@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# data files
+data/input/consumption_hourly
+data/input/hydro_weekly
+data/input/price_hourly
+data/input/price_daily
+data/input/production_hourly
+data/input/volume_hourly
+
+
 # Distribution / packaging
 .Python
 build/
