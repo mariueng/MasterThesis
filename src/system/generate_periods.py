@@ -5,6 +5,7 @@ import math
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def get_seasons():
@@ -21,16 +22,16 @@ def get_four_periods_median_method(write_summary):
     for s in seasons:
         period_table = pd.DataFrame(columns=["Start date", "End date", "Mean", "Variance", "Mean Dev", "Var Dev",
                                              "Norm Mean Dev", "Norm Var Dev", "Score"])
-        data = data_handler.get_data(s[0], s[1], ["System Price"])
+        data = data_handler.get_data(s[0], s[1], ["System Price"], os.getcwd())
         first_date_in_season = data.iloc[0]["Date"].date()
         last_date_in_season = data.iloc[-1]["Date"].date()
-        number_of_periods = math.floor((len(data) / 24) / 14)
+        number_of_periods = math.floor((len(data) / 24) / 7)
         if write_summary:
             print("First date in season: {}".format(first_date_in_season))
             print("Last date in season: {}".format(last_date_in_season))
             print("Number of periods in season: {}\n".format(number_of_periods))
         for i in range(number_of_periods):
-            first_date = first_date_in_season + dt.timedelta(days=14 * i)
+            first_date = first_date_in_season + dt.timedelta(days=7 * i)
             last_date = np.datetime64(first_date + dt.timedelta(days=13))
             first_date = np.datetime64(first_date)
             period = (data['Date'] >= first_date) & (data['Date'] <= last_date)
@@ -42,6 +43,7 @@ def get_four_periods_median_method(write_summary):
 
         season_mean = period_table["Mean"].mean()
         season_variance = period_table["Variance"].mean()
+
 
         for index, period in period_table.iterrows():
             period_mean_dev = abs(period["Mean"] - season_mean)
@@ -66,15 +68,16 @@ def get_four_periods_median_method(write_summary):
         periods.append((start_date_optimal_period, end_date_optimal_period))
 
         if write_summary:
-            print(period_table)
+            print("Season mean: {}, season variance: {}".format(round(season_mean, 2), round(season_variance, 2)))
+            print(period_table[["Mean", "Variance", "Norm Mean Dev", "Norm Var Dev", "Score"]])
             print("Optimal start: {}, optimal end: {}".format(start_date_optimal_period, end_date_optimal_period))
             print("\n")
 
-    print("The following four periods are suggested as validation test periods")
-    for p in periods:
-        print(p)
-    print("\n")
-
+    if write_summary:
+        print("The following four periods are suggested as validation test periods")
+        for p in periods:
+            print(p)
+        print("\n")
     return periods
 
 
@@ -122,4 +125,5 @@ def plot_price_year_and_periods(periods, write_dates):
 
 if __name__ == '__main__':
     periods_ = get_four_periods_median_method(write_summary=False)
-    plot_price_year_and_periods(periods_, write_dates=True)
+    # plot_price_year_and_periods(periods_, write_dates=True)
+    print(periods_)
