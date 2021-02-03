@@ -1,3 +1,7 @@
+# Code retrieved from: https://github.com/Mcompetitions/M4-methods/blob/master/ML_benchmarks.py
+# Right now it is a hard copy, not implemented to our data and it includes a simple RNN model as well
+# This code can be used to reproduce the forecasts of M4 Competition NN benchmarks and evaluate their accuracy
+
 from numpy.random import seed
 seed(42)
 from tensorflow import set_random_seed
