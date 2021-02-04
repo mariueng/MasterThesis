@@ -5,6 +5,7 @@ import pandas as pd
 from data import data_handler
 import os
 import numpy as np
+import random
 
 
 class CopyLastDayModel:
@@ -34,6 +35,18 @@ class CopyLastDayModel:
             forecast_df.at[index, "Forecast"] = forecast_hour
         return forecast_df
 
+    @staticmethod
+    def get_prob_forecast(forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
+        for index, row in forecast_df.iterrows():
+            point_f = row["Forecast"]
+            random.seed(1)
+            random_factor_up = random.randint(105, 120)
+            upper_f = point_f * (random_factor_up / 100)
+            forecast_df.at[index, "Upper"] = upper_f
+            random_factor_down = random.randint(80, 95)
+            lower_f = point_f * (random_factor_down / 100)
+            forecast_df.at[index, "Lower"] = lower_f
+        return forecast_df
 
 if __name__ == '__main__':
     model = CopyLastDayModel()
