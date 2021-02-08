@@ -123,7 +123,20 @@ def plot_price_year_and_periods(periods, write_dates):
     plt.close()
 
 
+def get_all_2019_periods():
+    periods = []
+    first_date = dt.datetime(2019, 1, 1).date()
+    for week in range(351):
+        last_date = first_date + dt.timedelta(days=14)
+        periods.append((first_date, last_date))
+        first_date = first_date + dt.timedelta(days=1)
+    return periods
+
+
 if __name__ == '__main__':
     periods_ = get_four_periods_median_method(write_summary=False)
-    # plot_price_year_and_periods(periods_, write_dates=True)
     print(periods_)
+    # plot_price_year_and_periods(periods_, write_dates=True)
+    periods_2019 = get_all_2019_periods()
+    print(periods_2019)
+    print(periods_2019[0])
