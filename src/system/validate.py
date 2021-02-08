@@ -1,5 +1,6 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
+from generate_periods import get_all_2019_periods
 from src.models.benchmarks import copy_last_day
 from data.data_handler import get_data
 import os
@@ -9,10 +10,12 @@ import pandas as pd
 import shutil
 import datetime as dt
 import math
+import time
 
 
 def validate(model, periods, plot):  # plot is boolean value, if you want to plot results
     print("-- Running validation using Model '{}' --".format(model.get_name()))
+    start_time = time.time()
     result_list = []
     for i in range(len(periods)):
         forecast_df = get_forecast(model, periods[i])
@@ -23,9 +26,12 @@ def validate(model, periods, plot):  # plot is boolean value, if you want to plo
     if plot:
         for i in range(len(result_list)):
             plot_result(result_list[i], periods[i], result_path, model.get_name(), str(i + 1))
-    calculate_point_performance(result_list, result_path, model)
-    calculate_interval_performance(result_list, result_path, model)
+    calculate_performance(result_list, result_path)
+    analyze_performance(result_path, model)
     print("\nResults are saved to 'src/" + result_path[3:] + "'")
+    elapsed_min = int((time.time() - start_time) // 60)
+    elapsed_sec = math.ceil((time.time() - start_time) % 60)
+    print("-- Validation time:\t{0:02d}:{1:02d} --".format(elapsed_min, elapsed_sec))
 
 
 def get_forecast(model, period):
@@ -63,8 +69,6 @@ def plot_result(result, period, dir_path, model_name, period_no):
     fig, ax = plt.subplots(figsize=img_size)
     plt.plot(result["DateTime"], result["System Price"], label="True", color=true_color, linewidth=2)
     plt.plot(result["DateTime"], result["Forecast"], label="Forecast", color=fc_color)
-    # plt.plot(result["DateTime"], result["Upper"], "--", label="Interval", color=fc_color)
-    # plt.plot(result["DateTime"], result["Lower"], "--", color=fc_color)
     plt.gca().fill_between(result["DateTime"], result["Upper"], result["Lower"],
                            facecolor='gainsboro', interpolate=True, label="Interval")
     for line in plt.legend(loc='upper center', ncol=5, bbox_to_anchor=(0.5, 1.03),
@@ -83,79 +87,77 @@ def plot_result(result, period, dir_path, model_name, period_no):
     plt.close()
 
 
-def calculate_point_performance(result_list, dir_path, model):
-    print("Calculating point performance for all periods")
-    mapes = []
-    smapes = []
-    maes = []
-    rmses = []
-    for result in result_list:
-        mapes.append(calculate_mape(result))
-        smapes.append(calculate_smape(result))
-        maes.append(calculate_mae(result))
-        rmses.append(calculate_rmse(result))
-    avg_mape = round(sum(mapes) / len(mapes), 2)
-    avg_smape = round(sum(smapes) / len(smapes), 2)
-    avg_mae = round(sum(maes) / len(maes), 2)
-    avg_rmse = round(sum(rmses) / len(rmses), 2)
-    summary = open(dir_path + "/performance.txt", "w")
+def calculate_performance(result_list, dir_path):
+    print("Calculating performance for all periods")
+    performance_df = pd.DataFrame(columns=["Period", "From Date", "To Date", "MAPE", "SMAPE", "MAE", "RMSE", "COV",
+                                           "CE", "IS"])
+    for i in range(len(result_list)):
+        result = result_list[i]
+        period = i + 1
+        from_date = result.at[0, "Date"]
+        to_date = result.at[len(result) - 1, "Date"]
+        mape = calculate_mape(result)
+        smape = calculate_smape(result)
+        mae = calculate_mae(result)
+        rmse = calculate_rmse(result)
+        cov, ce = calculate_coverage_error(result)
+        int_score = calculate_interval_score(result)
+        row = {"Period": period, "From Date": from_date, "To Date": to_date, "MAPE": mape, "SMAPE": smape,
+               "MAE": mae, "RMSE": rmse, "COV": cov, "CE": ce, "IS": int_score}
+        performance_df = performance_df.append(row, ignore_index=True)
+    path = dir_path + "/performance.csv"
+    performance_df.to_csv(path, index=False, sep=",", float_format='%.3f')
+
+
+def analyze_performance(result_path, model):
+    results = pd.read_csv(result_path + "/performance.csv")
+    avg_mape = round(results["MAPE"].mean(), 2)
+    std_mape = round(results["MAPE"].std(), 2)
+    avg_smape = round(results["SMAPE"].mean(), 2)
+    std_smape = round(results["SMAPE"].std(), 2)
+    avg_mae = round(results["MAE"].mean(), 2)
+    std_mae = round(results["MAE"].std(), 2)
+    avg_rmse = round(results["RMSE"].mean(), 2)
+    std_rmse = round(results["RMSE"].std(), 2)
+    avg_cov = round(results["COV"].mean(), 2)
+    std_cov = round(results["COV"].std(), 2)
+    avg_ce = round(results["CE"].mean(), 2)
+    std_ce = round(results["CE"].std(), 2)
+    avg_is = round(results["IS"].mean(), 2)
+    std_is = round(results["IS"].std(), 2)
+
+    summary = open(result_path + "/performance.txt", "w")
     summary.write("-- Performance Summary for '{}', created {} --\n\n".format(model.get_name(),
                                                                               model.get_time().replace("_", " ")))
-    line = "Point performance:\nMape:\t {}\nSmape:\t{}\nMae:\t{}\nRmse:\t{}\n\n".format(avg_mape, avg_smape, avg_mae,
-                                                                                        avg_rmse)
+    line = "Point performance:\nMape:\t {} ({})\nSmape:\t{} ({})\nMae:\t{} ({})\nRmse:\t{} ({})\n\n".format(
+        avg_mape, std_mape, avg_smape, std_smape, avg_mae, std_mae, avg_rmse, std_rmse)
     summary.write(line)
-    lines = ["Mapes: " + ", ".join(format(x, ".2f") for x in mapes) + "\n",
-             "Smapes: " + ", ".join(format(x, ".2f") for x in smapes) + "\n",
-             "Maes: " + ", ".join(format(x, ".2f") for x in maes) + "\n",
-             "Rmses: " + ", ".join(format(x, ".2f") for x in rmses) + "\n"]
-    for line in lines:
-        summary.write(line)
+    summary.write("Interval performance: \nCov:\t{:.1f}% ({})\nACE:\t{:.1f}% ({})\nMIS:\t{:.1f} ({})".format(
+        avg_cov, std_cov, avg_ce, std_ce, avg_is, std_is))
+
     summary.close()
 
 
-def calculate_interval_performance(result_list, dir_path, model):
-    print("Calculating point performance for all periods")
-    coverages = []
-    cov_errors = []
-    for result in result_list:
-        result['Hit'] = result.apply(lambda row: 1 if row["Lower"] <= row["System Price"] <=
-                                                      row["Upper"] else 0, axis=1)
-        coverage = sum(result["Hit"]) / len(result)
-        cov_error = abs(coverage - 0.95)
-        coverages.append(coverage)
-        cov_errors.append(cov_error)
-    a_coverage = sum(coverages) / len(coverages)
-    ace = abs(a_coverage - 0.95)
-    summary = open(dir_path + "/performance.txt", "a")
-    summary.write("\nInterval performance: \nCov:\t{:.1f}%\nACE:\t{:.1f}%".format(a_coverage * 100, ace * 100))
-    int_scores = get_interval_scores(result_list)
-    mean_int_score = sum(int_scores) / len(int_scores)
-    summary.write("\nMIS:\t{:.2f}\n".format(mean_int_score))
-    summary.write("\nCoverages:\t{}".format(get_lst_as_str(coverages, 3)))
-    summary.write("\nI. scores:\t{}".format(get_lst_as_str(int_scores, 2)))
-    summary.close()
+def calculate_coverage_error(result):
+    result['Hit'] = result.apply(lambda row: 1 if row["Lower"] <= row["System Price"] <=
+                                                  row["Upper"] else 0, axis=1)
+    coverage = sum(result["Hit"]) / len(result)
+    cov_error = abs(coverage - 0.95)
+    return coverage * 100, cov_error * 100
 
 
-def get_lst_as_str(input_list, decimals):
-    string = str([round(a, decimals) for a in input_list])[1:-1]
-    return string
-
-
-def get_interval_scores(result_list):
-    interval_scores = []
-    for result in result_list:
-        t_values = []
-        for index, row in result.iterrows():
-            u = row["Upper"]
-            l = row["Lower"]
-            y = row["System Price"]
-            func_l = 1 if y < l else 0
-            func_u = 1 if y > u else 0
-            t = (u - l) + (2 / 0.05) * (l - y) * func_l + (2 / 0.05) * (y - u) * func_u
-            t_values.append(t)
-        interval_score = sum(t_values) / len(t_values)
-        interval_scores.append(interval_score)
-    return interval_scores
+def calculate_interval_score(result):
+    t_values = []
+    for index, row in result.iterrows():
+        u = row["Upper"]
+        l = row["Lower"]
+        y = row["System Price"]
+        func_l = 1 if y < l else 0
+        func_u = 1 if y > u else 0
+        t = (u - l) + (2 / 0.05) * (l - y) * func_l + (2 / 0.05) * (y - u) * func_u
+        t_values.append(t)
+    interval_score = sum(t_values) / len(t_values)
+    return interval_score
 
 
 def calculate_mape(result):
@@ -205,4 +207,5 @@ def calculate_rmse(result):
 if __name__ == '__main__':
     model_ = copy_last_day.CopyLastDayModel()
     periods_ = get_four_periods_median_method(write_summary=False)
+    # periods_ = get_all_2019_periods()
     validate(model_, periods_, plot=True)
