@@ -1,22 +1,23 @@
+import os
 from data import data_handler
+from src.models.model_handler import *
+from data import data_formatter
 import pmdarima as pm
-from pmdarima.model_selection import train_test_split
-import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
+import pickle
 
-# Load/split your data
-y = data_handler.get_data("01.01.2018", "31.12.2018", ["System Price"], os.getcwd())
-print(y)
-train, test = train_test_split(y, train_size=150)
+start_time = "01.01.2018"
+end_time = "31.01.2018"
 
-# Fit your model
-model = pm.auto_arima(train, seasonal=True, m=12)
+data = data_handler.get_data(start_time, end_time, ["System Price"], os.getcwd())
+data = data_formatter.combine_hour_day_month_year_to_datetime_index(data)
+split = 150
+train, test = data[:split], data[split:]
 
-# make your forecasts
-forecasts = model.predict(test.shape[0])  # predict N steps into the future
 
-# Visualize the forecasts (blue=train, green=forecasts)
-x = np.arange(y.shape[0])
-plt.plot(x[:150], train, c='blue')
-plt.plot(x[150:], forecasts, c='green')
-plt.show()
+arima_model = pm.auto_arima(train, seasonal=True, m=12)
+
+# Forecast
+forecasts = arima_model.predict(test.shape[0])  # predict N (len(test)) steps into the future
+# Add datetime period as index for forecast data
+forecasts = data_formatter.array_to_dataframe_with_datetime_as_index(forecasts, test)
