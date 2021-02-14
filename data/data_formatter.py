@@ -15,14 +15,14 @@ def array_to_dataframe_with_datetime_as_index(array_, period):
     This method takes a list of data (e.g. forecasting array) and a period (e.g. the corresponding test period
     forecasted) and returns the forecasted data with datetime as index. In addition, array values is placed in
     'System Price' column.
-    TODO: Extend so that PI values are incorporated as well. This means there are two additional columns to add.
     :param array_: numpy.ndarray/list/...
     :param period: dataframe with datetime as index
     :return: pd.DataFrame
     """
     dataframe = pd.DataFrame(array_,
                              index=period.index)
-    dataframe.columns = ['System Price']
+    dataframe.columns = ['System Price', 'Lower Bound', 'Upper Bound']
+    print(dataframe)
     return dataframe
 
 
