@@ -137,6 +137,7 @@ def upper_indicator_function(upper_bound, observation):
         return 0
 
 
+# noinspection PyTypeChecker
 def absolute_coverage_error(forecast, actual, nominal_value):
     u = forecast['Upper bound']
     l = forecast['Lower bound']
