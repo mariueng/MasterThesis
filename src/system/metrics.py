@@ -142,8 +142,7 @@ def absolute_coverage_error(forecast, actual, nominal_value):
     l = forecast['Lower bound']
     y = actual['System Price']
     i = pd.concat([l, u, y], axis=1).apply(lambda x: indicator_function(x['Lower bound'], x['Upper bound'], x['System Price']), axis=1)
-    return abs((i.sum() / len(i.index)) - nominal_value)
-
+    return abs((i.sum() / len(i.index)) - nominal_value), i
 
 
 def lr_bt(self):
@@ -193,9 +192,10 @@ def lr_bt(self):
 
     return df
 
-def evaluate_interval_forecast(forecast, actual, in_sample):
+
+def evaluate_interval_forecast(forecast, actual, in_sample, nominal_coverage):
     msis_, _ = msis(forecast, actual, in_sample)
-    ace_, _ = absolute_coverage_error(forecast, actual)
+    ace_, _ = absolute_coverage_error(forecast, actual, nominal_coverage)
     scores = {'msis': msis_,
               'ace': ace_,
               }
@@ -211,5 +211,5 @@ if __name__ == '__main__':
                       [1, 0, 0],
                       [2, 1, 3]], columns=['System Price', 'Lower bound', 'Upper bound'])
     in_sample_ = pd.DataFrame([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], columns=['System Price'])
-    result = absolute_coverage_error(f, a, 0.95)
+    result = evaluate_interval_forecast(f, a, in_sample_, 0.95)
     print(result)
