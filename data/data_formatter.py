@@ -22,7 +22,6 @@ def array_to_dataframe_with_datetime_as_index(array_, period):
     dataframe = pd.DataFrame(array_,
                              index=period.index)
     dataframe.columns = ['System Price', 'Lower Bound', 'Upper Bound']
-    print(dataframe)
     return dataframe
 
 
