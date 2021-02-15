@@ -10,7 +10,7 @@ import matplotlib.dates as mdates
 import math
 
 
-def array_to_dataframe_with_datetime_as_index(array_, period):
+def point_and_intervals_to_dataframe_with_datetime_as_index(array_, period):
     """
     This method takes a list of data (e.g. forecasting array) and a period (e.g. the corresponding test period
     forecasted) and returns the forecasted data with datetime as index. Requires that array_ contains three columns:
@@ -21,7 +21,7 @@ def array_to_dataframe_with_datetime_as_index(array_, period):
     """
     dataframe = pd.DataFrame(array_,
                              index=period.index)
-    dataframe.columns = ['System Price', 'Lower Bound', 'Upper Bound']
+    dataframe.columns = ['System Price', 'Lower bound', 'Upper bound']
     return dataframe
 
 
