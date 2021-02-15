@@ -17,8 +17,8 @@ data/input/volume_hourly
 # Preliminary results
 src/results/validation/*
 
-# Venv
-/.idea/*
+# Venv-config
+.idea
 
 # Distribution / packaging
 .Python
