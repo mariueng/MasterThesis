@@ -4,6 +4,7 @@ from data import data_formatter, data_handler
 from src.system.metrics import evaluate_point_and_interval_forecast
 import pmdarima as pm
 import numpy as np
+import pandas as pd
 
 
 # Get data
@@ -27,8 +28,10 @@ def predict(arima_, test):
     # Combine results into one array
     results = np.column_stack((forecast, conf_int))
     # Add datetime period as index for forecast data
-    forecast = data_formatter.point_and_intervals_to_dataframe_with_datetime_as_index(results, test)
-    return forecast
+    dataframe = pd.DataFrame(results,
+                             index=test.index)
+    dataframe.columns = ['System Price', 'Lower bound', 'Upper bound']
+    return dataframe
 
 
 def score(forecast, actual, train, nominal_coverage=0.95):
