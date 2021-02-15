@@ -1,18 +1,15 @@
 import numpy as np
 import pandas as pd
+import sklearn.metrics
+import properscoring as ps
 from scipy import stats
+
 np.seterr(invalid="ignore", divide="ignore")
 
 
 # Point forecasting metrics
 
-def mape(forecast, actual):
-    """
-    Method calculating MAPE score over a point forecast result
-    :param forecast: pd.DataFrame
-    :param actual: pd.DataFrame
-    :return: numpy.float64, pd.DataFrame
-    """
+def mape(forecast: pd.DataFrame, actual: pd.DataFrame) -> (float, pd.DataFrame):
     apes = pd.DataFrame(
         (abs(actual['System Price'].values - forecast['System Price'].values) / actual[
             'System Price'].values) * 100,
@@ -25,13 +22,7 @@ def mape(forecast, actual):
     return mape_, apes
 
 
-def smape(forecast, actual):
-    """
-    Method calculating sMAPE score over a point forecast result
-    :param forecast: pd.DataFrame
-    :param actual: pd.DataFrame
-    :return: numpy.float64, pd.DataFrame
-    """
+def smape(forecast: pd.DataFrame, actual: pd.DataFrame) -> (float, pd.DataFrame):
     sapes = pd.DataFrame(
         (abs(actual['System Price'].values - forecast['System Price'].values) / (actual[
                                                                                      'System Price'].values + forecast[
@@ -45,13 +36,7 @@ def smape(forecast, actual):
     return smape_, sapes
 
 
-def mae(forecast, actual):
-    """
-    Method calculating MAE score over a point forecast result
-    :param forecast: pd.DataFrame
-    :param actual: pd.DataFrame
-    :return: numpy.float64, pd.DataFrame
-    """
+def mae(forecast: pd.DataFrame, actual: pd.DataFrame) -> (float, pd.DataFrame):
     aes = pd.DataFrame(
         abs(actual['System Price'].values - forecast['System Price'].values),
         columns=actual.columns, index=actual.index)
@@ -59,13 +44,7 @@ def mae(forecast, actual):
     return mae_, aes
 
 
-def rmse(forecast, actual):
-    """
-    Method calculating RMSE score over a point forecast result
-    :param forecast: pd.DataFrame
-    :param actual: pd.DataFrame
-    :return: numpy.float64, pd.DataFrame
-    """
+def rmse(forecast: pd.DataFrame, actual: pd.DataFrame) -> (float, pd.DataFrame):
     ses = pd.DataFrame(
         abs(actual['System Price'].values - forecast['System Price'].values) ** 2,
         columns=actual.columns, index=actual.index)
@@ -86,22 +65,18 @@ def evaluate_point_forecast(forecast, actual):
 
 
 # Prediction Interval metrics
-# TODO: Implement Pinball loss, Brier Score, winkler score, UC and CC, CWC, PINAW, OWA (?)
+# TODO: Implement CRPS, Pinball loss, Brier Score, winkler score, UC and CC, CWC, PINAW, OWA (?)
 
 # TODO: check whether this 'noinspection' is dangerous, or if PyCharm is just being an idiot
 # noinspection PyTypeChecker
-def msis(forecast, actual, in_sample):
+def msis(forecast: pd.DataFrame, actual: pd.DataFrame, in_sample: pd.DataFrame) -> (float, int):
     alpha = 0.05
-    u = forecast['Upper bound']
-    l = forecast['Lower bound']
-    y = actual['System Price']
-    i_lower = pd.concat([l, y], axis=1)
-    i_upper = pd.concat([u, y], axis=1)
+    u, l, y = forecast['Upper bound'], forecast['Lower bound'], actual['System Price']
+    i_lower, i_upper = pd.concat([l, y], axis=1), pd.concat([u, y], axis=1)
     # TODO: Check if this is correct or if a single two-sided indicator function is intended. Both are implemented.
     i_lower = i_lower.apply(lambda x: lower_indicator_function(x['Lower bound'], x['System Price']), axis=1)
     i_upper = i_upper.apply(lambda x: upper_indicator_function(x['Upper bound'], x['System Price']), axis=1)
-    h = len(forecast.index)
-    n = len(in_sample.index)
+    h, n = len(forecast.index), len(in_sample.index)
     m = 24  # Time interval between successive observations, i.e. 24 for hourly, 12 for monthly, four for quarterly 1
     # for one year, weekly and daily data
     mis = (1 / h) * (sum((u - l) + (2 / alpha) * ((l - y) * i_lower + (y - u) * i_upper)))
@@ -138,60 +113,38 @@ def upper_indicator_function(upper_bound, observation):
 
 
 # noinspection PyTypeChecker
-def absolute_coverage_error(forecast, actual, nominal_value):
+def absolute_coverage_error(forecast: pd.DataFrame, actual: pd.DataFrame, nominal_value: float) -> (
+        float, pd.DataFrame):
     u = forecast['Upper bound']
     l = forecast['Lower bound']
     y = actual['System Price']
-    i = pd.concat([l, u, y], axis=1).apply(lambda x: indicator_function(x['Lower bound'], x['Upper bound'], x['System Price']), axis=1)
+    i = pd.concat([l, u, y], axis=1).apply(
+        lambda x: indicator_function(x['Lower bound'], x['Upper bound'], x['System Price']), axis=1)
     return abs((i.sum() / len(i.index)) - nominal_value), i
 
 
-def lr_bt(self):
-    """Likelihood ratio framework of Christoffersen (1998)"""
-    hits = self.hit_series()  # Hit series
-    tr = hits[1:] - hits[:-1]  # Sequence to find transitions
+def crps():
+    return
 
-    # Transitions: nij denotes state i is followed by state j nij times
-    n01, n10 = (tr == 1).sum(), (tr == -1).sum()
-    n11, n00 = (hits[1:][tr == 0] == 1).sum(), (hits[1:][tr == 0] == 0).sum()
 
-    # Times in the states
-    n0, n1 = n01 + n00, n10 + n11
-    n = n0 + n1
+def brier_score():
+    return
 
-    # Probabilities of the transitions from one state to another
-    p01, p11 = n01 / (n00 + n01), n11 / (n11 + n10)
-    p = n1 / n
 
-    if n1 > 0:
-        # Unconditional Coverage
-        uc_h0 = n0 * np.log(1 - self.alpha) + n1 * np.log(self.alpha)
-        uc_h1 = n0 * np.log(1 - p) + n1 * np.log(p)
-        uc = -2 * (uc_h0 - uc_h1)
-
-        # Independence
-        ind_h0 = (n00 + n01) * np.log(1 - p) + (n01 + n11) * np.log(p)
-        ind_h1 = n00 * np.log(1 - p01) + n01 * np.log(p01) + n10 * np.log(1 - p11)
-        if p11 > 0:
-            ind_h1 += n11 * np.log(p11)
-        ind = -2 * (ind_h0 - ind_h1)
-
-        # Conditional coverage
-        cc = uc + ind
-
-        # Stack results
-        df = pd.concat([pd.Series([uc, ind, cc]),
-                        pd.Series([1 - stats.chi2.cdf(uc, 1),
-                                   1 - stats.chi2.cdf(ind, 1),
-                                   1 - stats.chi2.cdf(cc, 2)])], axis=1)
-    else:
-        df = pd.DataFrame(np.zeros((3, 2))).replace(0, np.nan)
-
-    # Assign names
-    df.columns = ["Statistic", "p-value"]
-    df.index = ["Unconditional", "Independence", "Conditional"]
-
-    return df
+# noinspection PyTypeChecker
+def pinball_loss(quantile_forecast: float, actual: pd.DataFrame, target_quantile: float) -> float:
+    y = actual['System Price']
+    quantiles = [0.05, 0.10, 0.5, 0.90, 0.95]
+    tau = 0.95
+    i_lower, i_upper = pd.concat([l, y], axis=1), pd.concat([u, y], axis=1)
+    i_lower = i_lower.apply(lambda x: lower_indicator_function(x['Lower bound'], x['System Price']), axis=1)
+    i_upper = i_upper.apply(lambda x: upper_indicator_function(x['Upper bound'], x['System Price']), axis=1)
+    pinball_score = 0
+    if y >= quantile_forecast:
+        pinball_score += (y - quantile_forecast) * target_quantile
+    elif quantile_forecast > y:
+        pinball_score += (quantile_forecast - y) * target_quantile
+    return
 
 
 def evaluate_interval_forecast(forecast, actual, in_sample, nominal_coverage):
@@ -202,7 +155,10 @@ def evaluate_interval_forecast(forecast, actual, in_sample, nominal_coverage):
               }
     return scores
 
+
 if __name__ == '__main__':
+
+    """
     a = pd.DataFrame([1, 2, 3.5, 1, 3, 1, 2], columns=['System Price'])
     f = pd.DataFrame([[1, 0, 2],
                       [0, -1, 1],
@@ -214,3 +170,17 @@ if __name__ == '__main__':
     in_sample_ = pd.DataFrame([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], columns=['System Price'])
     result = evaluate_interval_forecast(f, a, in_sample_, 0.95)
     print(result)
+    """
+
+    tau = 0.95  # Target quantile
+    target_quantiles = [0.05, 0.10, 0.50, 0.90, 0.95]
+    z = 0  # Forecasted value
+    Y = [1, 2, 3, 4, 5, 6, 7, 8, 9]  # Possible actual values, i.e. actual distribution
+    n = len(Y)  # Number of points
+    for tau in target_quantiles:
+        print(f"-------- Quantile: {tau} --------")
+        for z in Y:
+            loss = (tau / n) * sum([(Y[t] - z) for t in range(n) if Y[t] >= z]) + ((tau - 1) / n) * sum(
+                [(z - Y[t]) for t in range(n) if Y[t] < z])
+            print(loss)
+        print("-------------------------------")
