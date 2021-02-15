@@ -5,6 +5,7 @@ import numpy as np
 import os
 
 
+# TODO: write method so that get_data takes in resolution as parameter
 def get_data(from_date, to_date, column_list, work_dir):  # dates on form "dd.mm.yyyy", columns in list ["System Price", ...]
     # print("--Retrieving data from {} to {}. Columns: {} --\n".format(from_date, to_date, ", ".join(column_list)))
     path = get_path_to_all_data(work_dir)
