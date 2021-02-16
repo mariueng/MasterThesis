@@ -1,0 +1,12 @@
+-- Performance Summary for 'Arima', created 2021-02-16 15:43 --
+
+Point performance:
+Mape:	 10.49 (nan)
+Smape:	6.67 (nan)
+Mae:	5.1 (nan)
+Rmse:	5.93 (nan)
+
+Interval performance: 
+Cov:	100.0% (nan)
+ACE:	5.0% (nan)
+MIS:	208.5 (nan)

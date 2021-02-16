@@ -1,7 +1,9 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
 from generate_periods import get_all_2019_periods
+from generate_periods import get_one_period
 from src.models.benchmarks import copy_last_day
+from src.models.benchmarks import autoarima
 from data.data_handler import get_data
 import os
 import numpy as np
@@ -26,6 +28,7 @@ def validate(model, periods, plot):  # plot is boolean value, if you want to plo
     if plot:
         for i in range(len(result_list)):
             plot_result(result_list[i], periods[i], result_path, model.get_name(), str(i + 1))
+    save_forecast(result_list, result_path)
     calculate_performance(result_list, result_path)
     analyze_performance(result_path, model)
     print("\nResults are saved to 'src/" + result_path[3:] + "'")
@@ -38,11 +41,10 @@ def get_forecast(model, period):
     print("Forecasting from {} to {}".format(period[0], period[1]))
     time_df = get_data(period[0], period[1], [], os.getcwd())
     time_df["Forecast"] = np.nan
-    point_forecast = model.get_point_forecast(time_df)
-    point_forecast["Upper"] = np.nan
-    point_forecast["Lower"] = np.nan
-    prob_forecast = model.get_prob_forecast(point_forecast)
-    return prob_forecast
+    time_df["Upper"] = np.nan
+    time_df["Lower"] = np.nan
+    forecast_df = model.forecast(time_df)
+    return forecast_df
 
 
 def get_result_folder(model):
@@ -76,6 +78,9 @@ def plot_result(result, period, dir_path, model_name, period_no):
         line.set_linewidth(2)
     plt.ylabel("Price [€]", labelpad=label_pad)
     plt.xlabel("Date", labelpad=label_pad)
+    ymax = max(result["Forecast"])*1.5
+    ymin = min(result["Forecast"])*0.5
+    plt.ylim(ymin, ymax)
     ax.xaxis.set_major_locator(plt.MaxNLocator(7))
     start_day_string = dt.datetime.strftime(period[0], "%d %b")
     end_day_string = dt.datetime.strftime(period[1], "%d %b")
@@ -85,6 +90,16 @@ def plot_result(result, period, dir_path, model_name, period_no):
     out_path = dir_path + "/" + plot_path
     plt.savefig(out_path)
     plt.close()
+
+
+def save_forecast(result_list, result_path):
+    for i in range(len(result_list)):
+        result = result_list[i]
+        result["Period"] = i+1
+    all_forecasts = pd.concat(result_list, ignore_index=True)
+    all_forecasts = all_forecasts[["Period", "DateTime", "System Price", "Forecast", "Upper", "Lower"]]
+    path = result_path + "/forecast.csv"
+    all_forecasts.to_csv(path, index=False, float_format='%.3f')
 
 
 def calculate_performance(result_list, dir_path):
@@ -205,7 +220,9 @@ def calculate_rmse(result):
 
 
 if __name__ == '__main__':
-    model_ = copy_last_day.CopyLastDayModel()
+    # model_ = copy_last_day.CopyLastDayModel()
+    model_ = autoarima.ArimaModel()
     periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_all_2019_periods()
+    # periods_ = get_one_period()
     validate(model_, periods_, plot=True)

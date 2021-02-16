@@ -133,10 +133,19 @@ def get_all_2019_periods():
     return periods
 
 
+def get_one_period():
+    periods = []
+    first_date = dt.datetime(2019, 1, 30).date()
+    last_date = first_date + dt.timedelta(days=13)
+    periods.append((first_date, last_date))
+    return periods
+
+
 if __name__ == '__main__':
-    periods_ = get_four_periods_median_method(write_summary=False)
-    print(periods_)
+    # periods_ = get_four_periods_median_method(write_summary=False)
+    #print(periods_)
     # plot_price_year_and_periods(periods_, write_dates=True)
-    periods_2019 = get_all_2019_periods()
-    print(periods_2019)
-    print(periods_2019[0])
+    #periods_2019 = get_all_2019_periods()
+    #print(periods_2019)
+    periods_ = get_one_period()
+    print(periods_)
