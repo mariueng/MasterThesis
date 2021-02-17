@@ -1,9 +1,8 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
-from generate_periods import get_all_2019_periods
 from generate_periods import get_one_period
-from src.models.benchmarks import copy_last_day
-from src.models.benchmarks import autoarima
+from src.models.autoarima import autoarima
+from src.models.sarima import sarima
 from data.data_handler import get_data
 import os
 import numpy as np
@@ -221,8 +220,8 @@ def calculate_rmse(result):
 
 if __name__ == '__main__':
     # model_ = copy_last_day.CopyLastDayModel()
-    model_ = autoarima.ArimaModel()
+    model_ = sarima.Sarima()
     periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_all_2019_periods()
-    # periods_ = get_one_period()
+    #periods_ = get_one_period()
     validate(model_, periods_, plot=True)
