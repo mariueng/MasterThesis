@@ -42,7 +42,7 @@ class Sarima:
         history = [x for x in train["System Price"]]
         order = find_optimal_order(train)
         ses_order = (1, 1, 1, 24)
-        model = SARIMAX(history, trend="n", order=order, seasonal_order=ses_order)
+        model = SARIMAX(history, order=order, seasonal_order=ses_order)
         model_fit = model.fit(disp=0)
         prediction = model_fit.get_forecast(steps=len(forecast_df))
         forecast = prediction.predicted_mean
@@ -86,14 +86,15 @@ def find_optimal_order(train):
     min_order = results_table.iloc[results_table['AIC'].argmin()]["ARIMA"]
     return min_order
 
-def ARIM_pre(train, test):
+# methods for internal testing ___________________________________________________________
+def SARIMA_pre(train, test):
     warnings.filterwarnings("ignore")
     history = [x for x in train["System Price"]]
     x = test["System Price"].tolist()
     order = find_optimal_order(train)
-    ses_order = (1, 1, 1, 24)
-    model = SARIMAX(history, trend="n", order=order, seasonal_order=ses_order)
-    model_fit = model.fit()
+    ses_order = (1, 1, 0, 24)
+    model = SARIMAX(history, order=order, seasonal_order=ses_order)
+    model_fit = model.fit(disp=0)
     prediction = model_fit.get_forecast(steps=len(x))
     forecast = prediction.predicted_mean
     conf_int = prediction.conf_int(alpha=0.1)
@@ -118,10 +119,12 @@ def plot(train, resultstable):
         hour = len(train) + index
         row = {"Hour": hour, "True": true, "Forecast": forecast, "Upper": upper, "Lower": lower}
         df = df.append(row, ignore_index=True)
-    plt.plot(df["Hour"], df["True"])
-    plt.plot(df["Hour"], df["Forecast"])
-    plt.plot(df["Hour"], df["Upper"])
-    plt.plot(df["Hour"], df["Lower"])
+    fig, ax = plt.subplots(figsize=(13, 7))
+    plt.plot(df["Hour"], df["True"], label="True")
+    plt.plot(df["Hour"], df["Forecast"], label="Forecast")
+    plt.plot(df["Hour"], df["Upper"], label="Upper")
+    plt.plot(df["Hour"], df["Lower"], label="Lower")
+    plt.legend()
     ymax = max(df["True"])*1.2
     ymin = min(df["True"])*0.8
     plt.ylim(ymin, ymax)
@@ -129,12 +132,12 @@ def plot(train, resultstable):
 
 
 if __name__ == '__main__':
-    start_date_ = "26.01.2019"
-    end_date_ = "05.02.2019"
+    start_date_ = "24.01.2019"
+    end_date_ = "27.01.2019"
     train_ = data_handler.get_data(start_date_, end_date_, ["System Price"], os.getcwd())
     #stat_test(train_)
     # ------------
-    start_date_ = "06.02.2019"
-    end_date_ = "20.02.2019"
+    start_date_ = "28.01.2019"
+    end_date_ = "05.02.2019"
     test_ = data_handler.get_data(start_date_, end_date_, ["System Price"], os.getcwd())
-    Sarima(train_, test_)
+    SARIMA_pre(train_, test_)

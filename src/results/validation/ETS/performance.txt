@@ -1,12 +1,12 @@
--- Performance Summary for 'ETS', created 2021-02-18 13:02 --
+-- Performance Summary for 'ETS', created 2021-02-18 18:45 --
 
 Point performance:
-Mape:	 15.28 (6.17)
-Smape:	9.07 (3.19)
-Mae:	5.2 (2.14)
-Rmse:	6.62 (2.59)
+Mape:	 11.77 (6.27)
+Smape:	7.0 (2.96)
+Mae:	3.78 (1.16)
+Rmse:	4.9 (1.91)
 
 Interval performance: 
-Cov:	97.2% (3.11)
-ACE:	2.9% (2.34)
-MIS:	42.9 (14.73)
+Cov:	97.0% (3.45)
+ACE:	3.0% (2.35)
+MIS:	32.4 (7.37)

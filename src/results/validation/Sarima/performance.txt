@@ -1,12 +1,12 @@
--- Performance Summary for 'Sarima', created 2021-02-17 15:31 --
+-- Performance Summary for 'Sarima', created 2021-02-18 19:23 --
 
 Point performance:
-Mape:	 13.03 (6.24)
-Smape:	7.82 (3.45)
-Mae:	4.33 (1.98)
-Rmse:	5.55 (2.41)
+Mape:	 10.17 (4.24)
+Smape:	6.16 (1.95)
+Mae:	3.35 (0.93)
+Rmse:	4.37 (1.45)
 
 Interval performance: 
-Cov:	90.4% (15.31)
-ACE:	9.6% (11.83)
-MIS:	68.4 (59.96)
+Cov:	91.7% (15.93)
+ACE:	10.3% (11.23)
+MIS:	67.2 (60.62)

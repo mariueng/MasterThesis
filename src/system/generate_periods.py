@@ -135,7 +135,7 @@ def get_all_2019_periods():
 
 def get_one_period():
     periods = []
-    first_date = dt.datetime(2019, 1, 30).date()
+    first_date = dt.datetime(2019, 1, 28).date()
     last_date = first_date + dt.timedelta(days=13)
     periods.append((first_date, last_date))
     return periods

@@ -1,6 +1,7 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
 from generate_periods import get_one_period
+from src.models.copy_last_day import copy_last_day
 from src.models.sarima import sarima
 from src.models.ets import ets
 from data.data_handler import get_data
@@ -55,6 +56,7 @@ def get_result_folder(model):
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)  # delete old
     os.makedirs(folder_path)  # create new
+    os.makedirs(folder_path+"/plots")  # create plot folder
     return folder_path
 
 
@@ -86,7 +88,7 @@ def plot_result(result, period, dir_path, model_name, period_no):
     plt.title("Result from '{}' - {} to {}".format(model_name, start_day_string, end_day_string), pad=title_pad)
     plt.tight_layout()
     plot_path = period_no + "_" + start_day_string.replace(" ", "") + "_" + end_day_string.replace(" ", "") + ".png"
-    out_path = dir_path + "/" + plot_path
+    out_path = dir_path + "/plots/" + plot_path
     plt.savefig(out_path)
     plt.close()
 
@@ -219,10 +221,11 @@ def calculate_rmse(result):
 
 
 if __name__ == '__main__':
-    # model_ = copy_last_day.CopyLastDayModel()
-    # model_ = sarima.Sarima()
-    model_ = ets.Ets()
+    #model_ = copy_last_day.CopyLastDayModel()
+    model_ = sarima.Sarima()
+    #model_ = ets.Ets()
     periods_ = get_four_periods_median_method(write_summary=False)
+    #periods_ = [periods_[-1]]
     # periods_ = get_all_2019_periods()
-    #periods_ = get_one_period()
+    # periods_ = get_one_period()
     validate(model_, periods_, plot=True)
