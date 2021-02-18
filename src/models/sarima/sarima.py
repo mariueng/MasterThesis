@@ -11,27 +11,6 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 import matplotlib.pyplot as plt
 
 
-def find_optimal_order(train):
-    warnings.filterwarnings("ignore")
-    history = [x for x in train["System Price"]]
-    p = d = q = range(0, 4)
-    pdq = list(itertools.product(p, d, q))
-    aic_results = []
-    parameter = []
-    for param in pdq:
-        try:
-            model = ARIMA(history, order=param)
-            results = model.fit()
-            aic_results.append(results.aic)
-            parameter.append(param)
-        except:
-            continue
-    d = dict(ARIMA=parameter, AIC=aic_results)
-    results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
-    min_order = results_table.iloc[results_table['AIC'].argmin()]["ARIMA"]
-    return min_order
-
-
 class Sarima:
     def __init__(self):
         self.name = "Sarima"
@@ -75,27 +54,7 @@ class Sarima:
         results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
         return results_table
 
-    @staticmethod
-    def find_optimal_order(train):
-        history = [x for x in train["System Price"]]
-        p = d = q = range(0, 4)
-        pdq = list(itertools.product(p, d, q))
-        aic_results = []
-        parameter = []
-        for param in pdq:
-            try:
-                model = ARIMA(history, order=param)
-                results = model.fit()
-                aic_results.append(results.aic)
-                parameter.append(param)
-            except:
-                continue
-        d = dict(ARIMA=parameter, AIC=aic_results)
-        results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
-        min_order = results_table.iloc[results_table['AIC'].argmin()]["ARIMA"]
-        return min_order
 
-# other methods, used for internal testing
 
 def stat_test(df):
     x = df["System Price"]
@@ -105,26 +64,6 @@ def stat_test(df):
     print('Critical Values:')
     for key, value in result[4].items():
         print('\t%s: %.3f' % (key, value))
-
-
-def ARIM_pre(train, test):
-    warnings.filterwarnings("ignore")
-    history = [x for x in train["System Price"]]
-    x = test["System Price"].tolist()
-    order = find_optimal_order(train)
-    ses_order = (1, 1, 1, 24)
-    model = SARIMAX(history, trend="n", order=order, seasonal_order=ses_order)
-    model_fit = model.fit()
-    prediction = model_fit.get_forecast(steps=len(x))
-    forecast = prediction.predicted_mean
-    conf_int = prediction.conf_int(alpha=0.1)
-    predictions = forecast.tolist()
-    predictionslower = [conf_int[i][0] for i in range(len(conf_int))]
-    predictionsupper = [conf_int[i][1] for i in range(len(conf_int))]
-    d = dict(data=x, forecast=predictions, lower=predictionslower, upper=predictionsupper)
-    results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
-    plot(train, results_table)
-    results_table.to_csv(r'sarima_results.csv')
 
 
 def find_optimal_order(train):
@@ -146,6 +85,25 @@ def find_optimal_order(train):
     results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
     min_order = results_table.iloc[results_table['AIC'].argmin()]["ARIMA"]
     return min_order
+
+def ARIM_pre(train, test):
+    warnings.filterwarnings("ignore")
+    history = [x for x in train["System Price"]]
+    x = test["System Price"].tolist()
+    order = find_optimal_order(train)
+    ses_order = (1, 1, 1, 24)
+    model = SARIMAX(history, trend="n", order=order, seasonal_order=ses_order)
+    model_fit = model.fit()
+    prediction = model_fit.get_forecast(steps=len(x))
+    forecast = prediction.predicted_mean
+    conf_int = prediction.conf_int(alpha=0.1)
+    predictions = forecast.tolist()
+    predictionslower = [conf_int[i][0] for i in range(len(conf_int))]
+    predictionsupper = [conf_int[i][1] for i in range(len(conf_int))]
+    d = dict(data=x, forecast=predictions, lower=predictionslower, upper=predictionsupper)
+    results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
+    plot(train, results_table)
+    results_table.to_csv(r'sarima_results.csv')
 
 def plot(train, resultstable):
     df = pd.DataFrame(columns = ["Hour", "True", "Forecast", "Upper", "Lower"])

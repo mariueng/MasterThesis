@@ -1,8 +1,8 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
 from generate_periods import get_one_period
-from src.models.autoarima import autoarima
 from src.models.sarima import sarima
+from src.models.ets import ets
 from data.data_handler import get_data
 import os
 import numpy as np
@@ -77,8 +77,8 @@ def plot_result(result, period, dir_path, model_name, period_no):
         line.set_linewidth(2)
     plt.ylabel("Price [€]", labelpad=label_pad)
     plt.xlabel("Date", labelpad=label_pad)
-    ymax = max(result["Forecast"])*1.5
-    ymin = min(result["Forecast"])*0.5
+    ymax = max(result["System Price"])*1.4
+    ymin = min(result["System Price"])*0.7
     plt.ylim(ymin, ymax)
     ax.xaxis.set_major_locator(plt.MaxNLocator(7))
     start_day_string = dt.datetime.strftime(period[0], "%d %b")
@@ -156,7 +156,7 @@ def calculate_coverage_error(result):
     result['Hit'] = result.apply(lambda row: 1 if row["Lower"] <= row["System Price"] <=
                                                   row["Upper"] else 0, axis=1)
     coverage = sum(result["Hit"]) / len(result)
-    cov_error = abs(coverage - 0.95)
+    cov_error = abs(0.95 - coverage)
     return coverage * 100, cov_error * 100
 
 
@@ -220,7 +220,8 @@ def calculate_rmse(result):
 
 if __name__ == '__main__':
     # model_ = copy_last_day.CopyLastDayModel()
-    model_ = sarima.Sarima()
+    # model_ = sarima.Sarima()
+    model_ = ets.Ets()
     periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_all_2019_periods()
     #periods_ = get_one_period()

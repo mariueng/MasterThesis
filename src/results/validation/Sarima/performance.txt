@@ -1,4 +1,4 @@
--- Performance Summary for 'Sarima', created 2021-02-17 15:17 --
+-- Performance Summary for 'Sarima', created 2021-02-17 15:31 --
 
 Point performance:
 Mape:	 13.03 (6.24)
