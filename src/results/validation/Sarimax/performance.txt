@@ -1,0 +1,12 @@
+-- Performance Summary for 'Sarimax', created 2021-02-18 20:11 --
+
+Point performance:
+Mape:	 8.17 (5.99)
+Smape:	4.96 (2.97)
+Mae:	2.49 (1.1)
+Rmse:	3.36 (1.85)
+
+Interval performance: 
+Cov:	94.9% (6.36)
+ACE:	5.1% (2.31)
+MIS:	63.4 (62.78)

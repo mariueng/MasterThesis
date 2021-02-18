@@ -38,13 +38,15 @@ class Sarima:
         days_back = 14
         train_start_date = start_date - timedelta(days=days_back)
         train_end_date = train_start_date + timedelta(days=days_back-1)
-        train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd())
+        train = data_handler.get_data(train_start_date, train_end_date, ["System Price", "Total Vol"], os.getcwd())
         history = [x for x in train["System Price"]]
+        exog = [x for x in train["Total Vol"]]
         order = find_optimal_order(train)
         ses_order = (1, 1, 1, 24)
-        model = SARIMAX(history, order=order, seasonal_order=ses_order)
+        model = SARIMAX(history, order=order, seasonal_order=ses_order, exog=exog)
+        exog_t = data_handler.get_data(start_date, start_date+timedelta(days=13), ["Total Vol"], os.getcwd())["Total Vol"].tolist()
         model_fit = model.fit(disp=0)
-        prediction = model_fit.get_forecast(steps=len(forecast_df))
+        prediction = model_fit.get_forecast(steps=len(forecast_df), exog=exog_t)
         forecast = prediction.predicted_mean
         conf_int = prediction.conf_int(alpha=0.15)
         predictions = forecast.tolist()
@@ -53,17 +55,6 @@ class Sarima:
         d = dict(forecast=predictions, upper=predictionsupper, lower=predictionslower)
         results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
         return results_table
-
-
-
-def stat_test(df):
-    x = df["System Price"]
-    result = adfuller(x)
-    print('ADF Statistic: %f' % result[0])
-    print('p-value: %f' % result[1])
-    print('Critical Values:')
-    for key, value in result[4].items():
-        print('\t%s: %.3f' % (key, value))
 
 
 def find_optimal_order(train):
@@ -105,6 +96,15 @@ def SARIMA_pre(train, test):
     results_table = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in d.items()]))
     plot(train, results_table)
     results_table.to_csv(r'sarima_results.csv')
+
+def stat_test(df):
+    x = df["System Price"]
+    result = adfuller(x)
+    print('ADF Statistic: %f' % result[0])
+    print('p-value: %f' % result[1])
+    print('Critical Values:')
+    for key, value in result[4].items():
+        print('\t%s: %.3f' % (key, value))
 
 def plot(train, resultstable):
     df = pd.DataFrame(columns = ["Hour", "True", "Forecast", "Upper", "Lower"])
