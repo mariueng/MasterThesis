@@ -8,6 +8,7 @@ np.seterr(invalid="ignore", divide="ignore")
 
 
 # Point forecasting metrics
+# TODO: Add MAsE (?)
 
 def mape(forecast: pd.DataFrame, actual: pd.DataFrame) -> (float, pd.DataFrame):
     apes = pd.DataFrame(
