@@ -215,6 +215,7 @@ def calculate_rmse(result):
     ses = []
     for index, row in result.iterrows():
         true = row["System Price"]
+        true = row["System Price"]
         forecast = row["Forecast"]
         se = (true - forecast) ** 2
         ses.append(se)
@@ -223,9 +224,9 @@ def calculate_rmse(result):
 
 
 if __name__ == '__main__':
-    model_ = copy_last_day.CopyLastDayModel()
+    #model_ = copy_last_day.CopyLastDayModel()
     # model_ = sarimax.Sarimax()
-    #model_ = ets.Ets()
+    model_ = ets.Ets()
     periods_ = get_four_periods_median_method(write_summary=False)
     #periods_ = [periods_[-1]]
     # periods_ = get_all_2019_periods()
