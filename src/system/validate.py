@@ -180,9 +180,10 @@ def calculate_mape(result):
     apes = []
     for index, row in result.iterrows():
         true = row["System Price"]
-        forecast = row["Forecast"]
-        ape = (abs(true - forecast) / true) * 100
-        apes.append(ape)
+        if true != 0:
+            forecast = row["Forecast"]
+            ape = (abs(true - forecast) / true) * 100
+            apes.append(ape)
     mape = sum(apes) / len(apes)
     return mape
 
@@ -192,8 +193,9 @@ def calculate_smape(result):
     for index, row in result.iterrows():
         true = row["System Price"]
         forecast = row["Forecast"]
-        sape = 100 * (abs(true - forecast) / (true + forecast / 2))
-        sapes.append(sape)
+        if (true + forecast)/2 != 0:
+            sape = 100 * (abs(true - forecast) / (true + forecast / 2))
+            sapes.append(sape)
     smape = sum(sapes) / len(sapes)
     return smape
 
