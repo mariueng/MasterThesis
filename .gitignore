@@ -16,6 +16,11 @@ data/input/price_daily
 data/input/production_hourly
 data/input/volume_hourly
 
+# Preliminary results
+src/results/validation/*
+
+# Venv-config
+.idea
 
 # Distribution / packaging
 .Python

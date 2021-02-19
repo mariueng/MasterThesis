@@ -10,6 +10,34 @@ import matplotlib.dates as mdates
 import math
 
 
+def combine_hour_day_month_year_to_datetime_index(df):
+    """
+    This method reduces columns containing different time information such as hour, day, month and year into a single
+    column and sets it as index of the dataframe. NB! Assumes the column/index 'Date' exists.
+    TODO: implement check/methods for whether index is 'Date'
+    :param df: pd.DataFrame
+    :return: pd.DataFrame
+    """
+    cols = []
+    if 'Hour' in df.columns:
+        cols.append('Hour')
+        df['Date'] = df['Date'] + pd.to_timedelta(df['Hour'], unit='h')
+    if 'Day' in df.columns:
+        cols.append('Day')
+        df['Date'] = df['Date'] + pd.to_timedelta(df['Day'], unit='d')
+    if 'Month' in df.columns:
+        cols.append('Month')
+        df['Date'] = df['Date'] + pd.to_timedelta(df['Month'], unit="m")
+    if 'Year' in df.columns:
+        cols.append('Year')
+    if not 'Date' == df.index.name:
+        # Do this
+        code = 2
+    df.drop(cols, axis=1, inplace=True)
+    df.set_index('Date', inplace=True)
+    return df
+
+
 # helping method reformatting hour column
 def reformat_hour_column(df, date_sep):
     df['Hour'] = pd.to_datetime(df['Hour'], format='%H').dt.time
@@ -479,6 +507,18 @@ def write_hydro_deviations_to_combined(resolution):
     hydro_df = hydro_df[out_columns]
     hydro_df.to_csv(out_path, sep=",", index=False, float_format='%g')
 
+
+def convert_hour_to_datetime(forecasts, test):
+    """
+    Combines hour column into datetime index of forecasts
+    :param forecasts: DataFrame [index (Date), Hour, System price]
+    :return: DataFrame [index (Date + Hour), System price]
+    """
+    # Format
+    forecasts = pd.DataFrame(forecasts,
+                             index=test.index)
+    forecasts.columns = ['System Price']
+    return forecasts
 
 
 if __name__ == '__main__':
