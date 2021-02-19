@@ -1,6 +1,11 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+/inspectionProfiles
+/masteroppgave.iml
+/misc.xml
+/modules.xml
+/vcs.xml
 # Datasource local storage ignored files
 /../../../../../../:\Users\jakob\PycharmProjects\masteroppgave\.idea/dataSources/
 /dataSources.local.xml
