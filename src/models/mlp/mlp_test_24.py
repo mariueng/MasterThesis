@@ -65,18 +65,24 @@ def get_model(look_back):
     model = Sequential()
     model.add(Dense(units=32, input_dim=look_back, activation='relu'))
     model.add(Dense(8, activation='relu'))
-    model.add(Dense(1))
+    model.add(Dense(24))
     model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse', 'mae'])
     return model
 
 
 # turn dataset into matrix
 def convert2matrix(data_arr, look_back):
+    total_periods = int(len(data_arr)/24)
+    back_days = int(look_back/24)
     x, y = [], []
-    for i in range(len(data_arr) - look_back):
-        d = i + look_back
-        x.append(data_arr[i:d, 1])
-        y.append(data_arr[d, 1])
+    training_periods = total_periods-back_days
+    for i in range(training_periods):
+        x_index = i*24
+        y_index = x_index+look_back
+        x_list = data_arr[x_index:x_index+look_back, 1]
+        y_list = data_arr[y_index:y_index+24, 1]
+        x.append(x_list)
+        y.append(y_list)
     return np.asarray(x).astype('float32'), np.asarray(y).astype('float32')
 
 
@@ -84,17 +90,19 @@ def forecast(train, model, test, look_back):
     x = train[-look_back:, 1]
     x = x.reshape((1, look_back))
     predictions = []
-    for i in range(len(test)):
+    for i in range(14):
         input_x = np.asarray(x).astype('float32')
         prediction = model.predict(input_x, batch_size=None, verbose=0, steps=1, callbacks=None, max_queue_size=10,
                                    workers=1, use_multiprocessing=False)
-        pred = prediction[0, 0]
-        predictions.append(pred)
+        pred = np.round(prediction[0], 3)
+        print("Prediction {}".format(pred))
+        predictions = predictions + [round(i, 3) for i in pred.tolist()]
+        print("Predictions {}".format(predictions))
         x = np.append(x, prediction)
-        x = np.delete(x, 0)
+        x = np.delete(x, range(24))
         x = x.reshape((1, look_back))
     test_y = test[:, 1]
-    days_back = 5
+    days_back = 10
     last_days_train = train[-24*days_back:, 1]
     prediction_plot(test_y, predictions, last_days_train)
 
