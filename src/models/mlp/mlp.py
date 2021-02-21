@@ -2,6 +2,8 @@
 # Right now it is a hard copy, not implemented to our data and it includes a simple RNN model as well
 # This code can be used to reproduce the forecasts of M4 Competition NN benchmarks and evaluate their accuracy
 from sklearn.neural_network import MLPRegressor
+from sklearn.utils._testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
 from src.models.benchmarks.model import Model
 from data.data_handler import get_data
 from math import sqrt
@@ -9,9 +11,11 @@ import datetime as dt
 import os
 import pandas as pd
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
 import matplotlib.pyplot as plt
-tf.random.set_seed(42)
+#tf.random.set_seed(42)
+from random import seed
+seed(42)
 
 
 def detrend(insample_data):
@@ -62,19 +66,12 @@ def moving_averages(ts_init, window):
     :param window: window length
     :return: moving averages ts
     """
-    #print('ts_init: ' + str(ts_init.shape))
     if window % 2 == 0:
-        # ts_ma = pd.rolling_mean(ts_init, window, center=True)
         ts_ma = pd.Series(ts_init).rolling(window, center=True).mean()
-        #print('ts_ma after rolling mean(window) ' + str(ts_ma.shape))
-        # ts_ma = pd.rolling_mean(ts_ma, 2, center=True)
         ts_ma = pd.Series(ts_init).rolling(2, center=True).mean()
-        #print('ts_ma after rolling mean(2) ' + str(ts_ma.shape))
         ts_ma = np.roll(ts_ma, -1)
     else:
-        # ts_ma = pd.rolling_mean(ts_init, window, center=True)
         ts_ma = pd.Series(ts_init).rolling(window, center=True).mean()
-    #print('ts_ma shape:' + str(ts_ma.shape))
     return ts_ma
 
 
@@ -124,7 +121,6 @@ def split_into_train_test(data, in_num, fh):
     :param in_num: number of input points for the forecast
     :return:
     """
-    #test = data
     train, test = data[:-fh], data[-(fh + in_num):]
 
     x_train, y_train = train[:-1], np.roll(train, -in_num)[:-in_num]
@@ -144,6 +140,7 @@ def split_into_train_test(data, in_num, fh):
     return x_train, y_train, x_test, y_test
 
 
+@ignore_warnings(category=ConvergenceWarning)
 def mlp_bench(x_train, y_train, x_test, fh):
     """
     Forecasts using a simple MLP which 6 nodes in the hidden layer
@@ -158,10 +155,10 @@ def mlp_bench(x_train, y_train, x_test, fh):
     model = MLPRegressor(hidden_layer_sizes=6, activation='identity', solver='adam',
                          max_iter=100, learning_rate='adaptive', learning_rate_init=0.001,
                          random_state=42)
-    model.fit(x_train, y_train)
-    print('MLP loss: ' + str(model.loss_))
-    last_prediction = model.predict(x_test)[0]
 
+    model.fit(x_train, y_train)
+
+    last_prediction = model.predict(x_test)[0]
     for i in range(0, fh):
         y_hat_test.append(last_prediction)
         x_test[0] = np.roll(x_test[0], -1)
@@ -226,38 +223,46 @@ def mase(insample, y_test, y_hat_test, freq):
 
     return np.mean(abs(y_test - y_hat_test)) / masep
 
-
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 def main():
-    fh = 24  # forecasting horizon TODO: Check me out
+    fh = 2  # forecasting horizon
     freq = 1  # data frequency TODO: check this one
-    in_size = 24  # number of points used as input for each forecast
-
+    in_size = 3  # number of points used as input for each forecast
     err_MLP_sMAPE = []
     err_MLP_MASE = []
 
     # ===== In this example we produce forecasts for 100 randomly generated timeseries =====
 
     # data_all = np.array(np.random.random_integers(0, 100, (1, 1*7*24 + 2*7*24)), dtype=np.float32)
-    ts_length = fh + in_size
-    number_of_ts = 1
-    data_all = np.array(np.random.randint(0, 100 + 1, size=(number_of_ts, ts_length + 1)), dtype=np.float32)
-    for i in range(0, number_of_ts):
-        for j in range(0, ts_length):
-            data_all[i, j] = j * 10 + data_all[i, j]
-
+    # number_of_ts = 1
+    # ts_length = (fh + in_size) + filler
+    # data_all = np.array(np.random.randint(0, 100 + 1, size=(number_of_ts, ts_length)), dtype=np.float32)
+    # for i in range(0, number_of_ts):
+    #     for j in range(0, ts_length):
+    #         data_all[i, j] = j * 10 + data_all[i, j]
+    """
+    ['01.01.2018', '28.02.2018'],
+               ['01.03.2018', '28.04.2018'],
+               ['01.05.2018', '28.06.2018'],
+               ['01.07.2018', '28.08.2018']
+    """
     counter = 0
-    """
-    periods = [['07.01.2018', '14.01.2018'],
-               ['15.01.2018', '28.01.2018']]
-    data_all = []
+    periods = [['01.02.2018', '31.03.2018']]
+    data_all = np.zeros(shape=(len(periods), 1416))
     for i in range(0, len(periods)):
-        # test periods (contains price now, but wont later just for easy plotting)
         df = get_data(periods[i][0], periods[i][1], ['System Price'], os.getcwd())
-        data_all.append(df['System Price'].tolist())
-    """
+        print(df['System Price'].isnull().values.any())
+        df['Date'] = df['Date'] + pd.to_timedelta(df['Hour'], unit='h')
+        df.drop(['Hour'], axis=1, inplace=True)
+        data_all[i] = df['System Price'].to_numpy()
+
     # ===== Main loop which goes through all timeseries =====
     for j in range(len(data_all)):
-        ts = np.asarray(data_all[j])
+        ts = data_all[j]
+        plt.figure()
+        plt.plot(np.linspace(start=0, stop=len(ts), num=1416), ts)
+        plt.show()
 
         # remove seasonality
         seasonality_in = deseasonalize(ts, freq)
@@ -278,13 +283,12 @@ def main():
 
         # MLP benchmark - Produce forecasts
         y_hat_test_MLP = mlp_bench(x_train, y_train, x_test, fh)
-        print('First:')
-        print(y_hat_test_MLP)
-        for i in range(0, 29):
-            y_hat_test_MLP = np.vstack((y_hat_test_MLP, mlp_bench(x_train, y_train, x_test, fh)))
-        y_hat_test_MLP = np.median(y_hat_test_MLP, axis=0)
-        print('Last:')
-        print(y_hat_test_MLP)
+
+        # for i in range(0, 29):
+        #     y_hat_test_MLP = np.vstack((y_hat_test_MLP, mlp_bench(x_train, y_train, x_test, fh)))
+        # y_pred_int = []
+        # y_hat_test_MLP = np.median(y_hat_test_MLP, axis=0)
+
         # add trend
         for i in range(0, len(ts)):
             ts[i] = ts[i] + ((a * i) + b)
@@ -292,7 +296,7 @@ def main():
         for i in range(0, fh):
             y_hat_test_MLP[i] = y_hat_test_MLP[i] + ((a * (len(ts) + i + 1)) + b)
 
-        # add seasonality
+        # add seasonality, does nothing when no seasonality
         for i in range(0, len(ts)):
             ts[i] = ts[i] * seasonality_in[i % freq] / 100
 
@@ -309,23 +313,27 @@ def main():
 
         x_train, y_train, x_test, y_test = split_into_train_test(ts, in_size, fh)
 
-        # Plot forecasts
-        # True alone:
-        plt.figure()
-        plt.plot(y_test, label='True')
-        plt.legend(loc='upper right')
-        plt.show()
-
-        # MLP alone
-        plt.figure()
-        plt.plot(y_hat_test_MLP, label='MLP')
-        plt.plot(y_test, label='True')
-        plt.legend(loc='upper right')
-        plt.show()
-
         # Calculate errors
         err_MLP_sMAPE.append(smape(y_test, y_hat_test_MLP))
         err_MLP_MASE.append(mase(ts[:-fh], y_test, y_hat_test_MLP, freq))
+
+        # With training period
+        plt.figure()
+        x_axis = np.linspace(start=0, stop=len(ts), num=len(ts))
+        plt.plot(x_axis[-fh*2:], ts[-fh*2:], label='True')
+        plt.plot(x_axis[-len(y_test):], y_hat_test_MLP, label='MLP')
+        plt.plot([len(ts) - fh, len(ts) - fh], [0, 100], linestyle='--')
+        plt.title(f'Period: {periods[counter][0]} - {periods[counter][1]}    sMAPE: {round(err_MLP_sMAPE[counter], 3)}  MAsE: {round(err_MLP_MASE[counter], 3)}')
+        plt.legend(loc='upper left')
+        plt.show()
+
+        # MLP and true test
+        plt.figure()
+        plt.plot(x_axis[-len(y_test):], y_test, label='True')
+        plt.plot(x_axis[-len(y_test):], y_hat_test_MLP, label='MLP')
+        plt.title(f'Period: {periods[counter][0]} - {periods[counter][1]}    sMAPE: {round(err_MLP_sMAPE[counter], 3)}  MAsE: {round(err_MLP_MASE[counter], 3)}')
+        plt.legend(loc='upper right')
+        plt.show()
 
         counter = counter + 1
         print("-------------TS ID: ", counter, "-------------")
