@@ -1,0 +1,12 @@
+-- Performance Summary for 'Copy Last Day', created 2021-02-19 13:47 --
+
+Point performance:
+Mape:	 11.95 (5.09)
+Smape:	7.35 (2.39)
+Mae:	4.0 (0.83)
+Rmse:	5.03 (1.26)
+
+Interval performance: 
+Cov:	76.6% (15.17)
+ACE:	18.4% (15.17)
+MIS:	40.4 (25.0)

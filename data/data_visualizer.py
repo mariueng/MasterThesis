@@ -158,9 +158,9 @@ def get_line_width(data, resolution):
 # Helping method for getting out path
 def get_out_path(data, title):
     if len(data) == 1:
-        directory = "..\\plots\\data\\{}".format(data[0])
+        directory = "output\\plots\\{}".format(data[0])
     else:
-        directory = "..\\plots\\data\\double"
+        directory = "output\\plots\\double"
     existing_paths = sorted(Path(directory).iterdir())
     version = 1
     for p in existing_paths:
@@ -280,9 +280,9 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------------------
     data_options_idx = [2]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
     sub_markets_ = nordic_markets  # choose
-    start_date = datetime.date(2019, 1, 1)  # chose
-    end_date = datetime.date(2019, 12, 31)  # chose
-    resolution_ = "d"  # choose
+    start_date = datetime.date(2019, 12, 2)  # chose
+    end_date = datetime.date(2019, 12, 15)  # chose
+    resolution_ = "h"  # choose
     save_ = True  # choose
     # --------------------------------------------------------------------------------------
     data_ = [data_options[i] for i in data_options_idx]

@@ -1,7 +1,9 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
-from generate_periods import get_all_2019_periods
-from src.models.benchmarks import copy_last_day
+from generate_periods import get_one_period
+from src.models.copy_last_day import copy_last_day
+from src.models.sarimax import sarimax
+from src.models.ets import ets
 from data.data_handler import get_data
 import os
 import numpy as np
@@ -26,6 +28,7 @@ def validate(model, periods, plot):  # plot is boolean value, if you want to plo
     if plot:
         for i in range(len(result_list)):
             plot_result(result_list[i], periods[i], result_path, model.get_name(), str(i + 1))
+    save_forecast(result_list, result_path)
     calculate_performance(result_list, result_path)
     analyze_performance(result_path, model)
     print("\nResults are saved to 'src/" + result_path[3:] + "'")
@@ -38,11 +41,10 @@ def get_forecast(model, period):
     print("Forecasting from {} to {}".format(period[0], period[1]))
     time_df = get_data(period[0], period[1], [], os.getcwd())
     time_df["Forecast"] = np.nan
-    point_forecast = model.get_point_forecast(time_df)
-    point_forecast["Upper"] = np.nan
-    point_forecast["Lower"] = np.nan
-    prob_forecast = model.get_prob_forecast(point_forecast)
-    return prob_forecast
+    time_df["Upper"] = np.nan
+    time_df["Lower"] = np.nan
+    forecast_df = model.forecast(time_df)
+    return forecast_df
 
 
 def get_result_folder(model):
@@ -54,6 +56,7 @@ def get_result_folder(model):
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)  # delete old
     os.makedirs(folder_path)  # create new
+    os.makedirs(folder_path+"/plots")  # create plot folder
     return folder_path
 
 
@@ -76,15 +79,28 @@ def plot_result(result, period, dir_path, model_name, period_no):
         line.set_linewidth(2)
     plt.ylabel("Price [€]", labelpad=label_pad)
     plt.xlabel("Date", labelpad=label_pad)
+    ymax = max(result["System Price"])*1.4
+    ymin = min(result["System Price"])*0.7
+    plt.ylim(ymin, ymax)
     ax.xaxis.set_major_locator(plt.MaxNLocator(7))
     start_day_string = dt.datetime.strftime(period[0], "%d %b")
     end_day_string = dt.datetime.strftime(period[1], "%d %b")
     plt.title("Result from '{}' - {} to {}".format(model_name, start_day_string, end_day_string), pad=title_pad)
     plt.tight_layout()
     plot_path = period_no + "_" + start_day_string.replace(" ", "") + "_" + end_day_string.replace(" ", "") + ".png"
-    out_path = dir_path + "/" + plot_path
+    out_path = dir_path + "/plots/" + plot_path
     plt.savefig(out_path)
     plt.close()
+
+
+def save_forecast(result_list, result_path):
+    for i in range(len(result_list)):
+        result = result_list[i]
+        result["Period"] = i+1
+    all_forecasts = pd.concat(result_list, ignore_index=True)
+    all_forecasts = all_forecasts[["Period", "DateTime", "System Price", "Forecast", "Upper", "Lower"]]
+    path = result_path + "/forecast.csv"
+    all_forecasts.to_csv(path, index=False, float_format='%.3f')
 
 
 def calculate_performance(result_list, dir_path):
@@ -142,7 +158,7 @@ def calculate_coverage_error(result):
     result['Hit'] = result.apply(lambda row: 1 if row["Lower"] <= row["System Price"] <=
                                                   row["Upper"] else 0, axis=1)
     coverage = sum(result["Hit"]) / len(result)
-    cov_error = abs(coverage - 0.95)
+    cov_error = abs(0.95 - coverage)
     return coverage * 100, cov_error * 100
 
 
@@ -164,9 +180,10 @@ def calculate_mape(result):
     apes = []
     for index, row in result.iterrows():
         true = row["System Price"]
-        forecast = row["Forecast"]
-        ape = (abs(true - forecast) / true) * 100
-        apes.append(ape)
+        if true != 0:
+            forecast = row["Forecast"]
+            ape = (abs(true - forecast) / true) * 100
+            apes.append(ape)
     mape = sum(apes) / len(apes)
     return mape
 
@@ -176,8 +193,9 @@ def calculate_smape(result):
     for index, row in result.iterrows():
         true = row["System Price"]
         forecast = row["Forecast"]
-        sape = 100 * (abs(true - forecast) / (true + forecast / 2))
-        sapes.append(sape)
+        if (true + forecast)/2 != 0:
+            sape = 100 * (abs(true - forecast) / (true + forecast / 2))
+            sapes.append(sape)
     smape = sum(sapes) / len(sapes)
     return smape
 
@@ -206,6 +224,10 @@ def calculate_rmse(result):
 
 if __name__ == '__main__':
     model_ = copy_last_day.CopyLastDayModel()
+    # model_ = sarimax.Sarimax()
+    #model_ = ets.Ets()
     periods_ = get_four_periods_median_method(write_summary=False)
+    #periods_ = [periods_[-1]]
     # periods_ = get_all_2019_periods()
+    # periods_ = get_one_period()
     validate(model_, periods_, plot=True)

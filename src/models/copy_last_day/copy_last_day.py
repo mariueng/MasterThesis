@@ -21,8 +21,13 @@ class CopyLastDayModel:
     def get_time(self):
         return self.creation_date
 
+    def forecast(self, forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
+        forecast_df = self.get_point_forecast(forecast_df)
+        forecast_df = self.get_prob_forecast(forecast_df)
+        return forecast_df
+
     @staticmethod
-    def get_point_forecast(forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast"]
+    def get_point_forecast(forecast_df):
         start_date = forecast_df.at[0, "Date"]
         prev_day = start_date - timedelta(days=1)
         prev_day_string = prev_day.strftime("%d.%m.%Y")
@@ -36,7 +41,7 @@ class CopyLastDayModel:
         return forecast_df
 
     @staticmethod
-    def get_prob_forecast(forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
+    def get_prob_forecast(forecast_df):
         for index, row in forecast_df.iterrows():
             point_f = row["Forecast"]
             random.seed(1)
@@ -48,11 +53,14 @@ class CopyLastDayModel:
             forecast_df.at[index, "Lower"] = lower_f
         return forecast_df
 
+
 if __name__ == '__main__':
     model = CopyLastDayModel()
     start_date_ = "04.02.2019"
     end_date_ = "17.02.2019"
     time_list_ = data_handler.get_data(start_date_, end_date_, [], os.getcwd())
     time_list_["Forecast"] = np.nan
-    forecast_ = model.get_point_forecast(time_list_)
+    time_list_["Upper"] = np.nan
+    time_list_["Lower"] = np.nan
+    forecast_ = model.get_forecast(time_list_)
     print(forecast_)
