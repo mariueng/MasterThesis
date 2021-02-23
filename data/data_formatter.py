@@ -509,16 +509,52 @@ def write_hydro_deviations_to_combined(resolution):
 
 
 def convert_hour_to_datetime(forecasts, test):
-    """
-    Combines hour column into datetime index of forecasts
-    :param forecasts: DataFrame [index (Date), Hour, System price]
-    :return: DataFrame [index (Date + Hour), System price]
-    """
-    # Format
-    forecasts = pd.DataFrame(forecasts,
-                             index=test.index)
+    forecasts = pd.DataFrame(forecasts, index=test.index)
     forecasts.columns = ['System Price']
     return forecasts
+
+
+def remove_summer_winter_time(resolution):
+    print("Fixing 'bugs' from summer time and winter time change")
+    if resolution == "d":
+        data_path = "..\\data\\input\\combined\\all_data_daily.csv"
+    else:
+        data_path = "..\\data\\input\\combined\\all_data_hourly.csv"
+    date_format = "%Y-%m-%d"
+    df = pd.read_csv(data_path, sep=",")
+    df['Date'] = pd.to_datetime(df['Date'], format=date_format)
+    to_summer = {2014: 30, 2015: 29, 2016: 27, 2017: 26, 2018: 25, 2019: 31, 2020: 29}
+    to_summer_dates = []
+    to_winter = {2014: 26, 2015: 25, 2016: 30, 2017: 29, 2018: 28, 2019: 27, 2020: 25}
+    to_winter_dates = []
+    for year in range(2014, 2021):
+        to_summer_dates.append(datetime(year, 3, to_summer[year]).date())
+        to_winter_dates.append(datetime(year, 10, to_winter[year]).date())
+    for index, row in df.iterrows():
+        if row["Date"] in to_summer_dates and row["Hour"] == 2:
+            prev_row = df.iloc[index-1]
+            next_row = df.iloc[index+1]
+            for col in df.columns[2:]:
+                past_val = prev_row[col]
+                next_val = next_row[col]
+                value = round((past_val + next_val) / 2, 2)
+                df.loc[index, col] = value
+    years_covered = []
+    indices_to_delete = []
+    for index, row in df.iterrows():
+        if row["Date"] in to_winter_dates and row["Hour"] == 2:
+            year = row["Date"].year
+            if year not in years_covered:
+                years_covered.append(year)
+            else:
+                indices_to_delete.append(index)
+    df = df.drop(indices_to_delete)
+    df.to_csv(data_path, sep=",", index=False, float_format='%g')
+    print("Date updated and saved to {}".format(data_path))
+
+
+
+
 
 
 if __name__ == '__main__':
@@ -538,7 +574,7 @@ if __name__ == '__main__':
     # write_production_to_combined("d", convert_to_csv=False, replace_commas=True)
     # write_production_to_combined("h", convert_to_csv=True, replace_commas=True)
     # combine_all_data("daily")
-    change_date_hydro_dev()
-    combine_all_data("hourly")
+    #combine_all_data("hourly")
+    remove_summer_winter_time("h")
     # add_time_columns_to_all_data("d")
     # add_time_columns_to_all_data("h")

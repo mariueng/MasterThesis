@@ -1,6 +1,11 @@
 # script for validation test
 from generate_periods import get_four_periods_median_method
 from generate_periods import get_one_period
+from generate_periods import get_random_periods
+from generate_periods import get_all_2019_periods
+from scores import calculate_interval_score
+from scores import calculate_coverage_error
+from scores import get_all_point_metrics
 from src.models.copy_last_day import copy_last_day
 from src.models.sarimax import sarimax
 from src.models.ets import ets
@@ -40,6 +45,10 @@ def validate(model, periods, plot):  # plot is boolean value, if you want to plo
 def get_forecast(model, period):
     print("Forecasting from {} to {}".format(period[0], period[1]))
     time_df = get_data(period[0], period[1], [], os.getcwd())
+    if len(time_df) != 336:
+        print("Length of horizon: {}".format(len(time_df)))
+        print("Prediction horizon must be length 336")
+        assert False
     time_df["Forecast"] = np.nan
     time_df["Upper"] = np.nan
     time_df["Lower"] = np.nan
@@ -79,8 +88,8 @@ def plot_result(result, period, dir_path, model_name, period_no):
         line.set_linewidth(2)
     plt.ylabel("Price [€]", labelpad=label_pad)
     plt.xlabel("Date", labelpad=label_pad)
-    ymax = max(result["System Price"])*1.4
-    ymin = min(result["System Price"])*0.7
+    ymax = max(max(result["System Price"]), max(result["Forecast"]))*1.1
+    ymin = min(min(result["System Price"]), min(result["Forecast"]))*0.95
     plt.ylim(ymin, ymax)
     ax.xaxis.set_major_locator(plt.MaxNLocator(7))
     start_day_string = dt.datetime.strftime(period[0], "%d %b")
@@ -112,10 +121,11 @@ def calculate_performance(result_list, dir_path):
         period = i + 1
         from_date = result.at[0, "Date"]
         to_date = result.at[len(result) - 1, "Date"]
-        mape = calculate_mape(result)
-        smape = calculate_smape(result)
-        mae = calculate_mae(result)
-        rmse = calculate_rmse(result)
+        point_metrics = get_all_point_metrics(result)
+        mape = point_metrics["mape"]
+        smape = point_metrics["smape"]
+        mae = point_metrics["mae"]
+        rmse = point_metrics["rmse"]
         cov, ce = calculate_coverage_error(result)
         int_score = calculate_interval_score(result)
         row = {"Period": period, "From Date": from_date, "To Date": to_date, "MAPE": mape, "SMAPE": smape,
@@ -127,20 +137,20 @@ def calculate_performance(result_list, dir_path):
 
 def analyze_performance(result_path, model):
     results = pd.read_csv(result_path + "/performance.csv")
-    avg_mape = round(results["MAPE"].mean(), 2)
-    std_mape = round(results["MAPE"].std(), 2)
-    avg_smape = round(results["SMAPE"].mean(), 2)
-    std_smape = round(results["SMAPE"].std(), 2)
-    avg_mae = round(results["MAE"].mean(), 2)
-    std_mae = round(results["MAE"].std(), 2)
-    avg_rmse = round(results["RMSE"].mean(), 2)
-    std_rmse = round(results["RMSE"].std(), 2)
-    avg_cov = round(results["COV"].mean(), 2)
-    std_cov = round(results["COV"].std(), 2)
-    avg_ce = round(results["CE"].mean(), 2)
-    std_ce = round(results["CE"].std(), 2)
-    avg_is = round(results["IS"].mean(), 2)
-    std_is = round(results["IS"].std(), 2)
+    avg_mape = round(results["MAPE"].mean(), 3)
+    std_mape = round(results["MAPE"].std(), 3)
+    avg_smape = round(results["SMAPE"].mean(), 3)
+    std_smape = round(results["SMAPE"].std(), 3)
+    avg_mae = round(results["MAE"].mean(), 3)
+    std_mae = round(results["MAE"].std(), 3)
+    avg_rmse = round(results["RMSE"].mean(), 3)
+    std_rmse = round(results["RMSE"].std(), 3)
+    avg_cov = round(results["COV"].mean(), 3)
+    std_cov = round(results["COV"].std(), 3)
+    avg_ce = round(results["CE"].mean(), 3)
+    std_ce = round(results["CE"].std(), 3)
+    avg_is = round(results["IS"].mean(), 3)
+    std_is = round(results["IS"].std(), 3)
 
     summary = open(result_path + "/performance.txt", "w")
     summary.write("-- Performance Summary for '{}', created {} --\n\n".format(model.get_name(),
@@ -148,87 +158,30 @@ def analyze_performance(result_path, model):
     line = "Point performance:\nMape:\t {} ({})\nSmape:\t{} ({})\nMae:\t{} ({})\nRmse:\t{} ({})\n\n".format(
         avg_mape, std_mape, avg_smape, std_smape, avg_mae, std_mae, avg_rmse, std_rmse)
     summary.write(line)
-    summary.write("Interval performance: \nCov:\t{:.1f}% ({})\nACE:\t{:.1f}% ({})\nMIS:\t{:.1f} ({})".format(
+    summary.write("Interval performance: \nCov:\t{:.2f}% ({})\nACE:\t{:.2f}% ({})\nMIS:\t{:.2f} ({})".format(
         avg_cov, std_cov, avg_ce, std_ce, avg_is, std_is))
-
+    if len(results) > 5:
+        results = results.set_index("Period")
+        three_best_smape = results.sort_values(by="SMAPE").head(3)[["SMAPE"]].to_dict()["SMAPE"]
+        summary.write("\n\nThree best SMAPE performances:\t{}".format(three_best_smape))
+        three_worst_smape = results.sort_values(by="SMAPE").tail(3)[["SMAPE"]].to_dict()["SMAPE"]
+        summary.write("\nThree worst SMAPE performances:\t{}".format(three_worst_smape))
+        three_best_mis = results.sort_values(by="IS").head(3)[["IS"]].to_dict()["IS"]
+        summary.write("\nThree best IS performances:\t{}".format(three_best_mis))
+        three_worst_mis = results.sort_values(by="IS").tail(3)[["IS"]].to_dict()["IS"]
+        summary.write("\nThree worst IS performances:\t{}".format(three_worst_mis))
     summary.close()
 
 
-def calculate_coverage_error(result):
-    result['Hit'] = result.apply(lambda row: 1 if row["Lower"] <= row["System Price"] <=
-                                                  row["Upper"] else 0, axis=1)
-    coverage = sum(result["Hit"]) / len(result)
-    cov_error = abs(0.95 - coverage)
-    return coverage * 100, cov_error * 100
 
-
-def calculate_interval_score(result):
-    t_values = []
-    for index, row in result.iterrows():
-        u = row["Upper"]
-        l = row["Lower"]
-        y = row["System Price"]
-        func_l = 1 if y < l else 0
-        func_u = 1 if y > u else 0
-        t = (u - l) + (2 / 0.05) * (l - y) * func_l + (2 / 0.05) * (y - u) * func_u
-        t_values.append(t)
-    interval_score = sum(t_values) / len(t_values)
-    return interval_score
-
-
-def calculate_mape(result):
-    apes = []
-    for index, row in result.iterrows():
-        true = row["System Price"]
-        if true != 0:
-            forecast = row["Forecast"]
-            ape = (abs(true - forecast) / true) * 100
-            apes.append(ape)
-    mape = sum(apes) / len(apes)
-    return mape
-
-
-def calculate_smape(result):
-    sapes = []
-    for index, row in result.iterrows():
-        true = row["System Price"]
-        forecast = row["Forecast"]
-        if (true + forecast)/2 != 0:
-            sape = 100 * (abs(true - forecast) / (true + forecast / 2))
-            sapes.append(sape)
-    smape = sum(sapes) / len(sapes)
-    return smape
-
-
-def calculate_mae(result):
-    aes = []
-    for index, row in result.iterrows():
-        true = row["System Price"]
-        forecast = row["Forecast"]
-        ae = abs(true - forecast)
-        aes.append(ae)
-    mae = sum(aes) / len(aes)
-    return mae
-
-
-def calculate_rmse(result):
-    ses = []
-    for index, row in result.iterrows():
-        true = row["System Price"]
-        true = row["System Price"]
-        forecast = row["Forecast"]
-        se = (true - forecast) ** 2
-        ses.append(se)
-    rmse = math.sqrt(sum(ses) / len(ses))
-    return rmse
 
 
 if __name__ == '__main__':
     #model_ = copy_last_day.CopyLastDayModel()
-    # model_ = sarimax.Sarimax()
-    model_ = ets.Ets()
-    periods_ = get_four_periods_median_method(write_summary=False)
-    #periods_ = [periods_[-1]]
-    # periods_ = get_all_2019_periods()
+    model_ = sarimax.Sarimax()
+    # model_ = ets.Ets()
+    #periods_ = get_four_periods_median_method(write_summary=False)
+    #periods_ = get_random_periods(1)
+    periods_ = get_all_2019_periods()
     # periods_ = get_one_period()
     validate(model_, periods_, plot=True)
