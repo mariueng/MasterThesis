@@ -1,6 +1,5 @@
 # script for validation test
-from generate_periods import get_four_periods_median_method
-from generate_periods import get_one_period
+from generate_periods import get_four_periods_median_method, get_all_2019_periods
 from src.models.copy_last_day import copy_last_day
 from src.models.sarimax import sarimax
 from src.models.ets import ets
@@ -223,11 +222,8 @@ def calculate_rmse(result):
 
 
 if __name__ == '__main__':
-    model_ = copy_last_day.CopyLastDayModel()
     # model_ = sarimax.Sarimax()
     #model_ = ets.Ets()
     periods_ = get_four_periods_median_method(write_summary=False)
     #periods_ = [periods_[-1]]
-    # periods_ = get_all_2019_periods()
     # periods_ = get_one_period()
-    validate(model_, periods_, plot=True)

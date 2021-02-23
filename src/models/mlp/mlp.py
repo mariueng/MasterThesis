@@ -1,21 +1,19 @@
 # Code retrieved from: https://github.com/Mcompetitions/M4-methods/blob/master/ML_benchmarks.py
-# Right now it is a hard copy, not implemented to our data and it includes a simple RNN model as well
 # This code can be used to reproduce the forecasts of M4 Competition NN benchmarks and evaluate their accuracy
+import math
+import random
+
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils._testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
 from src.models.benchmarks.model import Model
 from data.data_handler import get_data
 from math import sqrt
-import datetime as dt
+from datetime import timedelta
 import os
+import copy
 import pandas as pd
 import numpy as np
-#import tensorflow as tf
-import matplotlib.pyplot as plt
-#tf.random.set_seed(42)
-from random import seed
-seed(42)
 
 
 def detrend(insample_data):
@@ -140,7 +138,7 @@ def split_into_train_test(data, in_num, fh):
     return x_train, y_train, x_test, y_test
 
 
-@ignore_warnings(category=ConvergenceWarning)
+#@ignore_warnings(category=ConvergenceWarning)
 def mlp_bench(x_train, y_train, x_test, fh):
     """
     Forecasts using a simple MLP which 6 nodes in the hidden layer
@@ -153,11 +151,15 @@ def mlp_bench(x_train, y_train, x_test, fh):
     y_hat_test = []
 
     model = MLPRegressor(hidden_layer_sizes=6, activation='identity', solver='adam',
-                         max_iter=100, learning_rate='adaptive', learning_rate_init=0.001,
-                         random_state=42)
+                         max_iter=1000, learning_rate='adaptive', learning_rate_init=0.001)
 
     model.fit(x_train, y_train)
 
+    return model, forecast(model, x_test, fh)
+
+
+def forecast(model, x_test, fh):
+    y_hat_test = []
     last_prediction = model.predict(x_test)[0]
     for i in range(0, fh):
         y_hat_test.append(last_prediction)
@@ -170,99 +172,22 @@ def mlp_bench(x_train, y_train, x_test, fh):
 
 class MLP(Model):
 
-    def train(self, start_test_period):
-        model = MLPRegressor(hidden_layer_sizes=6, activation='identity', solver='adam',
-                             max_iter=100, learning_rate='adaptive', learning_rate_init=0.001,
-                             random_state=42)
-        # Get data based on test_period
-        train = get_data(start_test_period - timedelta(days=14), start_test_period, ['System Price'], os.getcwd())
-        x_train, y_train = train[:-1], np.roll(train, -in_num)[:-in_num]
-        self.model = model.fit(x_train, y_train)
-        return self.model
+    def __init__(self, name):
+        self.residuals = None
+        Model.__init__(self, name)
 
     def forecast(self, df: pd.DataFrame):  # df: ["Date", "Hour", "Forecast", "Upper", "Lower"]
-        # Check if fitted here ...
-        index_array = df.index
-        y_hat_test = []
-        last_prediction = self.model.predict(index_array.shape[0])[0]
-        for i in range(0, len(index_array)):
-            y_hat_test.append(last_prediction)
-            x_test[0] = np.roll(x_test[0], -1)
-            x_test[0, (len(x_test[0]) - 1)] = last_prediction
-            last_prediction = self.model.predict(x_test)[0]
-
-        return np.asarray(y_hat_test)
-
-
-def smape(a, b):
-    """
-    Calculates sMAPE
-    :param a: actual values
-    :param b: predicted values
-    :return: sMAPE
-    """
-    a = np.reshape(a, (-1,))
-    b = np.reshape(b, (-1,))
-    return np.mean(2.0 * np.abs(a - b) / (np.abs(a) + np.abs(b))).item()
-
-
-def mase(insample, y_test, y_hat_test, freq):
-    """
-    Calculates MAsE
-    :param insample: insample data
-    :param y_test: out of sample target values
-    :param y_hat_test: predicted values
-    :param freq: data frequency
-    :return:
-    """
-    y_hat_naive = []
-    for i in range(freq, len(insample)):
-        y_hat_naive.append(insample[(i - freq)])
-
-    masep = np.mean(abs(insample[freq:] - y_hat_naive))
-
-    return np.mean(abs(y_test - y_hat_test)) / masep
-
-import sys
-np.set_printoptions(threshold=sys.maxsize)
-def main():
-    fh = 2  # forecasting horizon
-    freq = 1  # data frequency TODO: check this one
-    in_size = 3  # number of points used as input for each forecast
-    err_MLP_sMAPE = []
-    err_MLP_MASE = []
-
-    # ===== In this example we produce forecasts for 100 randomly generated timeseries =====
-
-    # data_all = np.array(np.random.random_integers(0, 100, (1, 1*7*24 + 2*7*24)), dtype=np.float32)
-    # number_of_ts = 1
-    # ts_length = (fh + in_size) + filler
-    # data_all = np.array(np.random.randint(0, 100 + 1, size=(number_of_ts, ts_length)), dtype=np.float32)
-    # for i in range(0, number_of_ts):
-    #     for j in range(0, ts_length):
-    #         data_all[i, j] = j * 10 + data_all[i, j]
-    """
-    ['01.01.2018', '28.02.2018'],
-               ['01.03.2018', '28.04.2018'],
-               ['01.05.2018', '28.06.2018'],
-               ['01.07.2018', '28.08.2018']
-    """
-    counter = 0
-    periods = [['01.02.2018', '31.03.2018']]
-    data_all = np.zeros(shape=(len(periods), 1416))
-    for i in range(0, len(periods)):
-        df = get_data(periods[i][0], periods[i][1], ['System Price'], os.getcwd())
-        print(df['System Price'].isnull().values.any())
-        df['Date'] = df['Date'] + pd.to_timedelta(df['Hour'], unit='h')
-        df.drop(['Hour'], axis=1, inplace=True)
-        data_all[i] = df['System Price'].to_numpy()
-
-    # ===== Main loop which goes through all timeseries =====
-    for j in range(len(data_all)):
-        ts = data_all[j]
-        plt.figure()
-        plt.plot(np.linspace(start=0, stop=len(ts), num=1416), ts)
-        plt.show()
+        # TODO: should really be datetime column unless time-variables are used as features
+        fh = len(df['Forecast'].values)  # Forecasting horizon
+        freq = 24  # Data frequency
+        in_size = fh  # Input size for fh
+        ensemble = True  # Ensemble MLP used for generating PIs
+        # Get data based on test_period
+        training_set_size = 2000  # Set size of data the model will be trained on with a moving window
+        forecast_from_date = df["Date"].iloc[-1]
+        train = get_data(forecast_from_date - timedelta(hours=training_set_size), forecast_from_date, ['System Price'], os.getcwd())
+        train.dropna(subset=['System Price'], inplace=True)
+        ts = train['System Price'].to_numpy()
 
         # remove seasonality
         seasonality_in = deseasonalize(ts, freq)
@@ -274,20 +199,13 @@ def main():
 
         for i in range(0, len(ts)):
             ts[i] = ts[i] - ((a * i) + b)
-        """
-        # Get data to train model on, based on test period (?) TODO: Is this correct?
-        start_test_period = dt.datetime.strptime(periods[j][0], '%d.%m.%Y')
-        train = get_data(start_test_period - dt.timedelta(days=14), start_test_period, ['System Price'], os.getcwd())
-        """
-        x_train, y_train, x_test, y_test = split_into_train_test(ts, in_size, fh)
 
-        # MLP benchmark - Produce forecasts
-        y_hat_test_MLP = mlp_bench(x_train, y_train, x_test, fh)
-
-        # for i in range(0, 29):
-        #     y_hat_test_MLP = np.vstack((y_hat_test_MLP, mlp_bench(x_train, y_train, x_test, fh)))
-        # y_pred_int = []
-        # y_hat_test_MLP = np.median(y_hat_test_MLP, axis=0)
+        x_train, y_train, x_test, _ = split_into_train_test(ts, in_size, fh)
+        if self.model is None:
+            model, y_hat_test_MLP = mlp_bench(x_train, y_train, copy.deepcopy(x_test), fh)
+            self.model = model
+        else:
+            y_hat_test_MLP = forecast(self.model, copy.deepcopy(x_test), fh)
 
         # add trend
         for i in range(0, len(ts)):
@@ -296,7 +214,7 @@ def main():
         for i in range(0, fh):
             y_hat_test_MLP[i] = y_hat_test_MLP[i] + ((a * (len(ts) + i + 1)) + b)
 
-        # add seasonality, does nothing when no seasonality
+        # add seasonality
         for i in range(0, len(ts)):
             ts[i] = ts[i] * seasonality_in[i % freq] / 100
 
@@ -311,44 +229,30 @@ def main():
             if y_hat_test_MLP[i] > (1000 * max(ts)):
                 y_hat_test_MLP[i] = max(ts)
 
-        x_train, y_train, x_test, y_test = split_into_train_test(ts, in_size, fh)
+        """Bootstrap prediction intervals using in_sample residual errors"""
+        # If not performed, calculate all residuals from in-sample dataset by forecasting all periods
+        if self.residuals is None:
+            in_sample_residuals = []
+            for i in range(0, np.shape(x_train)[0] - fh):
+                y_target = y_train[i:(i + fh)]
+                x_response = x_train[i, :].reshape(1, -1)
+                y_forecast = forecast(self.model, x_response, fh)
+                residuals = np.subtract(y_target, y_forecast).tolist()
+                in_sample_residuals.extend(residuals)
+            self.residuals = in_sample_residuals
 
-        # Calculate errors
-        err_MLP_sMAPE.append(smape(y_test, y_hat_test_MLP))
-        err_MLP_MASE.append(mase(ts[:-fh], y_test, y_hat_test_MLP, freq))
+        # Simulate possible future values for all forecasted values
+        simulations = [0] * 100
+        for estimate in y_hat_test_MLP:
+            residual_sample = np.array(random.choices(self.residuals, k=100))  # K is the number of simulations per estimate
+            estimate_simulations = residual_sample + estimate
+            simulations = np.vstack((simulations, estimate_simulations))
+        simulations = np.delete(simulations, [0], axis=0)
+        # Unnecessary?: simulations = np.transpose(simulations)
+        lower_quantile = np.quantile(simulations, 0.025, axis=1)
+        upper_quantile = np.quantile(simulations, 0.975, axis=1)
 
-        # With training period
-        plt.figure()
-        x_axis = np.linspace(start=0, stop=len(ts), num=len(ts))
-        plt.plot(x_axis[-fh*2:], ts[-fh*2:], label='True')
-        plt.plot(x_axis[-len(y_test):], y_hat_test_MLP, label='MLP')
-        plt.plot([len(ts) - fh, len(ts) - fh], [0, 100], linestyle='--')
-        plt.title(f'Period: {periods[counter][0]} - {periods[counter][1]}    sMAPE: {round(err_MLP_sMAPE[counter], 3)}  MAsE: {round(err_MLP_MASE[counter], 3)}')
-        plt.legend(loc='upper left')
-        plt.show()
-
-        # MLP and true test
-        plt.figure()
-        plt.plot(x_axis[-len(y_test):], y_test, label='True')
-        plt.plot(x_axis[-len(y_test):], y_hat_test_MLP, label='MLP')
-        plt.title(f'Period: {periods[counter][0]} - {periods[counter][1]}    sMAPE: {round(err_MLP_sMAPE[counter], 3)}  MAsE: {round(err_MLP_MASE[counter], 3)}')
-        plt.legend(loc='upper right')
-        plt.show()
-
-        counter = counter + 1
-        print("-------------TS ID: ", counter, "-------------")
-
-    print("\n\n---------FINAL RESULTS---------")
-    print("=============sMAPE=============\n")
-    print("#### MLP ####\n", np.mean(err_MLP_sMAPE), "\n")
-    print("==============MASE=============")
-    print("#### MLP ####\n", np.mean(err_MLP_MASE), "\n")
-
-
-# main()
-
-
-if __name__ == '__main__':
-    #model_ = MLP('MLP')
-    #model_.train('15.01.2018')
-    main()
+        df['Forecast'] = y_hat_test_MLP
+        df['Upper'] = upper_quantile
+        df['Lower'] = lower_quantile
+        return df
