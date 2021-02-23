@@ -6,6 +6,7 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import random
 
 
 def get_seasons():
@@ -127,7 +128,7 @@ def get_all_2019_periods():
     periods = []
     first_date = dt.datetime(2019, 1, 1).date()
     for week in range(351):
-        last_date = first_date + dt.timedelta(days=14)
+        last_date = first_date + dt.timedelta(days=13)
         periods.append((first_date, last_date))
         first_date = first_date + dt.timedelta(days=1)
     return periods
@@ -140,6 +141,23 @@ def get_one_period():
     periods.append((first_date, last_date))
     return periods
 
+
+def get_random_periods(number):
+    periods = []
+    limit = dt.datetime(2019, 12, 17).date()
+    random.seed(1)
+    while len(periods) != number:
+        month = random.randint(1, 12)
+        date = random.randint(1, 31)
+        try:
+            first_day = dt.datetime(2019, month, date).date()
+            if not first_day in [d[0] for d in periods] and first_day <= limit:
+                last_day = first_day + dt.timedelta(days=13)
+                periods.append((first_day, last_day))
+        except Exception as e:
+            print(e)
+    periods = sorted(periods)
+    return periods
 
 if __name__ == '__main__':
     # periods_ = get_four_periods_median_method(write_summary=False)

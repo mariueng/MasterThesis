@@ -15,6 +15,10 @@ from statsmodels.tsa.statespace.exponential_smoothing import ExponentialSmoothin
 from sklearn.metrics import mean_squared_error
 from numpy import array
 import warnings
+from src.system.generate_periods import get_random_periods
+from src.system.scores import calculate_coverage_error
+from data.data_handler import get_data
+import numpy as np
 
 
 class Ets:
@@ -38,7 +42,7 @@ class Ets:
         model_fit = ets.fit(disp=0, optimized=True, use_boxcox=conf["Box"], remove_bias=conf["Remove"])
         forecast = model_fit.get_prediction(start=len(train), end=len(train) + len(forecast_df) - 1)
         prediction = forecast.predicted_mean
-        conf_int = forecast.conf_int(alpha=0.15)
+        conf_int = forecast.conf_int(alpha=0.1)
         uppers = [conf_int[i][1] for i in range(len(conf_int))]
         lowers = [conf_int[i][0] for i in range(len(conf_int))]
         forecast_df["Forecast"] = prediction
@@ -144,8 +148,8 @@ def exp_smoothing_configs():
     d_params = [True, False]
     s_params = [None]
     p_params = [24]
-    b_params = [True, False]
-    r_params = [True, False]
+    b_params = [True]
+    r_params = [True]
     # create config instances
     for t in t_params:
         for d in d_params:
@@ -208,9 +212,29 @@ def plot(train, test, forecast):
     plt.close()
 
 
+def tune_best_alpha():
+    alphas = [0.05, 0.1, 0.15, 0.20, 0.25]
+    periods = get_random_periods(10)
+    results = {}
+    ets = Ets()
+    for a in alphas:
+        scores = []
+        for period in periods:
+            time_df = get_data(period[0], period[1], [], os.getcwd())
+            time_df["Forecast"] = np.nan
+            time_df["Upper"] = np.nan
+            time_df["Lower"] = np.nan
+            result = ets.forecast(time_df, a)
+            true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd())
+            result = true_price_df.merge(result, on=["Date", "Hour"], how="outer")
+            cov, score = calculate_coverage_error(result)
+            scores.append(score)
+        s = sum(scores)/len(scores)
+        print("Alpha {}, error {}".format(a, s))
+        result[a] = s
+    print("Min ACE up and down: " + str(min(results, key=results.get)))
+
+
+
 if __name__ == '__main__':
-    train_ = get_train_data()
-    best_configs_ = get_best_params(train_)
-    test_ = get_test_data()
-    forecast_ = get_forecast(train_, best_configs_, test_)
-    plot(train_, test_, forecast_)
+    tune_best_alpha()
