@@ -38,7 +38,7 @@ def get_point_forecast(forecast_df):
     start_date = forecast_df.at[0, "Date"]
     start_train = start_date - timedelta(days=14)
     end_train = start_train + timedelta(days=13)
-    last_weeks_price = data_handler.get_data(start_train, end_train, ["System Price"], os.getcwd())[
+    last_weeks_price = data_handler.get_data(start_train, end_train, ["System Price"], os.getcwd(), "h")[
         "System Price"].tolist()
     if len(last_weeks_price) != 168*2:
         assert False
@@ -61,12 +61,12 @@ def get_point_forecast(forecast_df):
 def run(model, periods):
     result_list = []
     for period in periods:
-        time_df = get_data(period[0], period[1], [], os.getcwd())
+        time_df = get_data(period[0], period[1], [], os.getcwd(), "h")
         time_df["Forecast"] = np.nan
         time_df["Upper"] = np.nan
         time_df["Lower"] = np.nan
         forecast_df = model.forecast(time_df)
-        true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd())
+        true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd(), "h")
         result_df = true_price_df.merge(forecast_df, on=["Date", "Hour"], how="outer")
         result_list.append(result_df)
     print(result_list)

@@ -37,7 +37,7 @@ def get_point_forecast(forecast_df):
     start_date = forecast_df.at[0, "Date"]
     prev_day = start_date - timedelta(days=1)
     prev_day_string = prev_day.strftime("%d.%m.%Y")
-    prev_day_price = data_handler.get_data(prev_day_string, prev_day_string, ["System Price"], os.getcwd())
+    prev_day_price = data_handler.get_data(prev_day_string, prev_day_string, ["System Price"], os.getcwd(), "h")
     hour_price_df = prev_day_price[["Hour", "System Price"]]
     hour_price_dict = pd.Series(hour_price_df["System Price"].values, index=hour_price_df["Hour"]).to_dict()
     for index, row in forecast_df.iterrows():
@@ -88,12 +88,12 @@ def find_best_up_and_down_factor(model, periods):
 def get_results(up, down, model, periods):
     result_list = []
     for period in periods:
-        time_df = get_data(period[0], period[1], [], os.getcwd())
+        time_df = get_data(period[0], period[1], [], os.getcwd(), "h")
         time_df["Forecast"] = np.nan
         time_df["Upper"] = np.nan
         time_df["Lower"] = np.nan
         forecast_df = model.forecast(time_df, up, down)
-        true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd())
+        true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd(), "h")
         result_df = true_price_df.merge(forecast_df, on=["Date", "Hour"], how="outer")
         result_list.append(result_df)
     return result_list

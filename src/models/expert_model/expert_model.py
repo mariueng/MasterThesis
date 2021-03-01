@@ -43,7 +43,7 @@ class ExpertModel:
         start_date = forecast_df.at[0, "Date"]
         train_start = start_date - timedelta(days=7)
         train_end = train_start + timedelta(days=6)
-        df = get_data(train_start, train_end, ["System Price", "Weekday"], os.getcwd())
+        df = get_data(train_start, train_end, ["System Price", "Weekday"], os.getcwd(), "h")
         df, a, b = arcsinh.to_arcsinh(df, "System Price")
         past_prices = df["Trans System Price"].tolist()
         weekdays = {1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
@@ -81,7 +81,7 @@ class ExpertModel:
 def train_model(dir_path):
     start_date = dt(2018, 1, 1)
     end_date = dt(2019, 1, 31)
-    training_data = get_data(start_date, end_date, ["System Price", "Weekday"], os.getcwd())
+    training_data = get_data(start_date, end_date, ["System Price", "Weekday"], os.getcwd(), "h")
     training_data, a, b = arcsinh.to_arcsinh(training_data, "System Price")
     training_data["1 hour lag"] = training_data["Trans System Price"].shift(1)
     training_data["2 hour lag"] = training_data["Trans System Price"].shift(2)
@@ -120,12 +120,12 @@ def train_model(dir_path):
 def run(model, periods):
     result_list = []
     for period in periods:
-        time_df = get_data(period[0], period[1], [], os.getcwd())
+        time_df = get_data(period[0], period[1], [], os.getcwd(), "h")
         time_df["Forecast"] = np.nan
         time_df["Upper"] = np.nan
         time_df["Lower"] = np.nan
         forecast_df = model.forecast(time_df)
-        true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd())
+        true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd(), "h")
         result_df = true_price_df.merge(forecast_df, on=["Date", "Hour"], how="outer")
         result_list.append(result_df)
     print(result_list)

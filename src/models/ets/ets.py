@@ -62,7 +62,7 @@ class Ets:
 def get_training_data(start_date, pre_proc, days_back):
     train_start_date = start_date - timedelta(days=days_back)
     train_end_date = train_start_date + timedelta(days=days_back - 1)
-    train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd())
+    train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd(), "h")
     if pre_proc:
         train, a, b = arcsinh.to_arcsinh(train, "System Price")
         data = train["Trans System Price"].tolist()
@@ -178,14 +178,14 @@ def exp_smoothing_configs():
 def get_train_data():
     start_date_ = "15.01.2019"
     end_date_ = "29.01.2019"
-    train = data_handler.get_data(start_date_, end_date_, ["System Price"], os.getcwd())["System Price"].tolist()
+    train = data_handler.get_data(start_date_, end_date_, ["System Price"], os.getcwd(), "h")["System Price"].tolist()
     return train
 
 
 def get_test_data():
     start_date_ = "30.01.2019"
     end_date_ = "12.02.2019"
-    test = data_handler.get_data(start_date_, end_date_, ["System Price"], os.getcwd())["System Price"].tolist()
+    test = data_handler.get_data(start_date_, end_date_, ["System Price"], os.getcwd(), "h")["System Price"].tolist()
     return test
 
 
@@ -232,12 +232,12 @@ def tune_best_alpha():
     for a in alphas:
         scores = []
         for period in periods:
-            time_df = get_data(period[0], period[1], [], os.getcwd())
+            time_df = get_data(period[0], period[1], [], os.getcwd(), "h")
             time_df["Forecast"] = np.nan
             time_df["Upper"] = np.nan
             time_df["Lower"] = np.nan
             result = ets.forecast(time_df, a)
-            true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd())
+            true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd(), "h")
             result = true_price_df.merge(result, on=["Date", "Hour"], how="outer")
             cov, score = calculate_coverage_error(result)
             scores.append(score)
