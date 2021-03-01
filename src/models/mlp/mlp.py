@@ -7,6 +7,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.utils._testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
 from src.models.benchmarks.model import Model
+from src.preprocessing.arcsinh.arcsinh import to_arcsinh, from_arcsin_to_original
 from data.data_handler import get_data
 from datetime import timedelta
 import src.preprocessing.m4_preprocessing as mp
@@ -63,7 +64,7 @@ class MLP(Model):
         # Get data based on test_period
         training_set_size = 24 * 365  # Set size of data the model will be trained on with a moving window
         forecast_from_date = df["Date"].iloc[-1]
-        train = get_data(forecast_from_date - timedelta(hours=training_set_size), forecast_from_date, ['System Price'], os.getcwd())
+        train = get_data(forecast_from_date - timedelta(hours=training_set_size), forecast_from_date, ['System Price'], os.getcwd(), 'h')
         train.dropna(subset=['System Price'], inplace=True)
         ts = train['System Price'].to_numpy()
 
@@ -78,12 +79,16 @@ class MLP(Model):
         for i in range(0, len(ts)):
             ts[i] = ts[i] - ((a * i) + b)
 
+        ts, mean, std = to_arcsinh(ts)
+
         x_train, y_train, x_test, _ = mp.split_into_train_test(ts, in_size, fh)
         if self.model is None:
             model, y_hat_test_MLP = mlp_bench(x_train, y_train, copy.deepcopy(x_test), fh)
             self.model = model
         else:
             y_hat_test_MLP = forecast(self.model, copy.deepcopy(x_test), fh)
+
+        y_hat_test_MLP = np.array(from_arcsin_to_original(y_hat_test_MLP, mean, std))
 
         # add trend
         for i in range(0, len(ts)):
@@ -120,9 +125,10 @@ class MLP(Model):
             self.residuals = in_sample_residuals
 
         # Simulate possible future values for all forecasted values
-        simulations = [0] * 100
+        k = 100
+        simulations = [0] * k
         for estimate in y_hat_test_MLP:
-            residual_sample = np.array(random.choices(self.residuals, k=100))  # K is the number of simulations per estimate
+            residual_sample = np.array(random.choices(self.residuals, k=k))  # K is the number of simulations per estimate
             estimate_simulations = residual_sample + estimate
             simulations = np.vstack((simulations, estimate_simulations))
         simulations = np.delete(simulations, [0], axis=0)
@@ -130,7 +136,6 @@ class MLP(Model):
         lower_quantile = np.quantile(simulations, 0.025, axis=1)
         upper_quantile = np.quantile(simulations, 0.975, axis=1)
         diff = upper_quantile - lower_quantile
-        print(diff)
         df['Forecast'] = y_hat_test_MLP
         df['Upper'] = upper_quantile
         df['Lower'] = lower_quantile
