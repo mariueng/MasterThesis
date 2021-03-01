@@ -406,6 +406,9 @@ def combine_all_data(resolution):
         other_columns = [col for col in all_columns if col not in ordered_columns]
         ordered_columns.extend(other_columns)
         df = df[ordered_columns]
+        date_format = "%d-%m-%Y"
+        print(df.loc[0, "Date"])
+        df['Date'] = pd.to_datetime(df['Date'], format=date_format)
         df.to_csv("..\\data\\input\\combined\\all_data_daily.csv", index=False)
     elif resolution == "hourly":
         df.dropna()  # remove all rows with nan (hydro dataset has not accounted for summer time)
@@ -433,16 +436,19 @@ def add_time_columns_to_all_data(resolution):
     for index, row in df.iterrows():
         date = row[0]
         week = datetime.date(date).isocalendar()[1]
-        sine_week = math.sin(math.pi * week / 52)
-        df.loc[index, "Sine Week"] = round(sine_week, 3)
+        df.loc[index, "Week"] = week
         month = date.month
-        sine_month = math.sin(math.pi * month / 12)
-        df.loc[index, "Sine Month"] = round(sine_month, 3)
-        season = math.floor(date.month / 4) + 1
-        sine_season = math.sin(math.pi * season / 4)
-        df.loc[index, "Sine Season"] = round(sine_season, 3)
+        df.loc[index, "Month"] = month
+        season = math.floor(date.month / 3) + 1
+        df.loc[index, "Season"] = season
+        weekday = date.weekday() + 1
+        df.loc[index, "Weekday"] = weekday
+        if weekday in [1, 2, 3, 4, 5]:
+            weekend = 0
+        else:
+            weekend = 1
+        df.loc[index, "Weekend"] = weekend
     out_path = data_path
-    # out_path  = "..\\data\\input\\combined\\all_data_daily_weeks.csv"
     df.to_csv(out_path, sep=",", index=False, float_format='%g')
 
 
@@ -458,8 +464,8 @@ def write_hydro_deviations_to_combined(resolution):
     hydro_df = pd.read_csv(data_path, sep=",")
     date_format = "%d-%m-%Y"
     hydro_df['Date'] = pd.to_datetime(hydro_df['Date'], format=date_format)
-    new_date_format = "%d-%m-%Y"
-    hydro_df['Date'] = hydro_df['Date'].apply(lambda x: x.strftime(new_date_format))
+    #new_date_format = "%d-%m-%Y"
+    #hydro_df['Date'] = hydro_df['Date'].apply(lambda x: x.strftime(new_date_format))
     average_year_df = hydro_df.groupby(
         [hydro_df["Date"].dt.month.rename("Month"), hydro_df["Date"].dt.day.rename("Day")]).mean()
     column_rename_dict = {"NO Hydro": "NO Mean", "SE Hydro": "SE Mean", "FI Hydro": "FI Mean",
@@ -476,6 +482,8 @@ def write_hydro_deviations_to_combined(resolution):
             hydro = row[country + " Hydro"]
             dev = hydro - mean
             hydro_df.loc[index, country + " Hydro Dev"] = round(dev, 3)
+    new_date_format = "%d-%m-%Y"
+    hydro_df['Date'] = hydro_df['Date'].apply(lambda x: x.strftime(new_date_format))
     hydro_df = hydro_df[out_columns]
     hydro_df.to_csv(out_path, sep=",", index=False, float_format='%g')
 
@@ -532,14 +540,14 @@ def remove_summer_winter_time(resolution):
 if __name__ == '__main__':
     print("Running method.." + "\n")
     # write_price_to_combined("h", convert_to_csv=True, replace_commas=True)
-    # write_price_to_combined("h", convert_to_csv=True, replace_commas=True)
-    # write_volume_to_combined("d", convert_to_csv=False, replace_commas=True)
+    # write_price_to_combined("d", convert_to_csv=True, replace_commas=True)
+    # write_volume_to_combined("d", convert_to_csv=True, replace_commas=True)
     # write_volume_to_combined("h", convert_to_csv=True, replace_commas=True)
     # write_hydro_all_weekly(convert_to_csv=True, replace_commas=False)  # replace_commas=False, always
     # write_hydro_daily_to_combined()
     # write_hydro_hourly_to_combined()
     # plot_hydro("h")
-    # write_hydro_deviations_to_combined("h")
+    # write_hydro_deviations_to_combined("d")
     # plot_hydro_dev("h")
     # write_consumption_to_combined("d", convert_to_csv=False, replace_commas=True)
     # write_consumption_to_combined("h", convert_to_csv=False, replace_commas=True)
@@ -547,6 +555,5 @@ if __name__ == '__main__':
     # write_production_to_combined("h", convert_to_csv=True, replace_commas=True)
     # combine_all_data("daily")
     #combine_all_data("hourly")
-    remove_summer_winter_time("h")
+    # remove_summer_winter_time("h")
     # add_time_columns_to_all_data("d")
-    # add_time_columns_to_all_data("h")

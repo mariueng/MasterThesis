@@ -6,8 +6,10 @@ from generate_periods import get_all_2019_periods
 from scores import calculate_interval_score
 from scores import calculate_coverage_error
 from scores import get_all_point_metrics
-from src.models.copy_last_day import copy_last_day
+from src.models.naive_day import naive_day
+from src.models.naive_week import naive_week
 from src.models.sarimax import sarimax
+from src.models.expert_model import expert_model
 from src.models.ets import ets
 from data.data_handler import get_data
 import os
@@ -173,15 +175,14 @@ def analyze_performance(result_path, model):
     summary.close()
 
 
-
-
-
 if __name__ == '__main__':
-    #model_ = copy_last_day.CopyLastDayModel()
-    model_ = sarimax.Sarimax()
-    # model_ = ets.Ets()
-    #periods_ = get_four_periods_median_method(write_summary=False)
-    #periods_ = get_random_periods(1)
+    # model_ = naive_day.NaiveDay()
+    # model_ = naive_week.NaiveWeek()
+    # model_ = sarimax.Sarimax()
+    # model_ = sarimax.Sarimax()
+    model_ = expert_model.ExpertModel()
+    # periods_ = get_four_periods_median_method(write_summary=False)
+    # periods_ = get_random_periods(10)
     periods_ = get_all_2019_periods()
     # periods_ = get_one_period()
     validate(model_, periods_, plot=True)
