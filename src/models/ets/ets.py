@@ -19,6 +19,7 @@ from src.system.generate_periods import get_random_periods
 from src.system.scores import calculate_coverage_error
 from data.data_handler import get_data
 import numpy as np
+from src.preprocessing.arcsinh import arcsinh
 
 
 class Ets:
@@ -36,27 +37,38 @@ class Ets:
 
     def forecast(self, forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
         start_date = forecast_df.at[0, "Date"]
-        train = get_training_data(start_date, days_back=7)
+        pre_proc = False
+        train, a, b = get_training_data(start_date, pre_proc, days_back=7)
         conf = get_best_params(train)
         ets = ExponentialSmoothing(train, trend=conf["Trend"], seasonal=24, damped_trend=conf["Damped"])
         model_fit = ets.fit(disp=0, optimized=True, use_boxcox=conf["Box"], remove_bias=conf["Remove"])
         forecast = model_fit.get_prediction(start=len(train), end=len(train) + len(forecast_df) - 1)
         prediction = forecast.predicted_mean
-        conf_int = forecast.conf_int(alpha=0.1)
-        uppers = [conf_int[i][1] for i in range(len(conf_int))]
-        lowers = [conf_int[i][0] for i in range(len(conf_int))]
+        if pre_proc:
+            prediction = arcsinh.from_arcsin_to_original(prediction, a, b)
+            conf_int = forecast.conf_int(alpha=0.04)
+            lowers = arcsinh.from_arcsin_to_original([conf_int[i][0] for i in range(len(conf_int))], a, b)
+            uppers = arcsinh.from_arcsin_to_original([conf_int[i][1] for i in range(len(conf_int))], a, b)
+        else:
+            conf_int = forecast.conf_int(alpha=0.1)
+            lowers = [conf_int[i][0] for i in range(len(conf_int))]
+            uppers = [conf_int[i][1] for i in range(len(conf_int))]
         forecast_df["Forecast"] = prediction
         forecast_df["Upper"] = uppers
         forecast_df["Lower"] = lowers
         return forecast_df
 
 
-def get_training_data(start_date, days_back):
+def get_training_data(start_date, pre_proc, days_back):
     train_start_date = start_date - timedelta(days=days_back)
     train_end_date = train_start_date + timedelta(days=days_back - 1)
-    train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd())[
-        "System Price"].tolist()
-    return train
+    train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd())
+    if pre_proc:
+        train, a, b = arcsinh.to_arcsinh(train, "System Price")
+        data = train["Trans System Price"].tolist()
+        return data, a, b
+    else:
+        return train["System Price"].tolist(), None, None
 
 
 # Exponential Smoothing forecast

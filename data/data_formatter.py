@@ -461,16 +461,19 @@ def add_time_columns_to_all_data(resolution):
     for index, row in df.iterrows():
         date = row[0]
         week = datetime.date(date).isocalendar()[1]
-        sine_week = math.sin(math.pi * week / 52)
-        df.loc[index, "Sine Week"] = round(sine_week, 3)
+        df.loc[index, "Week"] = week
         month = date.month
-        sine_month = math.sin(math.pi * month / 12)
-        df.loc[index, "Sine Month"] = round(sine_month, 3)
-        season = math.floor(date.month / 4) + 1
-        sine_season = math.sin(math.pi * season / 4)
-        df.loc[index, "Sine Season"] = round(sine_season, 3)
+        df.loc[index, "Month"] = month
+        season = math.floor(date.month / 3) + 1
+        df.loc[index, "Season"] = season
+        weekday = date.weekday() + 1
+        df.loc[index, "Weekday"] = weekday
+        if weekday in [1, 2, 3, 4, 5]:
+            weekend = 0
+        else:
+            weekend = 1
+        df.loc[index, "Weekend"] = weekend
     out_path = data_path
-    # out_path  = "..\\data\\input\\combined\\all_data_daily_weeks.csv"
     df.to_csv(out_path, sep=",", index=False, float_format='%g')
 
 
@@ -575,6 +578,5 @@ if __name__ == '__main__':
     # write_production_to_combined("h", convert_to_csv=True, replace_commas=True)
     # combine_all_data("daily")
     #combine_all_data("hourly")
-    remove_summer_winter_time("h")
-    # add_time_columns_to_all_data("d")
-    # add_time_columns_to_all_data("h")
+    # remove_summer_winter_time("h")
+    add_time_columns_to_all_data("h")
