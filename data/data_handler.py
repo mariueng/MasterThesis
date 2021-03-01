@@ -5,11 +5,9 @@ import numpy as np
 import os
 
 
-# TODO: write method so that get_data takes in resolution as parameter
-def get_data(from_date, to_date, column_list, work_dir):  # dates on form "dd.mm.yyyy", columns in list ["System Price", ...]
+def get_data(from_date, to_date, column_list, work_dir, resolution):  # dates on form "dd.mm.yyyy", columns in list ["System Price", ...]
     # print("--Retrieving data from {} to {}. Columns: {} --\n".format(from_date, to_date, ", ".join(column_list)))
-    path = get_path_to_all_data(work_dir)
-    first_row_in_data = datetime.datetime.strptime("01.01.2014", '%d.%m.%Y')
+    path = get_path_to_all_data(work_dir, resolution)
     if isinstance(from_date, str):
         first_date = datetime.datetime.strptime(from_date, '%d.%m.%Y')
     else:
@@ -20,20 +18,22 @@ def get_data(from_date, to_date, column_list, work_dir):  # dates on form "dd.mm
         last_date = datetime.datetime(to_date.year, to_date.month, to_date.day)
     valid_dates = check_valid_dates(first_date, last_date)
     if valid_dates:
-        difference = first_date - first_row_in_data
-        years = difference.days // 365
-        hours_less = years - 1
-        skip_rows_no = int(difference.days * 24 + difference.seconds / 3600) + (16 * years) - hours_less
-        columns = ["Date", "Hour"] + column_list
-        if len(column_list)==1 and column_list[0] == "all":
-            dataset = pd.read_csv(path, skiprows=range(1, skip_rows_no))
-        else:
-            dataset = pd.read_csv(path, skiprows=range(1, skip_rows_no), usecols=columns)
-        dataset["Date"] = pd.to_datetime(dataset["Date"], format='%Y.%m.%d')
-        dataset = dataset[dataset['Date'] <= np.datetime64(last_date.date())]
-        return dataset
+        if resolution == "h":
+            columns = ["Date", "Hour"] + column_list
+        elif resolution == "d":
+            columns = ["Date"] + column_list
+        all_data = pd.read_csv(path, usecols=columns)
+        all_data["Date"] = pd.to_datetime(all_data["Date"], format='%Y-%m-%d')
+        mask = (all_data['Date'] >= first_date) & (all_data['Date'] <= last_date)
+        df = all_data.loc[mask]
+        df = df.reset_index(drop=True)
+        return df
     else:
         assert False
+
+
+def get_index(string_start_date):
+    return 100
 
 
 def check_valid_dates(from_date, to_date):  # helping method checking that dates are valid
@@ -54,9 +54,15 @@ def check_valid_dates(from_date, to_date):  # helping method checking that dates
     return valid
 
 
-def get_path_to_all_data(work_dir):
+def get_path_to_all_data(work_dir, resolution):
     path_to_project = "/".join(work_dir.split("\\")[0:5])
-    path_to_all_data = "/data/input/combined/all_data_hourly.csv"
+    if resolution == "h":
+        path_to_all_data = "/data/input/combined/all_data_hourly.csv"
+    elif resolution == "d":
+        path_to_all_data = "/data/input/combined/all_data_daily.csv"
+    else:
+        print("Resolution must be d or h")
+        assert False
     path = path_to_project + path_to_all_data
     return path
 

@@ -2,15 +2,13 @@
 # Right now it is a hard copy, not implemented to our data and it includes a simple RNN model as well
 # This code can be used to reproduce the forecasts of M4 Competition NN benchmarks and evaluate their accuracy
 
-from numpy.random import seed
-seed(42)
-from tensorflow import set_random_seed
-set_random_seed(42)
+from tensorflow import random
+random.set_seed(42)
 from sklearn.neural_network import MLPRegressor
-from keras.models import Sequential
-from keras.layers import Dense, SimpleRNN
-from keras.optimizers import rmsprop
-from keras import backend as ker
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, SimpleRNN
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras import backend as ker
 from math import sqrt
 import numpy as np
 import tensorflow as tf
@@ -66,24 +64,15 @@ def moving_averages(ts_init, window):
     :param window: window length
     :return: moving averages ts
     """
-    """
-    As noted by Professor Isidro Lloret Galiana:
-    line 82:
-    if len(ts_init) % 2 == 0:
-    
-    should be changed to
     if window % 2 == 0:
-    
-    This change has a minor (less then 0.05%) impact on the calculations of the seasonal indices
-    In order for the results to be fully replicable this change is not incorporated into the code below
-    """
-    
-    if len(ts_init) % 2 == 0:
-        ts_ma = pd.rolling_mean(ts_init, window, center=True)
-        ts_ma = pd.rolling_mean(ts_ma, 2, center=True)
+        #ts_ma = pd.rolling_mean(ts_init, window, center=True)
+        ts_ma = np.convolve(ts_init, np.ones(window), 'valid') / window
+        #ts_ma = pd.rolling_mean(ts_ma, 2, center=True)
+        ts_ma = np.convolve(ts_ma, np.ones(2), 'valid') / 2
         ts_ma = np.roll(ts_ma, -1)
     else:
-        ts_ma = pd.rolling_mean(ts_init, window, center=True)
+        #ts_ma = pd.rolling_mean(ts_init, window, center=True)
+        ts_ma = np.convolve(ts_init, np.ones(window), 'valid') / window
 
     return ts_ma
 
@@ -175,7 +164,7 @@ def rnn_bench(x_train, y_train, x_test, fh, input_size):
                   dropout=0.0, recurrent_dropout=0.0),
         Dense(1, use_bias=True, activation='linear')
     ])
-    opt = rmsprop(lr=0.001)
+    opt = RMSprop(lr=0.001)
     model.compile(loss='mean_squared_error', optimizer=opt)
 
     # fit the model to the training data
@@ -250,41 +239,6 @@ def mase(insample, y_test, y_hat_test, freq):
 
 
 def main():
-    
-    """
-    This script was updated because of errors pointed out by Professor Isidro Lloret Galiana.
-    These issues had no impact on the published results and were problems only because of the
-    example 100x20 array provided in this specific script. Below is the list of the changed lines:
-    
-    -----------------------------
-    line changed from:
-    seasonality_in = deseasonalize(ts, freq)
-    to:
-    seasonality_in = deseasonalize(ts[:-fh], freq)
-    -----------------------------
-    line changed from:
-    a, b = detrend(ts)
-    to:
-    a, b = detrend(ts[:-fh])
-    -----------------------------
-    line changed from:
-    y_hat_test_MLP[i] = y_hat_test_MLP[i] + ((a * (len(ts) + i + 1)) + b)
-    y_hat_test_RNN[i] = y_hat_test_RNN[i] + ((a * (len(ts) + i + 1)) + b)
-    to:
-    y_hat_test_MLP[i] = y_hat_test_MLP[i] + ((a * (len(ts) - fh + i)) + b)
-    y_hat_test_RNN[i] = y_hat_test_RNN[i] + ((a * (len(ts) - fh + i)) + b)
-    -----------------------------
-    line changed from:
-    for i in range(len(ts), len(ts) + fh):
-        y_hat_test_MLP[i - len(ts)] = y_hat_test_MLP[i - len(ts)] * seasonality_in[i % freq] / 100
-        y_hat_test_RNN[i - len(ts)] = y_hat_test_RNN[i - len(ts)] * seasonality_in[i % freq] / 100
-    to:
-    for i in range(len(ts) - fh, len(ts)):
-        y_hat_test_MLP[i - (len(ts) - fh)] = y_hat_test_MLP[i - (len(ts) - fh)] * seasonality_in[i % freq] / 100
-        y_hat_test_RNN[i - (len(ts) - fh)] = y_hat_test_RNN[i - (len(ts) - fh)] * seasonality_in[i % freq] / 100
-    -----------------------------
-    """
-    
     fh = 6         # forecasting horizon
     freq = 1       # data frequency
     in_size = 3    # number of points used as input for each forecast
@@ -366,7 +320,7 @@ def main():
 
         # memory handling
         ker.clear_session()
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
         gc.collect()
 
         counter = counter + 1

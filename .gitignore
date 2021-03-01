@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.idea
+
 # C extensions
 *.so
 
@@ -13,10 +15,13 @@ data/input/price_hourly
 data/input/price_daily
 data/input/production_hourly
 data/input/volume_hourly
+data/input/volume_daily
 
 # Preliminary results
 src/results/validation/*
 
+# Venv-config
+.idea
 
 # Distribution / packaging
 .Python

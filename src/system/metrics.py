@@ -156,6 +156,12 @@ def evaluate_interval_forecast(forecast, actual, in_sample, nominal_coverage):
     return scores
 
 
+def evaluate_point_and_interval_forecast(forecast, actual, in_sample, nominal_coverage):
+    point = evaluate_point_forecast(forecast.copy(), actual.copy())
+    interval = evaluate_interval_forecast(forecast, actual, in_sample, nominal_coverage)
+    return {**point, **interval}
+
+
 if __name__ == '__main__':
 
     """

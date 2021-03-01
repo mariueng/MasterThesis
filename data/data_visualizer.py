@@ -5,15 +5,6 @@ import datetime
 import numpy as np
 from pathlib import Path
 
-# Markets used to seperate plots into groups
-sub_markets = ["NO", "SE", "FI", "DK", "Nordic", "EE", "LV", "LT", "Baltic"]
-nordic_markets = ["NO", "SE", "FI", "DK"]
-baltic_markets = ["EE", "LV", "LT"]
-hydro_markets = ["NO", "SE", "FI"]
-nordic_baltic_market = ["Nordic", "Baltic"]
-# Data sources possible to plot
-data_options = ["Consume", "Hydro", "Price", "Prod", "Sell Vol", "Buy Vol", "Tot Vol", "Hydro Dev"]
-
 
 def plot(data, sub_markets, resolution, period, save, title):
     path = get_path(resolution)
@@ -48,6 +39,8 @@ def get_columns_data_double(data, resolution):
             incl_columns.extend(["Total Consume"])
         elif data_source == "Hydro":
             incl_columns.extend(["Total Hydro"])
+        elif data_source == "Hydro Dev":
+            incl_columns.extend(["Total Hydro Dev"])
     return incl_columns
 
 
@@ -69,7 +62,6 @@ def filter_df_by_period(df, period):
 # Helping method for making date-column type datetime
 def convert_date_to_datetime(df_, resolution):
     date_format = "%d-%m-%Y"
-    print(df_.head(1))
     try:
         df_['Date'] = pd.to_datetime(df_['Date'], format=date_format)
     except:
@@ -86,7 +78,7 @@ def make_plot(df, resolution, save, data, title):
     columns = df.columns.tolist()
     labels = get_labels_from_columns(df.columns.tolist(), individual=True)
     l_width = get_line_width(data, resolution)
-    fig, ax = plt.subplots(figsize=(10, 5.5))  # REMOVE ?
+    plt.subplots(figsize=(10, 5.5))  # REMOVE ?
     for i in range(1, len(columns)):
         plt.plot(df[columns[0]], df[columns[i]], linewidth=l_width, label=labels[i])
     for line in plt.legend(loc='upper center', ncol=min(4, len(columns) - 1), bbox_to_anchor=(0.5, 1.05),
@@ -94,9 +86,9 @@ def make_plot(df, resolution, save, data, title):
         line.set_linewidth(2)
     plt.title(title, pad=20, size=12)
     y_max = max([val for val in df.max().tolist() if (type(val) == np.int64 or type(val) == np.float64)])
-    y_min = min([val for val in df.max().tolist() if (type(val) == np.int64 or type(val) == np.float64)])
+    y_min = min([val for val in df.min().tolist() if (type(val) == np.int64 or type(val) == np.float64)])
     axes = plt.gca()
-    axes.set_ylim([0, y_max * 1.1])
+    axes.set_ylim([y_min, y_max * 1.1])
     axes.set_ylabel(get_y_label(columns[1]), labelpad=6)
     plt.tight_layout()
     if save:
@@ -110,7 +102,7 @@ def make_plot(df, resolution, save, data, title):
 def make_double_plot(df, resolution, save, data, title):
     columns = df.columns.tolist()
     labels = get_labels_from_columns(df.columns.tolist(), individual=False)
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(13, 7))
     first_color = "tomato"  # price = tomato, other = goldenrod
     second_color = "royalblue"  # when using price, use "royalblue". Else. orchid
     ax1.set_ylabel(get_y_label(columns[1]), labelpad=6, color=first_color)
@@ -125,7 +117,7 @@ def make_double_plot(df, resolution, save, data, title):
     line1, label1 = ax1.get_legend_handles_labels()
     line2, label2 = ax2.get_legend_handles_labels()
     for line in ax2.legend(line1 + line2, label1 + label2, loc='upper center', ncol=min(4, len(columns) - 1),
-                           bbox_to_anchor=(0.5, 1.05), fancybox=True, shadow=True).get_lines():
+                           bbox_to_anchor=(0.5, 1.03), fancybox=True, shadow=True).get_lines():
         line.set_linewidth(2)
     plt.title(title, pad=20, size=12)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -158,9 +150,9 @@ def get_line_width(data, resolution):
 # Helping method for getting out path
 def get_out_path(data, title):
     if len(data) == 1:
-        directory = "..\\plots\\data\\{}".format(data[0])
+        directory = "output\\plots\\{}".format(data[0])
     else:
-        directory = "..\\plots\\data\\double"
+        directory = "output\\plots\\double"
     existing_paths = sorted(Path(directory).iterdir())
     version = 1
     for p in existing_paths:
@@ -183,10 +175,11 @@ def get_labels_from_columns(columns, individual):
     else:
         labels = []
         replace = {"Prod": "Total Production", "Vol": "Total Volume", "Consume": "Total Consumption",
-                   "Hydro": "Acc. Hydro State", "System Price": "SYS"}
+                   "Total Hydro": "Acc. Hydro State", "System Price": "SYS", "Total Hydro Dev": "Acc. Hydro State"
+                                                                                                " Deviation"}
         for col in columns:
             for key, value in replace.items():
-                if key in col:
+                if key == col:
                     labels.append(value)
     return labels
 
@@ -274,16 +267,26 @@ def append_year_title(title, period):
     return title
 
 
+# Markets used to seperate plots into groups
+sub_markets = ["NO", "SE", "FI", "DK", "Nordic", "EE", "LV", "LT", "Baltic", "Total"]
+nordic_markets = ["NO", "SE", "FI", "DK"]
+baltic_markets = ["EE", "LV", "LT"]
+hydro_markets = ["NO", "SE", "FI", "Total"]
+nordic_baltic_market = ["Nordic", "Baltic"]
+# Data sources possible to plot
+data_options = ["Consume", "Hydro", "Price", "Prod", "Sell Vol", "Buy Vol", "Tot Vol", "Hydro Dev"]
+
 if __name__ == '__main__':
     # Data Options: Consume=0, Hydro=1, Price=2, Prod=3, Sell Vol=4, Buy Vol=5, Tot Vol=6, Hydro Dev = 7
     # Sub Markets: sub_markets, nordic_markets, baltic_markets, nordic_baltic_markets, hydro_markets
     # --------------------------------------------------------------------------------------
-    data_options_idx = [2]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
-    sub_markets_ = nordic_markets  # choose
-    start_date = datetime.date(2019, 1, 1)  # chose
-    end_date = datetime.date(2019, 12, 31)  # chose
+    data_options_idx = [2, 7]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
+    sub_markets_ = hydro_markets  # choose
+    start_date = datetime.date(2014, 1, 1)  # chose
+    end_date = datetime.date(2020, 12, 31)  # chose
     resolution_ = "d"  # choose
     save_ = True  # choose
+    # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
     data_ = [data_options[i] for i in data_options_idx]
     period_ = [start_date, end_date]
