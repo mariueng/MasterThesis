@@ -45,18 +45,18 @@ class Sarimax:
         days_back = 14
         train_start_date = start_date - timedelta(days=days_back)
         train_end_date = train_start_date + timedelta(days=days_back-1)
-        train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd())
+        train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd(), "h")
         train, a, b = arcsinh.to_arcsinh(train, "System Price")
         history = [x for x in train["System Price"]]
         pre_proc = True
         if pre_proc:
             history = [x for x in train["Trans System Price"]]
         ex_col = "Weekday"
-        exog = data_handler.get_data(train_start_date, train_end_date, [ex_col], os.getcwd())[ex_col].tolist()
+        exog = data_handler.get_data(train_start_date, train_end_date, [ex_col], os.getcwd(), "h")[ex_col].tolist()
         order = find_optimal_order(history)
         ses_order = (1, 1, 1, 24)
         model = SARIMAX(history, order=order, seasonal_order=ses_order, exog=exog)
-        exog_t = data_handler.get_data(start_date, end_date, [ex_col], os.getcwd())[ex_col].tolist()
+        exog_t = data_handler.get_data(start_date, end_date, [ex_col], os.getcwd(), "h")[ex_col].tolist()
         model_fit = model.fit(disp=0)
         prediction = model_fit.get_forecast(steps=len(forecast_df), exog=exog_t)
         forecast = prediction.predicted_mean.tolist()
@@ -129,12 +129,12 @@ def tune_best_alpha():
         scores = []
         for period in periods:
             order = orders[period]
-            time_df = get_data(period[0], period[1], [], os.getcwd())
+            time_df = get_data(period[0], period[1], [], os.getcwd(), "h")
             time_df["Forecast"] = np.nan
             time_df["Upper"] = np.nan
             time_df["Lower"] = np.nan
             result = sarimax.forecast(time_df, a, order)
-            true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd())
+            true_price_df = get_data(period[0], period[1], ["System Price"], os.getcwd(), "h")
             result = true_price_df.merge(result, on=["Date", "Hour"], how="outer")
             cov, score = calculate_coverage_error(result)
             scores.append(score)
@@ -151,7 +151,7 @@ def get_orders(periods):
         days_back = 7
         train_start_date = start_date - timedelta(days=days_back)
         train_end_date = train_start_date + timedelta(days=days_back - 1)
-        train = data_handler.get_data(train_start_date, train_end_date, ["System Price", "Total Vol"], os.getcwd())
+        train = data_handler.get_data(train_start_date, train_end_date, ["System Price", "Total Vol"], os.getcwd(), "h")
         history = [x for x in train["System Price"]]
         order = find_optimal_order(history)
         print("Period starting from {} has order {}".format(period[0], order))
@@ -169,8 +169,8 @@ def run():
     days_back = 7
     train_start_date = forecast_df.loc[0, "Date"].date() - timedelta(days=days_back)
     train_end_date = train_start_date + timedelta(days=days_back - 1)
-    train = get_data(train_start_date, train_end_date, ["System Price"], os.getcwd())
-    true_test = get_data(start_date_, end_date_, ["System Price"], os.getcwd())
+    train = get_data(train_start_date, train_end_date, ["System Price"], os.getcwd(), "h")
+    true_test = get_data(start_date_, end_date_, ["System Price"], os.getcwd(), "h")
     result = result.merge(true_test, on=["Date", "Hour"], how="outer")
     pre_proc = False
     if pre_proc:
@@ -184,7 +184,7 @@ def run():
 
 
 def get_empty_forecast(start_date_, end_date_):
-    time_df = get_data(start_date_, end_date_, [], os.getcwd())
+    time_df = get_data(start_date_, end_date_, [], os.getcwd(), "h")
     if len(time_df) != 336:
         print("Length of horizon: {}".format(len(time_df)))
         print("Prediction horizon must be length 336")
