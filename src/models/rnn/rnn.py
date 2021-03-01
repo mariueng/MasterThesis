@@ -1,6 +1,6 @@
 # Code retrieved from: https://github.com/Mcompetitions/M4-methods/blob/master/ML_benchmarks.py
 # This code can be used to reproduce the forecasts of M4 Competition NN benchmarks and evaluate their accuracy
-from src.models.mlp.mlp import detrend, deseasonalize, moving_averages, seasonality_test, acf, split_into_train_test
+from src.preprocessing.m4_preprocessing import detrend, deseasonalize, moving_averages, seasonality_test, acf, split_into_train_test
 from sklearn.utils._testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
 from src.models.benchmarks.model import Model
