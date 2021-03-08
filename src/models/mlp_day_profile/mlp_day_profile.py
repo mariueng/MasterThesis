@@ -17,7 +17,7 @@ import pandas as pd
 
 
 def get_data_set(s_date, e_date):
-    day_df = data_handler.get_data(s_date, e_date, ["System Price", "Weekday", "Month"], os.getcwd(), "d")
+    day_df = data_handler.get_data(s_date, e_date, ["System Price", "Weekday", "Month", "T Nor"], os.getcwd(), "d")
     hour_df = data_handler.get_data(s_date, e_date, ["System Price"], os.getcwd(), "h")
     weekdays = ["d{}".format(i) for i in range(1, 8)]
     months = ["m{}".format(i) for i in range(1, 13)]
@@ -28,6 +28,7 @@ def get_data_set(s_date, e_date):
         row = {}
         date = day_df.loc[i, "Date"].date()
         row["Price"] = day_df.loc[i, "System Price"]
+        row["Temp Norway"] = day_df.loc[i, "T Nor"]
         weekday = day_df.loc[i, "Weekday"]
         month = day_df.loc[i, "Month"]
         hourly_prices = hour_df["System Price"][hour_df["Date"].isin([date])].tolist()
@@ -86,9 +87,12 @@ def get_model(number_of_inputs):
 def convert2matrix(data_arr):
     x, y = [], []
     for i in range(len(data_arr)):
-        row = data_arr.loc[i].tolist()
-        x_list = row[:-24]
-        y_list = row[-24:]
+        row = data_arr.loc[i]
+        all_keys = row.keys().tolist()
+        output_keys = ["h{}".format(i) for i in range(1, 25)]
+        input_keys = [i for i in all_keys if i not in output_keys]
+        x_list = row[[i for i in input_keys]].tolist()
+        y_list = row[[i for i in output_keys]].tolist()
         x.append(x_list)
         y.append(y_list)
     return np.asarray(x).astype('float32'), np.asarray(y).astype('float32')
@@ -156,10 +160,10 @@ def prediction_plot(test_y, test_predict, last_train):
 
 
 if __name__ == '__main__':
-    start_date = "01.01.2018"
+    start_date = "01.01.2014"
     end_date = "31.12.2018"
     train_ = get_data_set(start_date, end_date)
     end_test = "31.01.2019"
-    #fit_model(train_)
+    fit_model(train_)
     test_ = get_data_set(end_date, end_test)
     test_model(test_, end_date, end_test)

@@ -184,7 +184,7 @@ if __name__ == '__main__':
     # model_ = expert_model.ExpertModel()
     model_ = expert_day.ExpertDay()
     # periods_ = get_four_periods_median_method(write_summary=False)
-    # periods_ = get_random_periods(10)
+    # periods_ = get_random_periods(4)
     periods_ = get_all_2019_periods()
     # periods_ = get_one_period()
     validate(model_, periods_, plot=True)

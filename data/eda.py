@@ -8,6 +8,8 @@ import pandas as pd
 import warnings
 import numpy as np
 
+label_pad = 12
+title_pad = 20
 
 def plot_norm_weekday():
     start_date = dt(2019, 1, 1)
@@ -16,8 +18,6 @@ def plot_norm_weekday():
     # training_data, a, b = arcsinh.to_arcsinh(training_data, "System Price")
     grouped_df = training_data.groupby(by="Weekday").mean()
     normalized_df = (grouped_df - grouped_df.mean()) / grouped_df.std()
-    label_pad = 12
-    title_pad = 20
     plt.subplots(figsize=(6.5, 7))
     true_color = "steelblue"
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -57,8 +57,6 @@ def plot_norm_month():
         result_df = result_df.merge(df_year, on="Month", how="outer")
     col = [c for c in result_df.columns if c != "Month"]
     result_df['mean'] = result_df[col].mean(axis=1)
-    label_pad = 12
-    title_pad = 20
     plt.subplots(figsize=(6.5, 7))
     bar_color = "steelblue"
     plt.bar(result_df["Month"], result_df["mean"], color=bar_color)
@@ -80,8 +78,6 @@ def plot_daily_vs_hourly_prices():
     df_d = get_data(start_date, end_date, ["System Price"], os.getcwd(), "d")
     df_d = df_d.rename(columns={'System Price': "Daily Price"})
     df_d["DateTime"] = df_d["Date"] + timedelta(hours=12)
-    label_pad = 12
-    title_pad = 20
     f, ax = plt.subplots(figsize=(13, 7))
     hour_col = "steelblue"
     day_col = "firebrick"
@@ -117,8 +113,6 @@ def plot_norm_week():
         result_df = result_df.merge(df_year, on="Week", how="outer")
     col = [c for c in result_df.columns if c != "Week"]
     result_df['mean'] = result_df[col].mean(axis=1)
-    label_pad = 12
-    title_pad = 20
     plt.subplots(figsize=(6.5, 7))
     bar_color = "steelblue"
     plt.bar(result_df["Week"], result_df["mean"], color=bar_color)
@@ -131,10 +125,27 @@ def plot_norm_week():
 
 
 def plot_temperatures():
-    df = get_data("01.01.2019", "31.12.2019", ["T Hamar", "T Krsand", "T Troms", "T Namsos", "Bergen"], os.getcwd(),
-                  "d")
-
-
+    t_columns = ["T Nor", "T Hamar", "T Krsand", "T Troms", "T Namsos", "T Bergen"]
+    df = get_data("01.01.2019", "31.12.2019", t_columns, os.getcwd(), "d")
+    plt.subplots(figsize=(13, 7))
+    for col in t_columns:
+        if "Nor" in col:
+            width = 4
+        else:
+            width = 1
+        plt.plot(df["Date"], df[col], label=col[1:], linewidth=width)
+    for line in plt.legend(loc='upper center', ncol=6, bbox_to_anchor=(0.5, 1.02),
+                           fancybox=True, shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.title("Temperature Norway 2019", pad=title_pad)
+    plt.ylabel("Celsius", labelpad=label_pad)
+    plt.xlabel("Date", labelpad=label_pad)
+    ymax = max(df[t_columns].max())*1.1
+    ymin = min(df[t_columns].min())*0.9
+    plt.ylim(ymin, ymax)
+    plt.tight_layout()
+    path = "output/plots/eda/temperature_norway_2019.png"
+    plt.savefig(path)
 
 if __name__ == '__main__':
     print("Running eda..")

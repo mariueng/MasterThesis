@@ -615,7 +615,7 @@ def import_temperature_data():
             sub_df = sub_df[["Date", "value"]]
             sub_df = sub_df.rename(columns={"value": city})
             sub_df['Date'] = pd.to_datetime(sub_df['Date'])
-            year_df = pd.merge(year_df, sub_df, on="Date")
+            year_df = pd.merge(year_df, sub_df, on="Date", how="outer")
         temp_df = temp_df.append(year_df, ignore_index=True)
     temp_df["T Nor"] = temp_df[[y for y in coordinates.keys()]].mean(axis=1)
     temp_df.to_csv("input/combined/temp_daily.csv", index=False, float_format='%g')
@@ -624,6 +624,7 @@ def import_temperature_data():
 
 def write_daily_temperature_to_combined():
     temp_df = pd.read_csv("input/combined/temp_daily.csv")
+    temp_df = temp_df.fillna(method="bfill")
     df = pd.read_csv("input/combined/all_data_daily.csv")
     df = pd.merge(df, temp_df, on="Date")
     df.to_csv("input/combined/all_data_daily.csv", index=False, float_format='%g')
@@ -652,4 +653,5 @@ if __name__ == '__main__':
     #combine_all_data("hourly")
     # remove_summer_winter_time("h")
     # add_time_columns_to_all_data("d")
+    # import_temperature_data()
     write_daily_temperature_to_combined()

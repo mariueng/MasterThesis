@@ -42,6 +42,7 @@ class ExpertDay:
         train_start = start_date - timedelta(days=14)
         train_end = train_start + timedelta(days=13)
         df = get_data(train_start, train_end, ["System Price", "Weekday", "Week"], os.getcwd(), "d")
+        temp_df = get_data(start_date, start_date+timedelta(days=13), ["T Nor"], os.getcwd(), "d")
         #df, a, b = arcsinh.to_arcsinh(df, "System Price")
         col = "System Price"
         past_prices = df[col].tolist()
@@ -51,7 +52,7 @@ class ExpertDay:
         last_week_in_training = df.loc[len(df)-1, "Week"]
         last_day_in_training = df.loc[len(df)-1, "Weekday"]
         for i in range(14):
-            x = {"1 day lag": past_prices[-1], "2 day lag": past_prices[-2], "3 day lag": past_prices[-3],
+            x = {"Temp. Norway": temp_df.loc[i, "T Nor"], "1 day lag": past_prices[-1], "2 day lag": past_prices[-2], "3 day lag": past_prices[-3],
                  "1 week lag": past_prices[-7], "2 week lag": past_prices[-14]}
             weekday = df.loc[i % 7, "Weekday"]
             for val in weekdays.values():
@@ -86,12 +87,13 @@ class ExpertDay:
 
     @staticmethod
     def get_hour_forecast_from_mlp(forecast, start):
-        day_df = get_data(start, start+timedelta(days=13), ["Weekday", "Month"], os.getcwd(), "d")
+        day_df = get_data(start, start+timedelta(days=13), ["Weekday", "Month", "T Nor"], os.getcwd(), "d")
         hour_forecast = []
         model = load_model(r"../models/mlp_day_profile/first_model")
+        # model = load_model(r"../mlp_day_profile/first_model")
         weekdays = ["d{}".format(i) for i in range(1, 8)]
         months = ["m{}".format(i) for i in range(1, 13)]
-        col = ["Price"] + [w for w in weekdays] + [m for m in months]
+        col = ["Price"] + [w for w in weekdays] + [m for m in months] + ["Temp Norway"]
         data = pd.DataFrame(columns=col)
         for i in range(len(day_df)):
             row = {"Price": forecast[i]}
@@ -107,6 +109,7 @@ class ExpertDay:
                     row["m{}".format(j)] = 1
                 else:
                     row["m{}".format(j)] = 0
+            row["Temp Norway"] = day_df.loc[i, "T Nor"]
             data = data.append(row, ignore_index=True)
         rows = []
         for index, row in data.iterrows():
@@ -123,11 +126,11 @@ class ExpertDay:
         return hour_forecast
 
 
-
 def train_model(dir_path):
     start_date = dt(2014, 1, 1)
-    end_date = dt(2019, 12, 31)
-    training_data = get_data(start_date, end_date, ["System Price", "Weekday", "Week"], os.getcwd(), "d")
+    end_date = dt(2018, 12, 31)
+    training_data = get_data(start_date, end_date, ["System Price", "Weekday", "Week", "T Nor"], os.getcwd(), "d")
+    training_data = training_data.rename(columns={"T Nor": "Temp. Norway"})
     #training_data, a, b = arcsinh.to_arcsinh(training_data, "System Price")
     col = "System Price"
     training_data["1 day lag"] = training_data[col].shift(1)
@@ -188,7 +191,7 @@ def run(model, periods):
 
 
 if __name__ == '__main__':
-    # train_model(str(Path(__file__).parent))
+    #train_model(str(Path(__file__).parent))
     model_ = ExpertDay()
     periods_ = get_random_periods(1)
     run(model_, periods_)

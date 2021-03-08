@@ -41,6 +41,8 @@ def get_columns_data_double(data, resolution):
             incl_columns.extend(["Total Hydro"])
         elif data_source == "Hydro Dev":
             incl_columns.extend(["Total Hydro Dev"])
+        elif data_source == "T":
+            incl_columns.extend(["T Nor"])
     return incl_columns
 
 
@@ -101,7 +103,9 @@ def make_plot(df, resolution, save, data, title):
 
 def make_double_plot(df, resolution, save, data, title):
     columns = df.columns.tolist()
+    print(columns)
     labels = get_labels_from_columns(df.columns.tolist(), individual=False)
+    print(labels)
     fig, ax1 = plt.subplots(figsize=(13, 7))
     first_color = "tomato"  # price = tomato, other = goldenrod
     second_color = "royalblue"  # when using price, use "royalblue". Else. orchid
@@ -135,6 +139,8 @@ def get_y_label(column):
         return "Euro \u20ac"
     elif "Hydro" in column:
         return "Reservoir GWh"
+    elif "T Nor" in column:
+        return "Celsius"
     else:
         return "MWh"
 
@@ -175,8 +181,8 @@ def get_labels_from_columns(columns, individual):
     else:
         labels = []
         replace = {"Prod": "Total Production", "Vol": "Total Volume", "Consume": "Total Consumption",
-                   "Total Hydro": "Acc. Hydro State", "System Price": "SYS", "Total Hydro Dev": "Acc. Hydro State"
-                                                                                                " Deviation"}
+                   "Total Hydro": "Acc. Hydro State", "System Price": "SYS", "Total Hydro Dev":
+                       "Acc. Hydro State Deviation", "T Nor": "Temperature"}
         for col in columns:
             for key, value in replace.items():
                 if key == col:
@@ -274,23 +280,23 @@ baltic_markets = ["EE", "LV", "LT"]
 hydro_markets = ["NO", "SE", "FI", "Total"]
 nordic_baltic_market = ["Nordic", "Baltic"]
 # Data sources possible to plot
-data_options = ["Consume", "Hydro", "Price", "Prod", "Sell Vol", "Buy Vol", "Tot Vol", "Hydro Dev"]
+data_options = ["Consume", "Hydro", "Price", "Prod", "Sell Vol", "Buy Vol", "Tot Vol", "Hydro Dev", "T"]
 
 if __name__ == '__main__':
     # Data Options: Consume=0, Hydro=1, Price=2, Prod=3, Sell Vol=4, Buy Vol=5, Tot Vol=6, Hydro Dev = 7
     # Sub Markets: sub_markets, nordic_markets, baltic_markets, nordic_baltic_markets, hydro_markets
     # --------------------------------------------------------------------------------------
-    data_options_idx = [2, 7]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
-    sub_markets_ = hydro_markets  # choose
-    start_date = datetime.date(2014, 1, 1)  # chose
-    end_date = datetime.date(2020, 12, 31)  # chose
+    data_options_idx = [2, 8]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
+    sub_markets_ = ["Nor"]  # choose
+    start_date = datetime.date(2019, 1, 1)  # chose
+    end_date = datetime.date(2019, 12, 31)  # chose
     resolution_ = "d"  # choose
     save_ = True  # choose
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
     data_ = [data_options[i] for i in data_options_idx]
     period_ = [start_date, end_date]
-    title_ = create_plot_title(data_, sub_markets_, period_, resolution_)
+    title_ = "Price vs. Temperature Norway, Jan 19 - Dec 19"
     if len(data_) == 1:
         plot(data_, sub_markets_, resolution_, period_, save_, title_)
     elif len(data_) == 2:
