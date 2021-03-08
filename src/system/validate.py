@@ -10,6 +10,7 @@ from src.models.naive_day import naive_day
 from src.models.naive_week import naive_week
 from src.models.sarimax import sarimax
 from src.models.expert_model import expert_model
+from src.models.expert_day import expert_day
 from src.models.ets import ets
 from data.data_handler import get_data
 import os
@@ -28,7 +29,7 @@ def validate(model, periods, plot):  # plot is boolean value, if you want to plo
     result_list = []
     for i in range(len(periods)):
         forecast_df = get_forecast(model, periods[i])
-        true_price_df = get_data(periods[i][0], periods[i][1], ["System Price"], os.getcwd())
+        true_price_df = get_data(periods[i][0], periods[i][1], ["System Price"], os.getcwd(), "h")
         result_df = true_price_df.merge(forecast_df, on=["Date", "Hour"], how="outer")
         result_list.append(result_df)
     result_path = get_result_folder(model)
@@ -46,7 +47,7 @@ def validate(model, periods, plot):  # plot is boolean value, if you want to plo
 
 def get_forecast(model, period):
     print("Forecasting from {} to {}".format(period[0], period[1]))
-    time_df = get_data(period[0], period[1], [], os.getcwd())
+    time_df = get_data(period[0], period[1], [], os.getcwd(), "h")
     if len(time_df) != 336:
         print("Length of horizon: {}".format(len(time_df)))
         print("Prediction horizon must be length 336")
@@ -180,9 +181,10 @@ if __name__ == '__main__':
     # model_ = naive_week.NaiveWeek()
     # model_ = sarimax.Sarimax()
     # model_ = sarimax.Sarimax()
-    model_ = expert_model.ExpertModel()
+    # model_ = expert_model.ExpertModel()
+    model_ = expert_day.ExpertDay()
     # periods_ = get_four_periods_median_method(write_summary=False)
-    # periods_ = get_random_periods(10)
+    # periods_ = get_random_periods(4)
     periods_ = get_all_2019_periods()
     # periods_ = get_one_period()
     validate(model_, periods_, plot=True)
