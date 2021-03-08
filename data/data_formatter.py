@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import math
+from data_handler import get_data
 
 
 def combine_hour_day_month_year_to_datetime_index(df):
@@ -561,6 +562,72 @@ def remove_summer_winter_time(resolution):
     print("Date updated and saved to {}".format(data_path))
 
 
+def import_temperature_data():
+    from datetime import datetime as dt
+    import requests
+    coordinates = {
+        "T Hamar": "SN12290",
+        "T Krsand": "SN39100",
+        "T Namsos": "SN72710",
+        "T Troms": "SN91500",
+        "T Bergen": "SN50500"
+    }
+    years = [y for y in range(2014, 2021)]
+    client_id = 'f2acda91-356a-4475-b815-17214a0c7f14'
+    endpoint = 'https://frost.met.no/observations/v0.jsonld'
+    temp_df = pd.DataFrame()
+    for year in years:
+        start = dt(year, 1, 1).date()
+        end = dt(year, 12, 31).date()
+        locations = ",".join(coordinates.values())
+        parameters = {
+            'sources': locations,
+            'elements': 'mean(air_temperature P1D)',
+            'referencetime': '{}-01-01/{}-1-1'.format(year, year+1),
+        }
+        r = requests.get(endpoint, parameters, auth=(client_id, ''))
+        json = r.json()
+        data = None
+        if r.status_code == 200:
+            data = json['data']
+        else:
+            print('Error! Returned status code %s' % r.status_code)
+            print('Message: %s' % json['error']['message'])
+            print('Reason: %s' % json['error']['reason'])
+        df = pd.DataFrame()
+        for i in range(len(data)):
+            row = pd.DataFrame(data[i]['observations'])
+            row['referenceTime'] = data[i]['referenceTime']
+            row['sourceId'] = data[i]['sourceId']
+            df = df.append(row)
+        df = df.reset_index()
+        columns = ['sourceId', 'referenceTime', 'value', 'timeOffset']
+        df = df[columns]
+        df = df.rename(columns={"referenceTime": "Date"})
+        df['Date'] = pd.to_datetime(df['Date']).dt.date
+        df = df[df["timeOffset"].isin(["PT0H"])]
+        year_df = get_data(start, end, [], os.getcwd(), "d")
+        for city in coordinates.keys():
+            id_number = [coordinates[city] + ":0"]
+            sub_df = df[df["sourceId"].isin(id_number)]
+            mask = (sub_df['Date'] >= start) & (sub_df['Date'] <= end)
+            sub_df = sub_df.loc[mask].reset_index()
+            sub_df = sub_df[["Date", "value"]]
+            sub_df = sub_df.rename(columns={"value": city})
+            sub_df['Date'] = pd.to_datetime(sub_df['Date'])
+            year_df = pd.merge(year_df, sub_df, on="Date")
+        temp_df = temp_df.append(year_df, ignore_index=True)
+    temp_df["T Nor"] = temp_df[[y for y in coordinates.keys()]].mean(axis=1)
+    temp_df.to_csv("input/combined/temp_daily.csv", index=False, float_format='%g')
+    print("Number of nan rows: {}".format(temp_df.isna().sum()))
+
+
+def write_daily_temperature_to_combined():
+    temp_df = pd.read_csv("input/combined/temp_daily.csv")
+    df = pd.read_csv("input/combined/all_data_daily.csv")
+    df = pd.merge(df, temp_df, on="Date")
+    df.to_csv("input/combined/all_data_daily.csv", index=False, float_format='%g')
+
 
 
 
@@ -585,3 +652,4 @@ if __name__ == '__main__':
     #combine_all_data("hourly")
     # remove_summer_winter_time("h")
     # add_time_columns_to_all_data("d")
+    write_daily_temperature_to_combined()

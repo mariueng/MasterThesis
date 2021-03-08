@@ -23,7 +23,7 @@ def get_four_periods_median_method(write_summary):
     for s in seasons:
         period_table = pd.DataFrame(columns=["Start date", "End date", "Mean", "Variance", "Mean Dev", "Var Dev",
                                              "Norm Mean Dev", "Norm Var Dev", "Score"])
-        data = data_handler.get_data(s[0], s[1], ["System Price"], os.getcwd())
+        data = data_handler.get_data(s[0], s[1], ["System Price"], os.getcwd(), "h")
         first_date_in_season = data.iloc[0]["Date"].date()
         last_date_in_season = data.iloc[-1]["Date"].date()
         number_of_periods = math.floor((len(data) / 24) / 7)
@@ -89,7 +89,7 @@ def plot_price_year_and_periods(periods, write_dates):
     per_color = "firebrick"
     label_pad = 12
     title_pad = 20
-    data = data_handler.get_data("01.01.2019", "31.12.2019", ["System Price"])
+    data = data_handler.get_data("01.01.2019", "31.12.2019", ["System Price"], "h")
     fig, ax = plt.subplots(figsize=(13, 5.5))
     plt.plot(data["Date"], data["System Price"], label="SYS", color=price_color)
     period = 1
