@@ -1,0 +1,12 @@
+inputs,mape,smape,mae,rmse
+Weekday Month,8.854,8.425,3.143,3.755
+Weekday Week,9.664,9.255,3.429,4.066
+Weekday Month T Nor,8.526,8.016,3.010,3.569
+Weekday Week T Nor,9.310,8.735,3.244,3.819
+Weekday Month Total Hydro,8.917,8.435,3.154,3.770
+Weekday Month Total Hydro Dev,8.831,8.431,3.141,3.751
+Weekday Month Wind DK,9.548,9.333,3.425,4.012
+Weekday Month T Nor Wind DK,8.600,8.235,3.107,3.586
+Weekday - Month - Total Vol,8.569,8.193,3.050,3.600
+Weekday - Month - Total Vol - T Nor,8.405,7.979,2.981,3.523
+Total Hydro Dev,10.168,9.411,3.567,4.326

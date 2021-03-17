@@ -3,7 +3,8 @@ from datetime import datetime as dt
 from datetime import timedelta
 import numpy as np
 import os
-
+from pathlib import Path
+from src.system.scores import get_all_point_metrics
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Avoid warnings from Tensorflow or any {'0', '1', '2'}
 import tensorflow
 tensorflow.random.set_seed(2)
@@ -14,6 +15,7 @@ from keras.callbacks import EarlyStopping
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from src.models.expert_day.expert_day import calculate_performance
 
 
 def get_data_set(s_date, e_date):
@@ -32,6 +34,10 @@ def get_data_set(s_date, e_date):
         weekday = day_df.loc[i, "Weekday"]
         month = day_df.loc[i, "Month"]
         hourly_prices = hour_df["System Price"][hour_df["Date"].isin([date])].tolist()
+        if len(hourly_prices) != 24:
+            print(hourly_prices)
+            print(len(hourly_prices))
+            print(day_df.iloc[i])
         assert len(hourly_prices) == 24
         for j in range(1, 8):
             if weekday == j:
@@ -98,7 +104,7 @@ def convert2matrix(data_arr):
     return np.asarray(x).astype('float32'), np.asarray(y).astype('float32')
 
 
-def test_model(test, start_date, end_date):
+def test_model(test, start, end):
     model = load_model(r'first_model')
     test_x, test_y = convert2matrix(test)
     predictions = []
@@ -107,63 +113,51 @@ def test_model(test, start_date, end_date):
         prediction = model.predict(x, batch_size=None, verbose=0, steps=1, callbacks=None, max_queue_size=10,
                                    workers=1, use_multiprocessing=False)
         predictions.append(prediction[0])
-    mapes = []
-    maes = []
-    for i in range(len(test_y)):
-        pred = predictions[i]
-        true = test_y[i]
-        aes = []
-        apes = []
-        for j in range(24):
-            aes.append(abs(true[j] - pred[j]))
-            if true[j] != 0:
-                apes.append(100 * abs(true[j] - pred[j])/true[j])
-        mapes.append(sum(apes)/len(apes))
-        maes.append(sum(aes)/len(aes))
-    print("MAE: {}, MAPE: {}".format(sum(maes)/len(maes), sum(mapes)/len(mapes)))
-    df = data_handler.get_data(start_date, end_date, ["System Price"], os.getcwd(), "h")
-    df["Hour"] = pd.to_datetime(df['Hour'], format="%H").dt.time
-    df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour']), 1)
-    prediction_list = []
-    day_prices = data_handler.get_data(start_date, end_date, ["System Price"], os.getcwd(), "d")["System Price"].tolist()
-    for i in range(len(day_prices)):
-        pred = predictions[i]
-        day_price = day_prices[i]
-        all_prices = [pred[j] + day_price for j in range(24)]
-        prediction_list.extend(all_prices)
-    df["Forecast"] = prediction_list
-    plt.plot(df["DateTime"], df["System Price"], label="True")
-    plt.plot(df["DateTime"], df["Forecast"], label="Forecast")
-    plt.show()
+    analyze_results(predictions, test_y, start, end)
 
 
+def analyze_results(pred, true, start, end):
+    [f.unlink() for f in Path("validation/plots").glob("*") if f.is_file()]
+    df = pd.DataFrame(columns=("Date", "System Price", "Forecast"))
+    results = pd.DataFrame(columns=["Period", "mape", "smape", "mae", "rmse"])
+    day_df = data_handler.get_data(start, end, ["System Price"], os.getcwd(), "d")
+    for i in range(len(pred)):
+        day_price = day_df.loc[i, "System Price"]
+        prediction = [pred[i][j] + day_price for j in range(len(pred[i]))]
+        sys_price = [true[i][j] + day_price for j in range(len(true[i]))]
+        d_df = pd.DataFrame(columns=df.columns)
+        d_df["System Price"] = sys_price
+        d_df["Forecast"] = prediction
+        d_df["Date"] = day_df.loc[i, "Date"]
+        df = df.append(d_df, ignore_index=True)
+        plot_forecast(i+1, d_df.loc[0, "Date"], d_df["System Price"], d_df["Forecast"])
+        point_performance = get_all_point_metrics(d_df)
+        point_performance["Period"] = i
+        results = results.append(point_performance, ignore_index=True)
+    calculate_performance(df, results, "MLP", dt.today())
 
-def prediction_plot(test_y, test_predict, last_train):
-    df = pd.DataFrame(columns=["Hour", "True", "Forecast"])
-    for i in range(len(last_train)):
-        row = {"Hour": i, "True": last_train[i], "Forecast": None}
-        df = df.append(row, ignore_index=True)
-    for i in range(len(test_y)):
-        row = {"Hour": i + len(last_train), "True": test_y[i], "Forecast": test_predict[i]}
-        df = df.append(row, ignore_index=True)
-    plt.figure(figsize=(13, 7))
-    plt.plot(df["Hour"], df["True"], marker='.', label="True")
-    plt.plot(df["Hour"], df["Forecast"], 'r', label="Forecast")
+
+def plot_forecast(period, date, true, forecast):
+    plt.subplots(figsize=(6.5, 7))
+    plt.plot(true, label="True", color="steelblue")
+    plt.plot(forecast, label="Forecast", color="firebrick")
+    plt.title("Result from MLP, {}".format(date.date()), pad=20)
+    plt.xlabel("Hour of day", labelpad=12)
+    plt.ylabel("System Price [€]", labelpad=12)
+    for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03),
+                           fancybox=True, shadow=True).get_lines():
+        line.set_linewidth(2)
     plt.tight_layout()
-    sns.despine(top=True)
-    plt.ylabel('Price', size=10)
-    plt.xlabel('Time step', size=10)
-    plt.legend(fontsize=15)
-    plt.ylim(20, 60)
-    plt.tight_layout()
-    plt.show()
+    plt.savefig("validation/plots/{}.png".format(period))
+    plt.close()
 
 
 if __name__ == '__main__':
-    start_date = "01.01.2014"
-    end_date = "31.12.2018"
-    train_ = get_data_set(start_date, end_date)
-    end_test = "31.01.2019"
-    fit_model(train_)
-    test_ = get_data_set(end_date, end_test)
-    test_model(test_, end_date, end_test)
+    start_date = dt(2014, 1, 1)
+    end_date = dt(2018, 12, 31)
+    # train_ = get_data_set(start_date, end_date)
+    start_test = end_date+timedelta(days=1)
+    end_test = dt(2019, 12, 31)
+    # fit_model(train_)
+    test_ = get_data_set(start_test, end_test)
+    test_model(test_, start_test, end_test)

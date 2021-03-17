@@ -127,7 +127,7 @@ def plot_price_year_and_periods(periods, write_dates):
 def get_all_2019_periods():
     periods = []
     first_date = dt.datetime(2019, 1, 1).date()
-    for week in range(351):
+    while first_date != dt.datetime(2019, 12, 19).date():
         last_date = first_date + dt.timedelta(days=13)
         periods.append((first_date, last_date))
         first_date = first_date + dt.timedelta(days=1)

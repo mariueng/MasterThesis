@@ -422,6 +422,12 @@ def combine_all_data(resolution):
     dfs = []
     for p in paths:
         df = pd.read_csv(p, sep=",")
+        date_string = df.loc[0, "Date"].split("-")
+        if len(date_string[0]) == 2:
+            date_format = "%d-%m-%Y"
+        else:
+            date_format = "%Y-%m-%d"
+        df['Date'] = pd.to_datetime(df['Date'], format=date_format)
         dfs.append(df)
     for i in range(len(dfs) - 2, -1, -1):
         print("Merging in {}".format(paths[i]))
@@ -435,12 +441,8 @@ def combine_all_data(resolution):
         other_columns = [col for col in all_columns if col not in ordered_columns]
         ordered_columns.extend(other_columns)
         df = df[ordered_columns]
-        date_format = "%d-%m-%Y"
-        print(df.loc[0, "Date"])
-        df['Date'] = pd.to_datetime(df['Date'], format=date_format)
         df.to_csv("..\\data\\input\\combined\\all_data_daily.csv", index=False)
     elif resolution == "hourly":
-        df.dropna()  # remove all rows with nan (hydro dataset has not accounted for summer time)
         ordered_columns = ['Date', "Hour", "System Price"]
         all_columns = df.columns.tolist()
         other_columns = [col for col in all_columns if col not in ordered_columns]
@@ -481,22 +483,19 @@ def add_time_columns_to_all_data(resolution):
     df.to_csv(out_path, sep=",", index=False, float_format='%g')
 
 
-def write_hydro_deviations_to_combined(resolution):
-    if resolution == "d":
-        data_path = "..\\data\\input\\combined\\hydro_daily.csv"
-        out_path = "..\\data\\input\\combined\\hydro_dev_daily.csv"
-        out_columns = ["Date", "NO Hydro Dev", "SE Hydro Dev", "FI Hydro Dev", "Total Hydro Dev"]
-    else:
-        data_path = "..\\data\\input\\combined\\hydro_hourly.csv"
-        out_path = "..\\data\\input\\combined\\hydro_dev_hourly.csv"
-        out_columns = ["Date", "Hour", "NO Hydro Dev", "SE Hydro Dev", "FI Hydro Dev", "Total Hydro Dev"]
+def write_daily_hydro_deviations_to_combined():
+    data_path = "..\\data\\input\\combined\\hydro_daily.csv"
+    out_path = "..\\data\\input\\combined\\hydro_dev_daily.csv"
+    out_columns = ["Date", "NO Hydro Dev", "SE Hydro Dev", "FI Hydro Dev", "Total Hydro Dev"]
     hydro_df = pd.read_csv(data_path, sep=",")
     date_format = "%d-%m-%Y"
     hydro_df['Date'] = pd.to_datetime(hydro_df['Date'], format=date_format)
-    #new_date_format = "%d-%m-%Y"
-    #hydro_df['Date'] = hydro_df['Date'].apply(lambda x: x.strftime(new_date_format))
+    start = datetime(2014, 1, 1)
+    end = datetime(2020, 12, 31)
+    mask = (hydro_df['Date'] >= start) & (hydro_df['Date'] <= end)
+    hydro_df = hydro_df.loc[mask].reset_index()
     average_year_df = hydro_df.groupby(
-        [hydro_df["Date"].dt.month.rename("Month"), hydro_df["Date"].dt.day.rename("Day")]).mean()
+       [hydro_df["Date"].dt.month.rename("Month"), hydro_df["Date"].dt.day.rename("Day")]).mean()
     column_rename_dict = {"NO Hydro": "NO Mean", "SE Hydro": "SE Mean", "FI Hydro": "FI Mean",
                           "Total Hydro": "Total Mean"}
     average_year_df = rename_column_names(average_year_df, column_rename_dict)
@@ -511,24 +510,51 @@ def write_hydro_deviations_to_combined(resolution):
             hydro = row[country + " Hydro"]
             dev = hydro - mean
             hydro_df.loc[index, country + " Hydro Dev"] = round(dev, 3)
-    new_date_format = "%d-%m-%Y"
-    hydro_df['Date'] = hydro_df['Date'].apply(lambda x: x.strftime(new_date_format))
     hydro_df = hydro_df[out_columns]
     hydro_df.to_csv(out_path, sep=",", index=False, float_format='%g')
 
 
-def convert_hour_to_datetime(forecasts, test):
-    forecasts = pd.DataFrame(forecasts, index=test.index)
-    forecasts.columns = ['System Price']
-    return forecasts
+def write_hourly_hydro_deviations_to_combined():
+    daily_path = "..\\data\\input\\combined\\hydro_dev_daily.csv"
+    day_df = pd.read_csv(daily_path)
+    day_df["Date"] = pd.to_datetime(day_df["Date"], format="%Y-%m-%d")
+    out_columns = ['Date', 'Hour', 'NO Hydro Dev', 'SE Hydro Dev', 'FI Hydro Dev', 'Total Hydro Dev']
+    out_df = get_hourly_from_interpolated_daily(day_df, out_columns)
+    out_path = "..\\data\\input\\combined\\hydro_dev_hourly.csv"
+    out_df.to_csv(out_path, index=False, float_format='%g')
 
 
-def remove_summer_winter_time(resolution):
+def get_hourly_from_interpolated_daily(day_df, out_columns):
+    day_df = day_df.rename(columns={"Date": "DateTime"})
+    out_df = pd.read_csv("..\\data\\input\\combined\\price_hourly.csv")
+    out_df = out_df[["Date", "Hour"]]
+    out_df["Date"] = pd.to_datetime(out_df["Date"], format="%d-%m-%Y")
+    out_df["Hour"] = pd.to_datetime(out_df['Hour'], format="%H").dt.time
+    out_df["DateTime"] = out_df.apply(lambda r: datetime.combine(r['Date'], r['Hour']), 1)
+    out_df = out_df.merge(day_df, on="DateTime", how="outer")
+    out_df = out_df.interpolate(method='linear', axis=0)
+    out_df = out_df[out_columns]
+    out_df['Hour'] = out_df['Hour'].apply(lambda x: x.hour)
+    out_df = out_df.dropna()
+    print(len(out_df))
+    print(out_df)
+    assert len(out_df) == 61375
+    return out_df
+
+
+def write_hourly_temperature_to_combined():
+    daily_path = "..\\data\\input\\combined\\temp_daily.csv"
+    day_df = pd.read_csv(daily_path)
+    day_df["Date"] = pd.to_datetime(day_df["Date"], format="%Y-%m-%d")
+    out_columns = ["Date", "Hour", "T Hamar", "T Krsand", "T Namsos", "T Troms", "T Bergen", "T Nor"]
+    out_df = get_hourly_from_interpolated_daily(day_df, out_columns)
+    out_path = "..\\data\\input\\combined\\temp_hourly.csv"
+    out_df.to_csv(out_path, index=False, float_format='%g')
+
+
+def remove_summer_winter_time():
     print("Fixing 'bugs' from summer time and winter time change")
-    if resolution == "d":
-        data_path = "..\\data\\input\\combined\\all_data_daily.csv"
-    else:
-        data_path = "..\\data\\input\\combined\\all_data_hourly.csv"
+    data_path = "..\\data\\input\\combined\\all_data_hourly.csv"
     date_format = "%Y-%m-%d"
     df = pd.read_csv(data_path, sep=",")
     df['Date'] = pd.to_datetime(df['Date'], format=date_format)
@@ -562,7 +588,7 @@ def remove_summer_winter_time(resolution):
     print("Date updated and saved to {}".format(data_path))
 
 
-def import_temperature_data():
+def write_daily_temperature_to_combined():
     from datetime import datetime as dt
     import requests
     coordinates = {
@@ -606,7 +632,9 @@ def import_temperature_data():
         df = df.rename(columns={"referenceTime": "Date"})
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         df = df[df["timeOffset"].isin(["PT0H"])]
-        year_df = get_data(start, end, [], os.getcwd(), "d")
+        dates = pd.date_range(start, end, freq='d')
+        year_df = pd.DataFrame()
+        year_df["Date"] = dates
         for city in coordinates.keys():
             id_number = [coordinates[city] + ":0"]
             sub_df = df[df["sourceId"].isin(id_number)]
@@ -618,19 +646,50 @@ def import_temperature_data():
             year_df = pd.merge(year_df, sub_df, on="Date", how="outer")
         temp_df = temp_df.append(year_df, ignore_index=True)
     temp_df["T Nor"] = temp_df[[y for y in coordinates.keys()]].mean(axis=1)
+    temp_df = temp_df.fillna(method="bfill")
     temp_df.to_csv("input/combined/temp_daily.csv", index=False, float_format='%g')
     print("Number of nan rows: {}".format(temp_df.isna().sum()))
 
 
-def write_daily_temperature_to_combined():
-    temp_df = pd.read_csv("input/combined/temp_daily.csv")
-    temp_df = temp_df.fillna(method="bfill")
-    df = pd.read_csv("input/combined/all_data_daily.csv")
-    df = pd.merge(df, temp_df, on="Date")
-    df.to_csv("input/combined/all_data_daily.csv", index=False, float_format='%g')
+def write_wind_to_combined(resolution,convert_to_csv, replace_commas):
+    if resolution == "h":
+        path = "..\\data\\input\\wind_hourly"
+        out_path = "..\\data\\input\\combined\\wind_hourly.csv"
+        out_col = ["Date", "Hour", "Wind DK"]
+    elif resolution == "d":
+        path = "..\\data\\input\\wind_daily"
+        out_path = "..\\data\\input\\combined\\wind_daily.csv"
+        out_col = ["Date", "Wind DK"]
+    if convert_to_csv:
+        raw_path = path + "\\raw"
+        raw_paths = sorted(Path(raw_path).iterdir())  # list all raw xls files
+        convert_folder_to_csv(raw_paths, replace_commas, header_row=2, resolution=resolution, make_integer=True)
+    paths = get_all_csv_files_from_directory(path)
+    df_years = []
+    for p in paths:
+        df = pd.read_csv(p, sep=",")
+        df["Date"] = pd.to_datetime(df["Date"], format="%d-%m-%Y")
+        df_years.append(df)
+    df_all = pd.concat(df_years, ignore_index=True)
+    if resolution == "h":
+        df_all['Hour'] = df_all['Hour'].str[:2].astype(int)
+    df_all["Wind DK"] = df_all["DK1"] + df_all["DK2"]
+    df_all = df_all[out_col]
+    df_all = df_all.interpolate(method='linear', axis=0)
+    assert df_all["Wind DK"].isnull().sum(axis=0) == 0
+    df_all.to_csv(out_path, index=False, float_format='%g')
 
 
-
+def append_data_to_all_data(data, resolution):
+    df = pd.read_csv("..\\data\\input\\combined\\{}_{}.csv".format(data, resolution))
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    all_data = pd.read_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution))
+    all_data["Date"] = pd.to_datetime(all_data["Date"], format="%Y-%m-%d")
+    if resolution == "daily":
+        all_data = all_data.merge(df, on="Date", how="outer")
+    elif resolution == "hourly":
+        all_data = all_data.merge(df, on=["Date", "Hour"], how="outer")
+    all_data.to_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution), index=False, float_format='%g')
 
 
 if __name__ == '__main__':
@@ -642,16 +701,16 @@ if __name__ == '__main__':
     # write_hydro_all_weekly(convert_to_csv=True, replace_commas=False)  # replace_commas=False, always
     # write_hydro_daily_to_combined()
     # write_hydro_hourly_to_combined()
-    # plot_hydro("h")
-    # write_hydro_deviations_to_combined("d")
-    # plot_hydro_dev("h")
-    # write_consumption_to_combined("d", convert_to_csv=False, replace_commas=True)
-    # write_consumption_to_combined("h", convert_to_csv=False, replace_commas=True)
-    # write_production_to_combined("d", convert_to_csv=False, replace_commas=True)
-    # write_production_to_combined("h", convert_to_csv=True, replace_commas=True)
+    # write_daily_hydro_deviations_to_combined()
+    # write_hourly_hydro_deviations_to_combined()
+    # write_daily_temperature_to_combined()
+    # write_hourly_temperature_to_combined()
     # combine_all_data("daily")
-    #combine_all_data("hourly")
-    # remove_summer_winter_time("h")
+    # combine_all_data("hourly")
+    remove_summer_winter_time()
     # add_time_columns_to_all_data("d")
-    # import_temperature_data()
-    write_daily_temperature_to_combined()
+    # add_time_columns_to_all_data("h")
+    # write_daily_temperature_to_combined()
+    # write_wind_to_combined("d", convert_to_csv=False, replace_commas=True)
+    # write_wind_to_combined("h", convert_to_csv=False, replace_commas=True)
+    # append_data_to_all_data("wind", "daily")

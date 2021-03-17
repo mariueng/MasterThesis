@@ -1,0 +1,748 @@
+
+<html>
+	<body>
+		<table>
+			<thead>
+				<tr>
+					<td colspan="3">Wind power DK in MWh</td>
+				</tr><tr>
+					<td colspan="3">Data was last updated 01-01-2021</td>
+				</tr><tr>
+					<td></td><td style="text-align:center;">DK1</td><td style="text-align:center;">DK2</td>
+				</tr>
+			</thead><tbody>
+				<tr>
+					<td style="text-align:left;">01-01-2019</td><td style="text-align:right;">63850</td><td style="text-align:right;">21721</td>
+				</tr><tr>
+					<td style="text-align:left;">02-01-2019</td><td style="text-align:right;">35360</td><td style="text-align:right;">18135</td>
+				</tr><tr>
+					<td style="text-align:left;">03-01-2019</td><td style="text-align:right;">20397</td><td style="text-align:right;">6339</td>
+				</tr><tr>
+					<td style="text-align:left;">04-01-2019</td><td style="text-align:right;">66074</td><td style="text-align:right;">14207</td>
+				</tr><tr>
+					<td style="text-align:left;">05-01-2019</td><td style="text-align:right;">25268</td><td style="text-align:right;">6683</td>
+				</tr><tr>
+					<td style="text-align:left;">06-01-2019</td><td style="text-align:right;">14502</td><td style="text-align:right;">640</td>
+				</tr><tr>
+					<td style="text-align:left;">07-01-2019</td><td style="text-align:right;">41637</td><td style="text-align:right;">9019</td>
+				</tr><tr>
+					<td style="text-align:left;">08-01-2019</td><td style="text-align:right;">74831</td><td style="text-align:right;">22232</td>
+				</tr><tr>
+					<td style="text-align:left;">09-01-2019</td><td style="text-align:right;">58813</td><td style="text-align:right;">19261</td>
+				</tr><tr>
+					<td style="text-align:left;">10-01-2019</td><td style="text-align:right;">14622</td><td style="text-align:right;">2964</td>
+				</tr><tr>
+					<td style="text-align:left;">11-01-2019</td><td style="text-align:right;">61559</td><td style="text-align:right;">13215</td>
+				</tr><tr>
+					<td style="text-align:left;">12-01-2019</td><td style="text-align:right;">46528</td><td style="text-align:right;">14548</td>
+				</tr><tr>
+					<td style="text-align:left;">13-01-2019</td><td style="text-align:right;">67552</td><td style="text-align:right;">19887</td>
+				</tr><tr>
+					<td style="text-align:left;">14-01-2019</td><td style="text-align:right;">77264</td><td style="text-align:right;">22716</td>
+				</tr><tr>
+					<td style="text-align:left;">15-01-2019</td><td style="text-align:right;">57328</td><td style="text-align:right;">20016</td>
+				</tr><tr>
+					<td style="text-align:left;">16-01-2019</td><td style="text-align:right;">68663</td><td style="text-align:right;">19441</td>
+				</tr><tr>
+					<td style="text-align:left;">17-01-2019</td><td style="text-align:right;">33493</td><td style="text-align:right;">17989</td>
+				</tr><tr>
+					<td style="text-align:left;">18-01-2019</td><td style="text-align:right;">17065</td><td style="text-align:right;">7301</td>
+				</tr><tr>
+					<td style="text-align:left;">19-01-2019</td><td style="text-align:right;">16986</td><td style="text-align:right;">1983</td>
+				</tr><tr>
+					<td style="text-align:left;">20-01-2019</td><td style="text-align:right;">11720</td><td style="text-align:right;">1193</td>
+				</tr><tr>
+					<td style="text-align:left;">21-01-2019</td><td style="text-align:right;">31024</td><td style="text-align:right;">11516</td>
+				</tr><tr>
+					<td style="text-align:left;">22-01-2019</td><td style="text-align:right;">28462</td><td style="text-align:right;">6587</td>
+				</tr><tr>
+					<td style="text-align:left;">23-01-2019</td><td style="text-align:right;">23874</td><td style="text-align:right;">7068</td>
+				</tr><tr>
+					<td style="text-align:left;">24-01-2019</td><td style="text-align:right;">9220</td><td style="text-align:right;">1941</td>
+				</tr><tr>
+					<td style="text-align:left;">25-01-2019</td><td style="text-align:right;">16972</td><td style="text-align:right;">3040</td>
+				</tr><tr>
+					<td style="text-align:left;">26-01-2019</td><td style="text-align:right;">25282</td><td style="text-align:right;">3647</td>
+				</tr><tr>
+					<td style="text-align:left;">27-01-2019</td><td style="text-align:right;">40267</td><td style="text-align:right;">10072</td>
+				</tr><tr>
+					<td style="text-align:left;">28-01-2019</td><td style="text-align:right;">23512</td><td style="text-align:right;">4383</td>
+				</tr><tr>
+					<td style="text-align:left;">29-01-2019</td><td style="text-align:right;">13004</td><td style="text-align:right;">6990</td>
+				</tr><tr>
+					<td style="text-align:left;">30-01-2019</td><td style="text-align:right;">31074</td><td style="text-align:right;">10434</td>
+				</tr><tr>
+					<td style="text-align:left;">31-01-2019</td><td style="text-align:right;">42922</td><td style="text-align:right;">8279</td>
+				</tr><tr>
+					<td style="text-align:left;">01-02-2019</td><td style="text-align:right;">26863</td><td style="text-align:right;">7069</td>
+				</tr><tr>
+					<td style="text-align:left;">02-02-2019</td><td style="text-align:right;">13801</td><td style="text-align:right;">3676</td>
+				</tr><tr>
+					<td style="text-align:left;">03-02-2019</td><td style="text-align:right;">13534</td><td style="text-align:right;">4619</td>
+				</tr><tr>
+					<td style="text-align:left;">04-02-2019</td><td style="text-align:right;">62971</td><td style="text-align:right;">15268</td>
+				</tr><tr>
+					<td style="text-align:left;">05-02-2019</td><td style="text-align:right;">59143</td><td style="text-align:right;">20399</td>
+				</tr><tr>
+					<td style="text-align:left;">06-02-2019</td><td style="text-align:right;">28907</td><td style="text-align:right;">10123</td>
+				</tr><tr>
+					<td style="text-align:left;">07-02-2019</td><td style="text-align:right;">50361</td><td style="text-align:right;">14701</td>
+				</tr><tr>
+					<td style="text-align:left;">08-02-2019</td><td style="text-align:right;">68285</td><td style="text-align:right;">21218</td>
+				</tr><tr>
+					<td style="text-align:left;">09-02-2019</td><td style="text-align:right;">70926</td><td style="text-align:right;">23095</td>
+				</tr><tr>
+					<td style="text-align:left;">10-02-2019</td><td style="text-align:right;">33594</td><td style="text-align:right;">12055</td>
+				</tr><tr>
+					<td style="text-align:left;">11-02-2019</td><td style="text-align:right;">57642</td><td style="text-align:right;">18959</td>
+				</tr><tr>
+					<td style="text-align:left;">12-02-2019</td><td style="text-align:right;">34062</td><td style="text-align:right;">10186</td>
+				</tr><tr>
+					<td style="text-align:left;">13-02-2019</td><td style="text-align:right;">46281</td><td style="text-align:right;">17611</td>
+				</tr><tr>
+					<td style="text-align:left;">14-02-2019</td><td style="text-align:right;">25994</td><td style="text-align:right;">6664</td>
+				</tr><tr>
+					<td style="text-align:left;">15-02-2019</td><td style="text-align:right;">27962</td><td style="text-align:right;">4781</td>
+				</tr><tr>
+					<td style="text-align:left;">16-02-2019</td><td style="text-align:right;">48900</td><td style="text-align:right;">11202</td>
+				</tr><tr>
+					<td style="text-align:left;">17-02-2019</td><td style="text-align:right;">22633</td><td style="text-align:right;">4258</td>
+				</tr><tr>
+					<td style="text-align:left;">18-02-2019</td><td style="text-align:right;">34951</td><td style="text-align:right;">5012</td>
+				</tr><tr>
+					<td style="text-align:left;">19-02-2019</td><td style="text-align:right;">66472</td><td style="text-align:right;">16318</td>
+				</tr><tr>
+					<td style="text-align:left;">20-02-2019</td><td style="text-align:right;">33784</td><td style="text-align:right;">11807</td>
+				</tr><tr>
+					<td style="text-align:left;">21-02-2019</td><td style="text-align:right;">29966</td><td style="text-align:right;">12190</td>
+				</tr><tr>
+					<td style="text-align:left;">22-02-2019</td><td style="text-align:right;">22244</td><td style="text-align:right;">8601</td>
+				</tr><tr>
+					<td style="text-align:left;">23-02-2019</td><td style="text-align:right;">16662</td><td style="text-align:right;">3724</td>
+				</tr><tr>
+					<td style="text-align:left;">24-02-2019</td><td style="text-align:right;">17554</td><td style="text-align:right;">2832</td>
+				</tr><tr>
+					<td style="text-align:left;">25-02-2019</td><td style="text-align:right;">18230</td><td style="text-align:right;">3970</td>
+				</tr><tr>
+					<td style="text-align:left;">26-02-2019</td><td style="text-align:right;">9668</td><td style="text-align:right;">2498</td>
+				</tr><tr>
+					<td style="text-align:left;">27-02-2019</td><td style="text-align:right;">29584</td><td style="text-align:right;">7403</td>
+				</tr><tr>
+					<td style="text-align:left;">28-02-2019</td><td style="text-align:right;">18296</td><td style="text-align:right;">7325</td>
+				</tr><tr>
+					<td style="text-align:left;">01-03-2019</td><td style="text-align:right;">5639</td><td style="text-align:right;">1046</td>
+				</tr><tr>
+					<td style="text-align:left;">02-03-2019</td><td style="text-align:right;">26700</td><td style="text-align:right;">4483</td>
+				</tr><tr>
+					<td style="text-align:left;">03-03-2019</td><td style="text-align:right;">47082</td><td style="text-align:right;">14251</td>
+				</tr><tr>
+					<td style="text-align:left;">04-03-2019</td><td style="text-align:right;">52204</td><td style="text-align:right;">20305</td>
+				</tr><tr>
+					<td style="text-align:left;">05-03-2019</td><td style="text-align:right;">36085</td><td style="text-align:right;">18660</td>
+				</tr><tr>
+					<td style="text-align:left;">06-03-2019</td><td style="text-align:right;">40293</td><td style="text-align:right;">11970</td>
+				</tr><tr>
+					<td style="text-align:left;">07-03-2019</td><td style="text-align:right;">54495</td><td style="text-align:right;">17591</td>
+				</tr><tr>
+					<td style="text-align:left;">08-03-2019</td><td style="text-align:right;">69354</td><td style="text-align:right;">22039</td>
+				</tr><tr>
+					<td style="text-align:left;">09-03-2019</td><td style="text-align:right;">77023</td><td style="text-align:right;">20725</td>
+				</tr><tr>
+					<td style="text-align:left;">10-03-2019</td><td style="text-align:right;">32786</td><td style="text-align:right;">12977</td>
+				</tr><tr>
+					<td style="text-align:left;">11-03-2019</td><td style="text-align:right;">8433</td><td style="text-align:right;">2039</td>
+				</tr><tr>
+					<td style="text-align:left;">12-03-2019</td><td style="text-align:right;">57186</td><td style="text-align:right;">14007</td>
+				</tr><tr>
+					<td style="text-align:left;">13-03-2019</td><td style="text-align:right;">58834</td><td style="text-align:right;">21812</td>
+				</tr><tr>
+					<td style="text-align:left;">14-03-2019</td><td style="text-align:right;">34460</td><td style="text-align:right;">15513</td>
+				</tr><tr>
+					<td style="text-align:left;">15-03-2019</td><td style="text-align:right;">39929</td><td style="text-align:right;">17470</td>
+				</tr><tr>
+					<td style="text-align:left;">16-03-2019</td><td style="text-align:right;">50439</td><td style="text-align:right;">17023</td>
+				</tr><tr>
+					<td style="text-align:left;">17-03-2019</td><td style="text-align:right;">78093</td><td style="text-align:right;">20840</td>
+				</tr><tr>
+					<td style="text-align:left;">18-03-2019</td><td style="text-align:right;">55931</td><td style="text-align:right;">18576</td>
+				</tr><tr>
+					<td style="text-align:left;">19-03-2019</td><td style="text-align:right;">15037</td><td style="text-align:right;">2910</td>
+				</tr><tr>
+					<td style="text-align:left;">20-03-2019</td><td style="text-align:right;">38007</td><td style="text-align:right;">10659</td>
+				</tr><tr>
+					<td style="text-align:left;">21-03-2019</td><td style="text-align:right;">48692</td><td style="text-align:right;">13592</td>
+				</tr><tr>
+					<td style="text-align:left;">22-03-2019</td><td style="text-align:right;">23514</td><td style="text-align:right;">3485</td>
+				</tr><tr>
+					<td style="text-align:left;">23-03-2019</td><td style="text-align:right;">46819</td><td style="text-align:right;">8433</td>
+				</tr><tr>
+					<td style="text-align:left;">24-03-2019</td><td style="text-align:right;">45495</td><td style="text-align:right;">6440</td>
+				</tr><tr>
+					<td style="text-align:left;">25-03-2019</td><td style="text-align:right;">39740</td><td style="text-align:right;">10927</td>
+				</tr><tr>
+					<td style="text-align:left;">26-03-2019</td><td style="text-align:right;">47980</td><td style="text-align:right;">12028</td>
+				</tr><tr>
+					<td style="text-align:left;">27-03-2019</td><td style="text-align:right;">48381</td><td style="text-align:right;">12402</td>
+				</tr><tr>
+					<td style="text-align:left;">28-03-2019</td><td style="text-align:right;">31829</td><td style="text-align:right;">5470</td>
+				</tr><tr>
+					<td style="text-align:left;">29-03-2019</td><td style="text-align:right;">57881</td><td style="text-align:right;">10053</td>
+				</tr><tr>
+					<td style="text-align:left;">30-03-2019</td><td style="text-align:right;">37508</td><td style="text-align:right;">6574</td>
+				</tr><tr>
+					<td style="text-align:left;">31-03-2019</td><td style="text-align:right;">46127</td><td style="text-align:right;">9114</td>
+				</tr><tr>
+					<td style="text-align:left;">01-04-2019</td><td style="text-align:right;">7852</td><td style="text-align:right;">3096</td>
+				</tr><tr>
+					<td style="text-align:left;">02-04-2019</td><td style="text-align:right;">54916</td><td style="text-align:right;">16906</td>
+				</tr><tr>
+					<td style="text-align:left;">03-04-2019</td><td style="text-align:right;">21871</td><td style="text-align:right;">6782</td>
+				</tr><tr>
+					<td style="text-align:left;">04-04-2019</td><td style="text-align:right;">25115</td><td style="text-align:right;">9273</td>
+				</tr><tr>
+					<td style="text-align:left;">05-04-2019</td><td style="text-align:right;">24643</td><td style="text-align:right;">10069</td>
+				</tr><tr>
+					<td style="text-align:left;">06-04-2019</td><td style="text-align:right;">13520</td><td style="text-align:right;">4990</td>
+				</tr><tr>
+					<td style="text-align:left;">07-04-2019</td><td style="text-align:right;">10229</td><td style="text-align:right;">1666</td>
+				</tr><tr>
+					<td style="text-align:left;">08-04-2019</td><td style="text-align:right;">27069</td><td style="text-align:right;">5407</td>
+				</tr><tr>
+					<td style="text-align:left;">09-04-2019</td><td style="text-align:right;">26126</td><td style="text-align:right;">3090</td>
+				</tr><tr>
+					<td style="text-align:left;">10-04-2019</td><td style="text-align:right;">20074</td><td style="text-align:right;">2865</td>
+				</tr><tr>
+					<td style="text-align:left;">11-04-2019</td><td style="text-align:right;">9230</td><td style="text-align:right;">1655</td>
+				</tr><tr>
+					<td style="text-align:left;">12-04-2019</td><td style="text-align:right;">12184</td><td style="text-align:right;">4192</td>
+				</tr><tr>
+					<td style="text-align:left;">13-04-2019</td><td style="text-align:right;">21211</td><td style="text-align:right;">13064</td>
+				</tr><tr>
+					<td style="text-align:left;">14-04-2019</td><td style="text-align:right;">30411</td><td style="text-align:right;">14354</td>
+				</tr><tr>
+					<td style="text-align:left;">15-04-2019</td><td style="text-align:right;">24382</td><td style="text-align:right;">10409</td>
+				</tr><tr>
+					<td style="text-align:left;">16-04-2019</td><td style="text-align:right;">36044</td><td style="text-align:right;">11519</td>
+				</tr><tr>
+					<td style="text-align:left;">17-04-2019</td><td style="text-align:right;">33329</td><td style="text-align:right;">8447</td>
+				</tr><tr>
+					<td style="text-align:left;">18-04-2019</td><td style="text-align:right;">20428</td><td style="text-align:right;">7000</td>
+				</tr><tr>
+					<td style="text-align:left;">19-04-2019</td><td style="text-align:right;">10894</td><td style="text-align:right;">5352</td>
+				</tr><tr>
+					<td style="text-align:left;">20-04-2019</td><td style="text-align:right;">2554</td><td style="text-align:right;">818</td>
+				</tr><tr>
+					<td style="text-align:left;">21-04-2019</td><td style="text-align:right;">2831</td><td style="text-align:right;">482</td>
+				</tr><tr>
+					<td style="text-align:left;">22-04-2019</td><td style="text-align:right;">32966</td><td style="text-align:right;">9534</td>
+				</tr><tr>
+					<td style="text-align:left;">23-04-2019</td><td style="text-align:right;">59804</td><td style="text-align:right;">18478</td>
+				</tr><tr>
+					<td style="text-align:left;">24-04-2019</td><td style="text-align:right;">61401</td><td style="text-align:right;">14102</td>
+				</tr><tr>
+					<td style="text-align:left;">25-04-2019</td><td style="text-align:right;">25533</td><td style="text-align:right;">6039</td>
+				</tr><tr>
+					<td style="text-align:left;">26-04-2019</td><td style="text-align:right;">15774</td><td style="text-align:right;">9364</td>
+				</tr><tr>
+					<td style="text-align:left;">27-04-2019</td><td style="text-align:right;">7289</td><td style="text-align:right;">3509</td>
+				</tr><tr>
+					<td style="text-align:left;">28-04-2019</td><td style="text-align:right;">4117</td><td style="text-align:right;">2231</td>
+				</tr><tr>
+					<td style="text-align:left;">29-04-2019</td><td style="text-align:right;">8282</td><td style="text-align:right;">4043</td>
+				</tr><tr>
+					<td style="text-align:left;">30-04-2019</td><td style="text-align:right;">16181</td><td style="text-align:right;">3549</td>
+				</tr><tr>
+					<td style="text-align:left;">01-05-2019</td><td style="text-align:right;">64453</td><td style="text-align:right;">17029</td>
+				</tr><tr>
+					<td style="text-align:left;">02-05-2019</td><td style="text-align:right;">71881</td><td style="text-align:right;">22542</td>
+				</tr><tr>
+					<td style="text-align:left;">03-05-2019</td><td style="text-align:right;">54127</td><td style="text-align:right;">16475</td>
+				</tr><tr>
+					<td style="text-align:left;">04-05-2019</td><td style="text-align:right;">31536</td><td style="text-align:right;">10802</td>
+				</tr><tr>
+					<td style="text-align:left;">05-05-2019</td><td style="text-align:right;">41839</td><td style="text-align:right;">6927</td>
+				</tr><tr>
+					<td style="text-align:left;">06-05-2019</td><td style="text-align:right;">56575</td><td style="text-align:right;">16460</td>
+				</tr><tr>
+					<td style="text-align:left;">07-05-2019</td><td style="text-align:right;">49269</td><td style="text-align:right;">11757</td>
+				</tr><tr>
+					<td style="text-align:left;">08-05-2019</td><td style="text-align:right;">15961</td><td style="text-align:right;">5411</td>
+				</tr><tr>
+					<td style="text-align:left;">09-05-2019</td><td style="text-align:right;">23453</td><td style="text-align:right;">4100</td>
+				</tr><tr>
+					<td style="text-align:left;">10-05-2019</td><td style="text-align:right;">27345</td><td style="text-align:right;">4061</td>
+				</tr><tr>
+					<td style="text-align:left;">11-05-2019</td><td style="text-align:right;">40065</td><td style="text-align:right;">3655</td>
+				</tr><tr>
+					<td style="text-align:left;">12-05-2019</td><td style="text-align:right;">47778</td><td style="text-align:right;">9913</td>
+				</tr><tr>
+					<td style="text-align:left;">13-05-2019</td><td style="text-align:right;">30134</td><td style="text-align:right;">5946</td>
+				</tr><tr>
+					<td style="text-align:left;">14-05-2019</td><td style="text-align:right;">2861</td><td style="text-align:right;">794</td>
+				</tr><tr>
+					<td style="text-align:left;">15-05-2019</td><td style="text-align:right;">4033</td><td style="text-align:right;">2126</td>
+				</tr><tr>
+					<td style="text-align:left;">16-05-2019</td><td style="text-align:right;">29026</td><td style="text-align:right;">13220</td>
+				</tr><tr>
+					<td style="text-align:left;">17-05-2019</td><td style="text-align:right;">45009</td><td style="text-align:right;">8622</td>
+				</tr><tr>
+					<td style="text-align:left;">18-05-2019</td><td style="text-align:right;">14472</td><td style="text-align:right;">6712</td>
+				</tr><tr>
+					<td style="text-align:left;">19-05-2019</td><td style="text-align:right;">10667</td><td style="text-align:right;">8116</td>
+				</tr><tr>
+					<td style="text-align:left;">20-05-2019</td><td style="text-align:right;">7683</td><td style="text-align:right;">3068</td>
+				</tr><tr>
+					<td style="text-align:left;">21-05-2019</td><td style="text-align:right;">11117</td><td style="text-align:right;">2815</td>
+				</tr><tr>
+					<td style="text-align:left;">22-05-2019</td><td style="text-align:right;">35871</td><td style="text-align:right;">11054</td>
+				</tr><tr>
+					<td style="text-align:left;">23-05-2019</td><td style="text-align:right;">30421</td><td style="text-align:right;">4315</td>
+				</tr><tr>
+					<td style="text-align:left;">24-05-2019</td><td style="text-align:right;">49871</td><td style="text-align:right;">9617</td>
+				</tr><tr>
+					<td style="text-align:left;">25-05-2019</td><td style="text-align:right;">46440</td><td style="text-align:right;">10540</td>
+				</tr><tr>
+					<td style="text-align:left;">26-05-2019</td><td style="text-align:right;">31694</td><td style="text-align:right;">12456</td>
+				</tr><tr>
+					<td style="text-align:left;">27-05-2019</td><td style="text-align:right;">37930</td><td style="text-align:right;">13984</td>
+				</tr><tr>
+					<td style="text-align:left;">28-05-2019</td><td style="text-align:right;">46543</td><td style="text-align:right;">6174</td>
+				</tr><tr>
+					<td style="text-align:left;">29-05-2019</td><td style="text-align:right;">24682</td><td style="text-align:right;">5045</td>
+				</tr><tr>
+					<td style="text-align:left;">30-05-2019</td><td style="text-align:right;">54208</td><td style="text-align:right;">14777</td>
+				</tr><tr>
+					<td style="text-align:left;">31-05-2019</td><td style="text-align:right;">7419</td><td style="text-align:right;">5939</td>
+				</tr><tr>
+					<td style="text-align:left;">01-06-2019</td><td style="text-align:right;">40982</td><td style="text-align:right;">8979</td>
+				</tr><tr>
+					<td style="text-align:left;">02-06-2019</td><td style="text-align:right;">21398</td><td style="text-align:right;">4350</td>
+				</tr><tr>
+					<td style="text-align:left;">03-06-2019</td><td style="text-align:right;">21892</td><td style="text-align:right;">5902</td>
+				</tr><tr>
+					<td style="text-align:left;">04-06-2019</td><td style="text-align:right;">6476</td><td style="text-align:right;">2019</td>
+				</tr><tr>
+					<td style="text-align:left;">05-06-2019</td><td style="text-align:right;">21069</td><td style="text-align:right;">6156</td>
+				</tr><tr>
+					<td style="text-align:left;">06-06-2019</td><td style="text-align:right;">29490</td><td style="text-align:right;">10338</td>
+				</tr><tr>
+					<td style="text-align:left;">07-06-2019</td><td style="text-align:right;">8275</td><td style="text-align:right;">3352</td>
+				</tr><tr>
+					<td style="text-align:left;">08-06-2019</td><td style="text-align:right;">54066</td><td style="text-align:right;">13739</td>
+				</tr><tr>
+					<td style="text-align:left;">09-06-2019</td><td style="text-align:right;">50411</td><td style="text-align:right;">9900</td>
+				</tr><tr>
+					<td style="text-align:left;">10-06-2019</td><td style="text-align:right;">12567</td><td style="text-align:right;">11403</td>
+				</tr><tr>
+					<td style="text-align:left;">11-06-2019</td><td style="text-align:right;">32160</td><td style="text-align:right;">6575</td>
+				</tr><tr>
+					<td style="text-align:left;">12-06-2019</td><td style="text-align:right;">20932</td><td style="text-align:right;">7018</td>
+				</tr><tr>
+					<td style="text-align:left;">13-06-2019</td><td style="text-align:right;">25067</td><td style="text-align:right;">3569</td>
+				</tr><tr>
+					<td style="text-align:left;">14-06-2019</td><td style="text-align:right;">13045</td><td style="text-align:right;">5308</td>
+				</tr><tr>
+					<td style="text-align:left;">15-06-2019</td><td style="text-align:right;">21840</td><td style="text-align:right;">9539</td>
+				</tr><tr>
+					<td style="text-align:left;">16-06-2019</td><td style="text-align:right;">20210</td><td style="text-align:right;">5694</td>
+				</tr><tr>
+					<td style="text-align:left;">17-06-2019</td><td style="text-align:right;">16129</td><td style="text-align:right;">1625</td>
+				</tr><tr>
+					<td style="text-align:left;">18-06-2019</td><td style="text-align:right;">12626</td><td style="text-align:right;">5742</td>
+				</tr><tr>
+					<td style="text-align:left;">19-06-2019</td><td style="text-align:right;">10168</td><td style="text-align:right;">3922</td>
+				</tr><tr>
+					<td style="text-align:left;">20-06-2019</td><td style="text-align:right;">11597</td><td style="text-align:right;">3495</td>
+				</tr><tr>
+					<td style="text-align:left;">21-06-2019</td><td style="text-align:right;">15814</td><td style="text-align:right;">2885</td>
+				</tr><tr>
+					<td style="text-align:left;">22-06-2019</td><td style="text-align:right;">9762</td><td style="text-align:right;">1312</td>
+				</tr><tr>
+					<td style="text-align:left;">23-06-2019</td><td style="text-align:right;">4836</td><td style="text-align:right;">2243</td>
+				</tr><tr>
+					<td style="text-align:left;">24-06-2019</td><td style="text-align:right;">21152</td><td style="text-align:right;">5276</td>
+				</tr><tr>
+					<td style="text-align:left;">25-06-2019</td><td style="text-align:right;">19014</td><td style="text-align:right;">4695</td>
+				</tr><tr>
+					<td style="text-align:left;">26-06-2019</td><td style="text-align:right;">31836</td><td style="text-align:right;">9516</td>
+				</tr><tr>
+					<td style="text-align:left;">27-06-2019</td><td style="text-align:right;">45387</td><td style="text-align:right;">12971</td>
+				</tr><tr>
+					<td style="text-align:left;">28-06-2019</td><td style="text-align:right;">12091</td><td style="text-align:right;">2650</td>
+				</tr><tr>
+					<td style="text-align:left;">29-06-2019</td><td style="text-align:right;">16122</td><td style="text-align:right;">2231</td>
+				</tr><tr>
+					<td style="text-align:left;">30-06-2019</td><td style="text-align:right;">40107</td><td style="text-align:right;">10619</td>
+				</tr><tr>
+					<td style="text-align:left;">01-07-2019</td><td style="text-align:right;">56609</td><td style="text-align:right;">14391</td>
+				</tr><tr>
+					<td style="text-align:left;">02-07-2019</td><td style="text-align:right;">64649</td><td style="text-align:right;">19814</td>
+				</tr><tr>
+					<td style="text-align:left;">03-07-2019</td><td style="text-align:right;">50852</td><td style="text-align:right;">12625</td>
+				</tr><tr>
+					<td style="text-align:left;">04-07-2019</td><td style="text-align:right;">61347</td><td style="text-align:right;">17855</td>
+				</tr><tr>
+					<td style="text-align:left;">05-07-2019</td><td style="text-align:right;">27194</td><td style="text-align:right;">11608</td>
+				</tr><tr>
+					<td style="text-align:left;">06-07-2019</td><td style="text-align:right;">49256</td><td style="text-align:right;">12567</td>
+				</tr><tr>
+					<td style="text-align:left;">07-07-2019</td><td style="text-align:right;">49724</td><td style="text-align:right;">16822</td>
+				</tr><tr>
+					<td style="text-align:left;">08-07-2019</td><td style="text-align:right;">24442</td><td style="text-align:right;">9880</td>
+				</tr><tr>
+					<td style="text-align:left;">09-07-2019</td><td style="text-align:right;">25233</td><td style="text-align:right;">9305</td>
+				</tr><tr>
+					<td style="text-align:left;">10-07-2019</td><td style="text-align:right;">17982</td><td style="text-align:right;">5994</td>
+				</tr><tr>
+					<td style="text-align:left;">11-07-2019</td><td style="text-align:right;">2284</td><td style="text-align:right;">790</td>
+				</tr><tr>
+					<td style="text-align:left;">12-07-2019</td><td style="text-align:right;">1621</td><td style="text-align:right;">655</td>
+				</tr><tr>
+					<td style="text-align:left;">13-07-2019</td><td style="text-align:right;">13849</td><td style="text-align:right;">2658</td>
+				</tr><tr>
+					<td style="text-align:left;">14-07-2019</td><td style="text-align:right;">15154</td><td style="text-align:right;">2306</td>
+				</tr><tr>
+					<td style="text-align:left;">15-07-2019</td><td style="text-align:right;">20102</td><td style="text-align:right;">6912</td>
+				</tr><tr>
+					<td style="text-align:left;">16-07-2019</td><td style="text-align:right;">17131</td><td style="text-align:right;">5443</td>
+				</tr><tr>
+					<td style="text-align:left;">17-07-2019</td><td style="text-align:right;">2368</td><td style="text-align:right;">1710</td>
+				</tr><tr>
+					<td style="text-align:left;">18-07-2019</td><td style="text-align:right;">5153</td><td style="text-align:right;">1887</td>
+				</tr><tr>
+					<td style="text-align:left;">19-07-2019</td><td style="text-align:right;">3460</td><td style="text-align:right;">3250</td>
+				</tr><tr>
+					<td style="text-align:left;">20-07-2019</td><td style="text-align:right;">21400</td><td style="text-align:right;">4119</td>
+				</tr><tr>
+					<td style="text-align:left;">21-07-2019</td><td style="text-align:right;">32235</td><td style="text-align:right;">10803</td>
+				</tr><tr>
+					<td style="text-align:left;">22-07-2019</td><td style="text-align:right;">25807</td><td style="text-align:right;">4188</td>
+				</tr><tr>
+					<td style="text-align:left;">23-07-2019</td><td style="text-align:right;">12901</td><td style="text-align:right;">3109</td>
+				</tr><tr>
+					<td style="text-align:left;">24-07-2019</td><td style="text-align:right;">6875</td><td style="text-align:right;">1932</td>
+				</tr><tr>
+					<td style="text-align:left;">25-07-2019</td><td style="text-align:right;">14301</td><td style="text-align:right;">5472</td>
+				</tr><tr>
+					<td style="text-align:left;">26-07-2019</td><td style="text-align:right;">17856</td><td style="text-align:right;">5115</td>
+				</tr><tr>
+					<td style="text-align:left;">27-07-2019</td><td style="text-align:right;">38040</td><td style="text-align:right;">14932</td>
+				</tr><tr>
+					<td style="text-align:left;">28-07-2019</td><td style="text-align:right;">25119</td><td style="text-align:right;">11033</td>
+				</tr><tr>
+					<td style="text-align:left;">29-07-2019</td><td style="text-align:right;">5489</td><td style="text-align:right;">1830</td>
+				</tr><tr>
+					<td style="text-align:left;">30-07-2019</td><td style="text-align:right;">10929</td><td style="text-align:right;">1950</td>
+				</tr><tr>
+					<td style="text-align:left;">31-07-2019</td><td style="text-align:right;">18253</td><td style="text-align:right;">4188</td>
+				</tr><tr>
+					<td style="text-align:left;">01-08-2019</td><td style="text-align:right;">3937</td><td style="text-align:right;">1046</td>
+				</tr><tr>
+					<td style="text-align:left;">02-08-2019</td><td style="text-align:right;">1486</td><td style="text-align:right;">612</td>
+				</tr><tr>
+					<td style="text-align:left;">03-08-2019</td><td style="text-align:right;">3537</td><td style="text-align:right;">746</td>
+				</tr><tr>
+					<td style="text-align:left;">04-08-2019</td><td style="text-align:right;">5775</td><td style="text-align:right;">2490</td>
+				</tr><tr>
+					<td style="text-align:left;">05-08-2019</td><td style="text-align:right;">3454</td><td style="text-align:right;">496</td>
+				</tr><tr>
+					<td style="text-align:left;">06-08-2019</td><td style="text-align:right;">19276</td><td style="text-align:right;">4105</td>
+				</tr><tr>
+					<td style="text-align:left;">07-08-2019</td><td style="text-align:right;">20722</td><td style="text-align:right;">3086</td>
+				</tr><tr>
+					<td style="text-align:left;">08-08-2019</td><td style="text-align:right;">30588</td><td style="text-align:right;">11306</td>
+				</tr><tr>
+					<td style="text-align:left;">09-08-2019</td><td style="text-align:right;">17214</td><td style="text-align:right;">5840</td>
+				</tr><tr>
+					<td style="text-align:left;">10-08-2019</td><td style="text-align:right;">50126</td><td style="text-align:right;">14136</td>
+				</tr><tr>
+					<td style="text-align:left;">11-08-2019</td><td style="text-align:right;">54644</td><td style="text-align:right;">15105</td>
+				</tr><tr>
+					<td style="text-align:left;">12-08-2019</td><td style="text-align:right;">49687</td><td style="text-align:right;">7236</td>
+				</tr><tr>
+					<td style="text-align:left;">13-08-2019</td><td style="text-align:right;">23843</td><td style="text-align:right;">7890</td>
+				</tr><tr>
+					<td style="text-align:left;">14-08-2019</td><td style="text-align:right;">18445</td><td style="text-align:right;">6133</td>
+				</tr><tr>
+					<td style="text-align:left;">15-08-2019</td><td style="text-align:right;">21491</td><td style="text-align:right;">9055</td>
+				</tr><tr>
+					<td style="text-align:left;">16-08-2019</td><td style="text-align:right;">19374</td><td style="text-align:right;">5582</td>
+				</tr><tr>
+					<td style="text-align:left;">17-08-2019</td><td style="text-align:right;">49796</td><td style="text-align:right;">9625</td>
+				</tr><tr>
+					<td style="text-align:left;">18-08-2019</td><td style="text-align:right;">15203</td><td style="text-align:right;">3320</td>
+				</tr><tr>
+					<td style="text-align:left;">19-08-2019</td><td style="text-align:right;">42981</td><td style="text-align:right;">9087</td>
+				</tr><tr>
+					<td style="text-align:left;">20-08-2019</td><td style="text-align:right;">25565</td><td style="text-align:right;">5135</td>
+				</tr><tr>
+					<td style="text-align:left;">21-08-2019</td><td style="text-align:right;">15488</td><td style="text-align:right;">3415</td>
+				</tr><tr>
+					<td style="text-align:left;">22-08-2019</td><td style="text-align:right;">36796</td><td style="text-align:right;">3954</td>
+				</tr><tr>
+					<td style="text-align:left;">23-08-2019</td><td style="text-align:right;">33527</td><td style="text-align:right;">2697</td>
+				</tr><tr>
+					<td style="text-align:left;">24-08-2019</td><td style="text-align:right;">5504</td><td style="text-align:right;">2350</td>
+				</tr><tr>
+					<td style="text-align:left;">25-08-2019</td><td style="text-align:right;">8395</td><td style="text-align:right;">5544</td>
+				</tr><tr>
+					<td style="text-align:left;">26-08-2019</td><td style="text-align:right;">9354</td><td style="text-align:right;">4246</td>
+				</tr><tr>
+					<td style="text-align:left;">27-08-2019</td><td style="text-align:right;">11462</td><td style="text-align:right;">5078</td>
+				</tr><tr>
+					<td style="text-align:left;">28-08-2019</td><td style="text-align:right;">10900</td><td style="text-align:right;">2577</td>
+				</tr><tr>
+					<td style="text-align:left;">29-08-2019</td><td style="text-align:right;">9405</td><td style="text-align:right;">4222</td>
+				</tr><tr>
+					<td style="text-align:left;">30-08-2019</td><td style="text-align:right;">27200</td><td style="text-align:right;">1189</td>
+				</tr><tr>
+					<td style="text-align:left;">31-08-2019</td><td style="text-align:right;">19355</td><td style="text-align:right;">1965</td>
+				</tr><tr>
+					<td style="text-align:left;">01-09-2019</td><td style="text-align:right;">20639</td><td style="text-align:right;">7650</td>
+				</tr><tr>
+					<td style="text-align:left;">02-09-2019</td><td style="text-align:right;">33743</td><td style="text-align:right;">8851</td>
+				</tr><tr>
+					<td style="text-align:left;">03-09-2019</td><td style="text-align:right;">44273</td><td style="text-align:right;">14621</td>
+				</tr><tr>
+					<td style="text-align:left;">04-09-2019</td><td style="text-align:right;">36204</td><td style="text-align:right;">9804</td>
+				</tr><tr>
+					<td style="text-align:left;">05-09-2019</td><td style="text-align:right;">45787</td><td style="text-align:right;">16538</td>
+				</tr><tr>
+					<td style="text-align:left;">06-09-2019</td><td style="text-align:right;">42887</td><td style="text-align:right;">15079</td>
+				</tr><tr>
+					<td style="text-align:left;">07-09-2019</td><td style="text-align:right;">16012</td><td style="text-align:right;">5798</td>
+				</tr><tr>
+					<td style="text-align:left;">08-09-2019</td><td style="text-align:right;">6931</td><td style="text-align:right;">606</td>
+				</tr><tr>
+					<td style="text-align:left;">09-09-2019</td><td style="text-align:right;">2802</td><td style="text-align:right;">2515</td>
+				</tr><tr>
+					<td style="text-align:left;">10-09-2019</td><td style="text-align:right;">27322</td><td style="text-align:right;">14657</td>
+				</tr><tr>
+					<td style="text-align:left;">11-09-2019</td><td style="text-align:right;">49127</td><td style="text-align:right;">15585</td>
+				</tr><tr>
+					<td style="text-align:left;">12-09-2019</td><td style="text-align:right;">40678</td><td style="text-align:right;">10028</td>
+				</tr><tr>
+					<td style="text-align:left;">13-09-2019</td><td style="text-align:right;">37836</td><td style="text-align:right;">15387</td>
+				</tr><tr>
+					<td style="text-align:left;">14-09-2019</td><td style="text-align:right;">46687</td><td style="text-align:right;">6916</td>
+				</tr><tr>
+					<td style="text-align:left;">15-09-2019</td><td style="text-align:right;">73505</td><td style="text-align:right;">20634</td>
+				</tr><tr>
+					<td style="text-align:left;">16-09-2019</td><td style="text-align:right;">57201</td><td style="text-align:right;">17312</td>
+				</tr><tr>
+					<td style="text-align:left;">17-09-2019</td><td style="text-align:right;">60463</td><td style="text-align:right;">19357</td>
+				</tr><tr>
+					<td style="text-align:left;">18-09-2019</td><td style="text-align:right;">48346</td><td style="text-align:right;">14986</td>
+				</tr><tr>
+					<td style="text-align:left;">19-09-2019</td><td style="text-align:right;">17131</td><td style="text-align:right;">3506</td>
+				</tr><tr>
+					<td style="text-align:left;">20-09-2019</td><td style="text-align:right;">36903</td><td style="text-align:right;">7243</td>
+				</tr><tr>
+					<td style="text-align:left;">21-09-2019</td><td style="text-align:right;">11162</td><td style="text-align:right;">3633</td>
+				</tr><tr>
+					<td style="text-align:left;">22-09-2019</td><td style="text-align:right;">13404</td><td style="text-align:right;">4089</td>
+				</tr><tr>
+					<td style="text-align:left;">23-09-2019</td><td style="text-align:right;">43725</td><td style="text-align:right;">14694</td>
+				</tr><tr>
+					<td style="text-align:left;">24-09-2019</td><td style="text-align:right;">9011</td><td style="text-align:right;">1537</td>
+				</tr><tr>
+					<td style="text-align:left;">25-09-2019</td><td style="text-align:right;">19173</td><td style="text-align:right;">3567</td>
+				</tr><tr>
+					<td style="text-align:left;">26-09-2019</td><td style="text-align:right;">35868</td><td style="text-align:right;">4756</td>
+				</tr><tr>
+					<td style="text-align:left;">27-09-2019</td><td style="text-align:right;">22298</td><td style="text-align:right;">7800</td>
+				</tr><tr>
+					<td style="text-align:left;">28-09-2019</td><td style="text-align:right;">41420</td><td style="text-align:right;">11889</td>
+				</tr><tr>
+					<td style="text-align:left;">29-09-2019</td><td style="text-align:right;">21028</td><td style="text-align:right;">14033</td>
+				</tr><tr>
+					<td style="text-align:left;">30-09-2019</td><td style="text-align:right;">52338</td><td style="text-align:right;">16903</td>
+				</tr><tr>
+					<td style="text-align:left;">01-10-2019</td><td style="text-align:right;">32230</td><td style="text-align:right;">4207</td>
+				</tr><tr>
+					<td style="text-align:left;">02-10-2019</td><td style="text-align:right;">38702</td><td style="text-align:right;">10740</td>
+				</tr><tr>
+					<td style="text-align:left;">03-10-2019</td><td style="text-align:right;">9803</td><td style="text-align:right;">4268</td>
+				</tr><tr>
+					<td style="text-align:left;">04-10-2019</td><td style="text-align:right;">29691</td><td style="text-align:right;">5573</td>
+				</tr><tr>
+					<td style="text-align:left;">05-10-2019</td><td style="text-align:right;">25775</td><td style="text-align:right;">9641</td>
+				</tr><tr>
+					<td style="text-align:left;">06-10-2019</td><td style="text-align:right;">18253</td><td style="text-align:right;">3134</td>
+				</tr><tr>
+					<td style="text-align:left;">07-10-2019</td><td style="text-align:right;">8295</td><td style="text-align:right;">1619</td>
+				</tr><tr>
+					<td style="text-align:left;">08-10-2019</td><td style="text-align:right;">34005</td><td style="text-align:right;">11931</td>
+				</tr><tr>
+					<td style="text-align:left;">09-10-2019</td><td style="text-align:right;">27709</td><td style="text-align:right;">11822</td>
+				</tr><tr>
+					<td style="text-align:left;">10-10-2019</td><td style="text-align:right;">30658</td><td style="text-align:right;">15657</td>
+				</tr><tr>
+					<td style="text-align:left;">11-10-2019</td><td style="text-align:right;">46253</td><td style="text-align:right;">21438</td>
+				</tr><tr>
+					<td style="text-align:left;">12-10-2019</td><td style="text-align:right;">54211</td><td style="text-align:right;">16489</td>
+				</tr><tr>
+					<td style="text-align:left;">13-10-2019</td><td style="text-align:right;">25346</td><td style="text-align:right;">7286</td>
+				</tr><tr>
+					<td style="text-align:left;">14-10-2019</td><td style="text-align:right;">36584</td><td style="text-align:right;">12135</td>
+				</tr><tr>
+					<td style="text-align:left;">15-10-2019</td><td style="text-align:right;">29705</td><td style="text-align:right;">8142</td>
+				</tr><tr>
+					<td style="text-align:left;">16-10-2019</td><td style="text-align:right;">3071</td><td style="text-align:right;">2245</td>
+				</tr><tr>
+					<td style="text-align:left;">17-10-2019</td><td style="text-align:right;">14197</td><td style="text-align:right;">5130</td>
+				</tr><tr>
+					<td style="text-align:left;">18-10-2019</td><td style="text-align:right;">27560</td><td style="text-align:right;">10587</td>
+				</tr><tr>
+					<td style="text-align:left;">19-10-2019</td><td style="text-align:right;">42526</td><td style="text-align:right;">13744</td>
+				</tr><tr>
+					<td style="text-align:left;">20-10-2019</td><td style="text-align:right;">11589</td><td style="text-align:right;">1598</td>
+				</tr><tr>
+					<td style="text-align:left;">21-10-2019</td><td style="text-align:right;">5782</td><td style="text-align:right;">3853</td>
+				</tr><tr>
+					<td style="text-align:left;">22-10-2019</td><td style="text-align:right;">25684</td><td style="text-align:right;">8745</td>
+				</tr><tr>
+					<td style="text-align:left;">23-10-2019</td><td style="text-align:right;">23054</td><td style="text-align:right;">3227</td>
+				</tr><tr>
+					<td style="text-align:left;">24-10-2019</td><td style="text-align:right;">33127</td><td style="text-align:right;">7584</td>
+				</tr><tr>
+					<td style="text-align:left;">25-10-2019</td><td style="text-align:right;">51718</td><td style="text-align:right;">15799</td>
+				</tr><tr>
+					<td style="text-align:left;">26-10-2019</td><td style="text-align:right;">35327</td><td style="text-align:right;">20936</td>
+				</tr><tr>
+					<td style="text-align:left;">27-10-2019</td><td style="text-align:right;">52890</td><td style="text-align:right;">21058</td>
+				</tr><tr>
+					<td style="text-align:left;">28-10-2019</td><td style="text-align:right;">24004</td><td style="text-align:right;">9289</td>
+				</tr><tr>
+					<td style="text-align:left;">29-10-2019</td><td style="text-align:right;">5127</td><td style="text-align:right;">3044</td>
+				</tr><tr>
+					<td style="text-align:left;">30-10-2019</td><td style="text-align:right;">12012</td><td style="text-align:right;">1013</td>
+				</tr><tr>
+					<td style="text-align:left;">31-10-2019</td><td style="text-align:right;">12272</td><td style="text-align:right;">2293</td>
+				</tr><tr>
+					<td style="text-align:left;">01-11-2019</td><td style="text-align:right;">29744</td><td style="text-align:right;">8730</td>
+				</tr><tr>
+					<td style="text-align:left;">02-11-2019</td><td style="text-align:right;">26639</td><td style="text-align:right;">6418</td>
+				</tr><tr>
+					<td style="text-align:left;">03-11-2019</td><td style="text-align:right;">15055</td><td style="text-align:right;">2591</td>
+				</tr><tr>
+					<td style="text-align:left;">04-11-2019</td><td style="text-align:right;">61390</td><td style="text-align:right;">10633</td>
+				</tr><tr>
+					<td style="text-align:left;">05-11-2019</td><td style="text-align:right;">35040</td><td style="text-align:right;">6908</td>
+				</tr><tr>
+					<td style="text-align:left;">06-11-2019</td><td style="text-align:right;">4470</td><td style="text-align:right;">1387</td>
+				</tr><tr>
+					<td style="text-align:left;">07-11-2019</td><td style="text-align:right;">11479</td><td style="text-align:right;">2061</td>
+				</tr><tr>
+					<td style="text-align:left;">08-11-2019</td><td style="text-align:right;">16568</td><td style="text-align:right;">3440</td>
+				</tr><tr>
+					<td style="text-align:left;">09-11-2019</td><td style="text-align:right;">6847</td><td style="text-align:right;">1625</td>
+				</tr><tr>
+					<td style="text-align:left;">10-11-2019</td><td style="text-align:right;">8462</td><td style="text-align:right;">2835</td>
+				</tr><tr>
+					<td style="text-align:left;">11-11-2019</td><td style="text-align:right;">40207</td><td style="text-align:right;">12175</td>
+				</tr><tr>
+					<td style="text-align:left;">12-11-2019</td><td style="text-align:right;">59524</td><td style="text-align:right;">15678</td>
+				</tr><tr>
+					<td style="text-align:left;">13-11-2019</td><td style="text-align:right;">39812</td><td style="text-align:right;">8060</td>
+				</tr><tr>
+					<td style="text-align:left;">14-11-2019</td><td style="text-align:right;">17882</td><td style="text-align:right;">4420</td>
+				</tr><tr>
+					<td style="text-align:left;">15-11-2019</td><td style="text-align:right;">61500</td><td style="text-align:right;">18646</td>
+				</tr><tr>
+					<td style="text-align:left;">16-11-2019</td><td style="text-align:right;">25363</td><td style="text-align:right;">10530</td>
+				</tr><tr>
+					<td style="text-align:left;">17-11-2019</td><td style="text-align:right;">21911</td><td style="text-align:right;">9533</td>
+				</tr><tr>
+					<td style="text-align:left;">18-11-2019</td><td style="text-align:right;">26928</td><td style="text-align:right;">10466</td>
+				</tr><tr>
+					<td style="text-align:left;">19-11-2019</td><td style="text-align:right;">23886</td><td style="text-align:right;">14701</td>
+				</tr><tr>
+					<td style="text-align:left;">20-11-2019</td><td style="text-align:right;">8344</td><td style="text-align:right;">1890</td>
+				</tr><tr>
+					<td style="text-align:left;">21-11-2019</td><td style="text-align:right;">21130</td><td style="text-align:right;">3276</td>
+				</tr><tr>
+					<td style="text-align:left;">22-11-2019</td><td style="text-align:right;">31279</td><td style="text-align:right;">5255</td>
+				</tr><tr>
+					<td style="text-align:left;">23-11-2019</td><td style="text-align:right;">60985</td><td style="text-align:right;">15842</td>
+				</tr><tr>
+					<td style="text-align:left;">24-11-2019</td><td style="text-align:right;">62907</td><td style="text-align:right;">14569</td>
+				</tr><tr>
+					<td style="text-align:left;">25-11-2019</td><td style="text-align:right;">18492</td><td style="text-align:right;">4855</td>
+				</tr><tr>
+					<td style="text-align:left;">26-11-2019</td><td style="text-align:right;">12189</td><td style="text-align:right;">4188</td>
+				</tr><tr>
+					<td style="text-align:left;">27-11-2019</td><td style="text-align:right;">25370</td><td style="text-align:right;">8237</td>
+				</tr><tr>
+					<td style="text-align:left;">28-11-2019</td><td style="text-align:right;">18333</td><td style="text-align:right;">14447</td>
+				</tr><tr>
+					<td style="text-align:left;">29-11-2019</td><td style="text-align:right;">43982</td><td style="text-align:right;">17470</td>
+				</tr><tr>
+					<td style="text-align:left;">30-11-2019</td><td style="text-align:right;">19870</td><td style="text-align:right;">6545</td>
+				</tr><tr>
+					<td style="text-align:left;">01-12-2019</td><td style="text-align:right;">20595</td><td style="text-align:right;">4699</td>
+				</tr><tr>
+					<td style="text-align:left;">02-12-2019</td><td style="text-align:right;">29491</td><td style="text-align:right;">10710</td>
+				</tr><tr>
+					<td style="text-align:left;">03-12-2019</td><td style="text-align:right;">39349</td><td style="text-align:right;">10027</td>
+				</tr><tr>
+					<td style="text-align:left;">04-12-2019</td><td style="text-align:right;">42550</td><td style="text-align:right;">12067</td>
+				</tr><tr>
+					<td style="text-align:left;">05-12-2019</td><td style="text-align:right;">71315</td><td style="text-align:right;">13905</td>
+				</tr><tr>
+					<td style="text-align:left;">06-12-2019</td><td style="text-align:right;">73205</td><td style="text-align:right;">23768</td>
+				</tr><tr>
+					<td style="text-align:left;">07-12-2019</td><td style="text-align:right;">60248</td><td style="text-align:right;">19541</td>
+				</tr><tr>
+					<td style="text-align:left;">08-12-2019</td><td style="text-align:right;">66292</td><td style="text-align:right;">21606</td>
+				</tr><tr>
+					<td style="text-align:left;">09-12-2019</td><td style="text-align:right;">64351</td><td style="text-align:right;">20819</td>
+				</tr><tr>
+					<td style="text-align:left;">10-12-2019</td><td style="text-align:right;">47690</td><td style="text-align:right;">12551</td>
+				</tr><tr>
+					<td style="text-align:left;">11-12-2019</td><td style="text-align:right;">46890</td><td style="text-align:right;">12512</td>
+				</tr><tr>
+					<td style="text-align:left;">12-12-2019</td><td style="text-align:right;">28016</td><td style="text-align:right;">6971</td>
+				</tr><tr>
+					<td style="text-align:left;">13-12-2019</td><td style="text-align:right;">54263</td><td style="text-align:right;">12986</td>
+				</tr><tr>
+					<td style="text-align:left;">14-12-2019</td><td style="text-align:right;">35740</td><td style="text-align:right;">11687</td>
+				</tr><tr>
+					<td style="text-align:left;">15-12-2019</td><td style="text-align:right;">62572</td><td style="text-align:right;">17898</td>
+				</tr><tr>
+					<td style="text-align:left;">16-12-2019</td><td style="text-align:right;">47162</td><td style="text-align:right;">11724</td>
+				</tr><tr>
+					<td style="text-align:left;">17-12-2019</td><td style="text-align:right;">15417</td><td style="text-align:right;">7756</td>
+				</tr><tr>
+					<td style="text-align:left;">18-12-2019</td><td style="text-align:right;">37120</td><td style="text-align:right;">13100</td>
+				</tr><tr>
+					<td style="text-align:left;">19-12-2019</td><td style="text-align:right;">47531</td><td style="text-align:right;">10124</td>
+				</tr><tr>
+					<td style="text-align:left;">20-12-2019</td><td style="text-align:right;">56372</td><td style="text-align:right;">8410</td>
+				</tr><tr>
+					<td style="text-align:left;">21-12-2019</td><td style="text-align:right;">27543</td><td style="text-align:right;">5951</td>
+				</tr><tr>
+					<td style="text-align:left;">22-12-2019</td><td style="text-align:right;">27647</td><td style="text-align:right;">6585</td>
+				</tr><tr>
+					<td style="text-align:left;">23-12-2019</td><td style="text-align:right;">20853</td><td style="text-align:right;">8296</td>
+				</tr><tr>
+					<td style="text-align:left;">24-12-2019</td><td style="text-align:right;">20218</td><td style="text-align:right;">5806</td>
+				</tr><tr>
+					<td style="text-align:left;">25-12-2019</td><td style="text-align:right;">14595</td><td style="text-align:right;">2601</td>
+				</tr><tr>
+					<td style="text-align:left;">26-12-2019</td><td style="text-align:right;">7682</td><td style="text-align:right;">3498</td>
+				</tr><tr>
+					<td style="text-align:left;">27-12-2019</td><td style="text-align:right;">7948</td><td style="text-align:right;">2458</td>
+				</tr><tr>
+					<td style="text-align:left;">28-12-2019</td><td style="text-align:right;">24400</td><td style="text-align:right;">1544</td>
+				</tr><tr>
+					<td style="text-align:left;">29-12-2019</td><td style="text-align:right;">66194</td><td style="text-align:right;">10799</td>
+				</tr><tr>
+					<td style="text-align:left;">30-12-2019</td><td style="text-align:right;">67269</td><td style="text-align:right;">16364</td>
+				</tr><tr>
+					<td style="text-align:left;">31-12-2019</td><td style="text-align:right;">52497</td><td style="text-align:right;">12482</td>
+				</tr>
+			</tbody>
+		</table>
+	</body>
+</html>

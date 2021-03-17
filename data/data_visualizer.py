@@ -103,9 +103,7 @@ def make_plot(df, resolution, save, data, title):
 
 def make_double_plot(df, resolution, save, data, title):
     columns = df.columns.tolist()
-    print(columns)
     labels = get_labels_from_columns(df.columns.tolist(), individual=False)
-    print(labels)
     fig, ax1 = plt.subplots(figsize=(13, 7))
     first_color = "tomato"  # price = tomato, other = goldenrod
     second_color = "royalblue"  # when using price, use "royalblue". Else. orchid
@@ -283,20 +281,20 @@ nordic_baltic_market = ["Nordic", "Baltic"]
 data_options = ["Consume", "Hydro", "Price", "Prod", "Sell Vol", "Buy Vol", "Tot Vol", "Hydro Dev", "T"]
 
 if __name__ == '__main__':
-    # Data Options: Consume=0, Hydro=1, Price=2, Prod=3, Sell Vol=4, Buy Vol=5, Tot Vol=6, Hydro Dev = 7
+    # Data Options: Consume=0, Hydro=1, Price=2, Prod=3, Sell Vol=4, Buy Vol=5, Tot Vol=6, Hydro Dev = 7, Temp = 8
     # Sub Markets: sub_markets, nordic_markets, baltic_markets, nordic_baltic_markets, hydro_markets
     # --------------------------------------------------------------------------------------
-    data_options_idx = [2, 8]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
+    data_options_idx = [2, 7]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
     sub_markets_ = ["Nor"]  # choose
     start_date = datetime.date(2019, 1, 1)  # chose
     end_date = datetime.date(2019, 12, 31)  # chose
+    title_ = "Price vs. Hydro State Dev, Jan 19 - Dec 19"
     resolution_ = "d"  # choose
     save_ = True  # choose
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
     data_ = [data_options[i] for i in data_options_idx]
     period_ = [start_date, end_date]
-    title_ = "Price vs. Temperature Norway, Jan 19 - Dec 19"
     if len(data_) == 1:
         plot(data_, sub_markets_, resolution_, period_, save_, title_)
     elif len(data_) == 2:

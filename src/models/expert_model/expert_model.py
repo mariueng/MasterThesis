@@ -1,4 +1,4 @@
-# script for the most naive model: copy the 24 hours of last day for the following 14 days
+# script for the most naive model: copy the 24 hours of last day for the following 14 weekdays
 from datetime import datetime as dt
 from datetime import timedelta
 import pandas as pd
