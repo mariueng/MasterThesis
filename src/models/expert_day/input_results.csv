@@ -10,3 +10,9 @@ Weekday Month T Nor Wind DK,8.600,8.235,3.107,3.586
 Weekday - Month - Total Vol,8.569,8.193,3.050,3.600
 Weekday - Month - Total Vol - T Nor,8.405,7.979,2.981,3.523
 Total Hydro Dev,10.168,9.411,3.567,4.326
+Asinh Total Hydro Dev,10.167,9.408,3.566,4.325
+Total Hydro Dev -11 lag,10.067,9.401,3.553,4.313
+Total Hydro Dev,10.168,9.411,3.567,4.326
+Weekday - Month - Prec Forecast,8.058,7.608,2.867,3.458
+Weekday - Month - Temp Norway - Prec Forecast,8.152,7.646,2.888,3.395
+Weekday - Month - Prec Forecast,8.058,7.608,2.867,3.458

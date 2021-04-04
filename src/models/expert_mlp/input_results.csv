@@ -1,0 +1,55 @@
+inputs,mape,smape,mae,rmse
+Weekday - Month - Total Hydro Dev - Wind DK,13.744,12.139,4.837,5.526
+Weekday - Month - Wind DK - Temp Norway - Prec Forecast - Total Vol,156.277,85.761,59.395,61.031
+Weekday - Month - Total Hydro Dev,24.687,35.922,8.727,9.666
+Weekday - Month - Temp Norway - Prec Forecast - Total Vol,48.133,37.269,17.435,18.137
+Weekday - Month - Temp Norway - Prec Forecast,13.719,12.141,4.919,5.646
+Weekday - Month - Total Hydro Dev - Temp Norway - Total Vol,9.689,9.195,3.482,4.228
+Weekday - Month - Total Hydro Dev - Temp Norway - Prec Forecast - Total Vol,979.220,162.379,387.459,393.593
+Weekday - Month - Wind DK - Total Vol - Total Hydro Dev - Temp Norway - Prec Forecast,29.224,17.136,9.551,14.709
+Weekday - Month - Total Hydro Dev - Temp Norway,69.030,522.287,25.180,27.325
+Weekday - Month - Total Hydro Dev - Total Vol,22.311,19.018,8.075,8.690
+Weekday - Month - Wind DK - Temp Norway - Total Vol,1931.147,177.433,733.268,787.125
+Weekday - Month - Wind DK - Prec Forecast - Total Vol,46.449,36.009,17.134,18.282
+Weekday - Month - Total Hydro Dev - Temp Norway - Prec Forecast - Wind DK,11.954,12.200,4.385,4.952
+Weekday - Month - Total Hydro Dev - Total Vol - Wind DK,10.672,11.194,3.795,4.771
+Weekday - Month - Wind DK - Temp Norway - Prec Forecast,200.856,3143.709,75.258,82.693
+Weekday - Month - Prec Forecast - Total Vol,258.443,111.444,97.947,98.416
+Weekday - Month - Wind DK,516.388,1016.669,193.380,209.152
+Weekday - Month - Total Hydro Dev - Prec Forecast - Wind DK,14.902,14.737,5.257,6.013
+Weekday - Month - Temp Norway,10.161,10.169,3.719,4.292
+Weekday - Month - Total Hydro Dev - Temp Norway - Prec Forecast,17.241,15.023,6.434,7.210
+Weekday - Month - Total Hydro Dev - Prec Forecast,24.693,30.412,9.038,9.900
+Weekday - Month - Temp Norway - Total Vol,3144.268,215.100,1197.392,1231.907
+Weekday - Month - Total Vol,154.097,3326.514,59.146,62.152
+Weekday - Month - Total Hydro Dev - Prec Forecast - Total Vol,77.191,145.312,30.044,31.936
+Weekday - Month - Wind DK - Total Vol,3799.093,189.653,1446.312,1456.003
+Weekday - Month - Wind DK - Prec Forecast,56.861,106.334,21.578,23.424
+Weekday - Month - Total Hydro Dev - Prec Forecast - Total Vol - Wind DK,10.628,10.829,3.911,4.502
+Weekday - Month - Wind DK - Temp Norway,9.614,8.799,3.399,3.927
+Weekday - Month - Total Hydro Dev - Temp Norway - Total Vol - Wind DK,20.736,23.154,7.987,8.623
+Weekday - Month,12.888,11.624,4.660,5.424
+Weekday - Month - Total Hydro Dev - Temp Norway - Wind DK,70.400,360.924,27.755,30.282
+Weekday - Month - Prec Forecast,9.858,8.953,3.471,4.092
+Weekday - Month - Prec Forecast - Total Hydro Dev,8.664,7.982,3.037,3.617
+Weekday - Month - Wind DK - Prec Forecast,9.252,8.984,3.349,3.929
+Weekday - Month - Wind DK - Temp Norway - Prec Forecast,8.837,8.600,3.241,3.741
+Weekday - Month - Prec Forecast,8.835,8.155,3.142,3.723
+Weekday - Month - Wind DK - Temp Norway - Total Hydro Dev,9.726,8.884,3.365,3.929
+Weekday - Month - Temp Norway - Total Hydro Dev,12.827,11.519,4.526,5.166
+Weekday - Month - Total Hydro Dev,9.618,9.698,3.598,4.198
+Weekday - Month - Temp Norway,9.641,9.548,3.570,4.128
+Weekday - Month - Wind DK - Temp Norway,8.476,8.187,3.033,3.530
+Weekday - Month - Wind DK - Total Hydro Dev,10.052,10.232,3.703,4.293
+Weekday - Month - Prec Forecast - Temp Norway - Total Hydro Dev,9.871,9.162,3.543,4.078
+Weekday - Month,9.260,9.030,3.334,3.951
+Weekday - Month - Temp Norway - Prec Forecast,9.233,8.522,3.252,3.779
+Weekday - Month - Wind DK,9.868,9.457,3.471,4.086
+Weekday - Month - Wind DK - Prec Forecast - Temp Norway - Total Hydro Dev,11.599,12.329,4.436,4.944
+Weekday - Month - Wind DK - Prec Forecast - Total Hydro Dev,9.472,9.253,3.386,3.973
+Weekday - Month - Temp Norway - Total Hydro Dev - Wind DK - Prec Forecast,10.405,9.763,3.730,4.245
+Weekday - Month - Temp Norway - Total Hydro Dev - Wind DK - Prec Forecast,9.516,8.883,3.461,4.050
+Weekday - Month - Demand - Total Hydro Dev,10.080,9.565,3.525,4.119
+Weekday - Month - Demand,8.634,8.326,3.152,3.694
+Weekday - Month - Coal,10.906,11.272,4.203,4.812
+Weekday - Month - Demand - Coal,10.871,10.996,4.128,4.716

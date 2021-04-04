@@ -284,11 +284,12 @@ if __name__ == '__main__':
     # Data Options: Consume=0, Hydro=1, Price=2, Prod=3, Sell Vol=4, Buy Vol=5, Tot Vol=6, Hydro Dev = 7, Temp = 8
     # Sub Markets: sub_markets, nordic_markets, baltic_markets, nordic_baltic_markets, hydro_markets
     # --------------------------------------------------------------------------------------
-    data_options_idx = [2, 7]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
+    data_options_idx = [2]  # choose. If two are chosen, its a double plot. 6 should not be plottet alone.
     sub_markets_ = ["Nor"]  # choose
     start_date = datetime.date(2019, 1, 1)  # chose
     end_date = datetime.date(2019, 12, 31)  # chose
     title_ = "Price vs. Hydro State Dev, Jan 19 - Dec 19"
+    title_ = "System Price, jan 19 - dec 19"
     resolution_ = "d"  # choose
     save_ = True  # choose
     # --------------------------------------------------------------------------------------

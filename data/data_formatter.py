@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import math
 from data_handler import get_data
+from src.preprocessing.arcsinh.arcsinh import to_arcsinh
 
 
 def combine_hour_day_month_year_to_datetime_index(df):
@@ -341,38 +342,6 @@ def make_all_columns_integers_without_date(df, int_columns):
     return df
 
 
-def write_consumption_to_combined(resolution, convert_to_csv, replace_commas):
-    if resolution == "h":
-        path = "..\\data\\input\\consumption_hourly"
-        out_path = "..\\data\\input\\combined\\consumption_hourly.csv"
-    elif resolution == "d":
-        path = "..\\data\\input\\consumption_daily"
-        out_path = "..\\data\\input\\combined\\consumption_daily.csv"
-    if convert_to_csv:
-        raw_path = path + "\\raw"
-        raw_paths = sorted(Path(raw_path).iterdir())  # list all raw xls files
-        convert_folder_to_csv(raw_paths, replace_commas, header_row=2, resolution=resolution, make_integer=True)
-    paths = get_all_csv_files_from_directory(path)
-    df_years = []
-    for p in paths:
-        df = pd.read_csv(p, sep=",")
-        df_years.append(df)
-    df_all = pd.concat(df_years, ignore_index=True)
-    if resolution == "h":
-        df_all['Hour'] = df_all['Hour'].str[:2].astype(int)
-        df_all = copy_last_days_hours_in_column(df_all, "EE")  # affects last 3 rows of 2019, column EE
-        df_all['Baltic'] = df_all['EE'] + df_all['LV'] + df_all["LT"]
-        df_all = copy_last_days_hours_in_column(df_all, "SE")  # affects only last 13 rows of 2019, column SE
-        df_all['Nordic'] = df_all['NO'] + df_all['SE'] + df_all["FI"] + df_all["DK"]
-        df_all['Total'] = df_all['Nordic'] + df_all['Baltic']
-    col_name_changes = {'Total': "Total Consume", 'NO': 'NO Consume', "SE": "SE Consume", "FI": "FI Consume",
-                        "DK": "DK Consume",
-                        "Nordic": "Nordic Consume", "EE": "EE Consume", "LV": "LV Consume", "LT": "LT Consume",
-                        "Baltic": "Baltic Consume"}
-    df_all = rename_column_names(df_all, col_name_changes)
-    df_all.to_csv(out_path, index=False, float_format='%g')
-
-
 def copy_last_days_hours_in_column(df, column):
     for i in range(len(df) - 1, 1, -1):
         if i > 23:
@@ -383,13 +352,16 @@ def copy_last_days_hours_in_column(df, column):
     return df
 
 
-def write_production_to_combined(resolution, convert_to_csv, replace_commas):
+def write_supply_to_all_data(resolution, convert_to_csv, replace_commas):
     if resolution == "h":
         path = "..\\data\\input\\production_hourly"
-        out_path = "..\\data\\input\\combined\\production_hourly.csv"
+        out_path = "..\\data\\input\\combined\\supply_hourly.csv"
+        all_data = pd.read_csv("..\\data\\input\\combined\\all_data_hourly.csv.csv")
     elif resolution == "d":
         path = "..\\data\\input\\production_daily"
-        out_path = "..\\data\\input\\combined\\production_daily.csv"
+        out_path = "..\\data\\input\\combined\\supply_daily.csv"
+        all_data = pd.read_csv("..\\data\\input\\combined\\all_data_daily.csv")
+    all_data["Date"] = pd.to_datetime(all_data["Date"], format="%Y-%m-%d")
     if convert_to_csv:
         raw_path = path + "\\raw"
         raw_paths = sorted(Path(raw_path).iterdir())  # list all raw xls files
@@ -403,13 +375,63 @@ def write_production_to_combined(resolution, convert_to_csv, replace_commas):
     if resolution == "h":
         df_all['Hour'] = df_all['Hour'].str[:2].astype(int)
         df_all = copy_last_days_hours_in_column(df_all, "EE")  # affects only last 16 rows of 2019, column EE
-        df_all['Baltic'] = df_all['EE'] + df_all['LV'] + df_all["LT"]
-    col_name_changes = {'NO': 'NO Prod', "SE": "SE Prod", "FI": "FI Prod", "DK": "DK Prod",
-                        "Nordic": "Nordic Prod", "EE": "EE Prod", "LV": "LV Prod", "LT": "LT Prod",
-                        "Baltic": "Baltic Prod"}
-    df_all = rename_column_names(df_all, col_name_changes)
-    df_all["Total Prod"] = df_all["Nordic Prod"] + df_all["Baltic Prod"]
+        df_all["Supply"] = df_all["Nordic"] + df_all["Baltic"]
+        df_all = df_all[["Date", "Hour", "Supply"]]
+    elif resolution == "d":
+        df_all['Nordic'] = df_all['Nordic'].fillna(df_all.iloc[:, 1:5].sum(axis=1))
+        df_all['Baltic'] = df_all['Baltic'].fillna(df_all.iloc[:, 6:9].sum(axis=1))
+        df_all["Supply"] = df_all["Nordic"] + df_all["Baltic"]
+        df_all = df_all[["Date", "Supply"]]
+    df_all["Date"] = pd.to_datetime(df_all["Date"], format="%d-%m-%Y")
+    assert [i == 0 for i in df_all.isna().sum().tolist()]
     df_all.to_csv(out_path, index=False, float_format='%g')
+    assert len(df_all) == len(all_data)
+    if resolution == "d":
+        all_data = all_data.merge(df_all, on="Date", how="outer")
+        assert [i == 0 for i in all_data.isna().sum().tolist()]
+        all_data.to_csv("..\\data\\input\\combined\\all_data_daily.csv", index=False, float_format='%g')
+
+
+def write_demand_to_all_data(resolution, convert_to_csv, replace_commas):
+    if resolution == "h":
+        path = "..\\data\\input\\consumption_hourly"
+        out_path = "..\\data\\input\\combined\\consumption_hourly.csv"
+        all_data = pd.read_csv("..\\data\\input\\combined\\all_data_hourly.csv")
+    elif resolution == "d":
+        path = "..\\data\\input\\consumption_daily"
+        out_path = "..\\data\\input\\combined\\consumption_daily.csv"
+        all_data = pd.read_csv("..\\data\\input\\combined\\all_data_daily.csv")
+    all_data["Date"] = pd.to_datetime(all_data["Date"], format="%Y-%m-%d")
+    if convert_to_csv:
+        raw_path = path + "\\raw"
+        raw_paths = sorted(Path(raw_path).iterdir())  # list all raw xls files
+        convert_folder_to_csv(raw_paths, replace_commas, header_row=2, resolution=resolution, make_integer=True)
+    paths = get_all_csv_files_from_directory(path)
+    df_years = []
+    for p in paths:
+        df = pd.read_csv(p, sep=",")
+        df_years.append(df)
+    df_all = pd.concat(df_years, ignore_index=True)
+    df_all["Date"] = pd.to_datetime(df_all["Date"], format="%d-%m-%Y")
+    if resolution == "h":
+        df_all['Hour'] = df_all['Hour'].str[:2].astype(int)
+        df_all = copy_last_days_hours_in_column(df_all, "EE")  # affects last 3 rows of 2019, column EE
+        df_all['Baltic'] = df_all['EE'] + df_all['LV'] + df_all["LT"]
+        df_all = copy_last_days_hours_in_column(df_all, "SE")  # affects only last 13 rows of 2019, column SE
+        df_all['Nordic'] = df_all['NO'] + df_all['SE'] + df_all["FI"] + df_all["DK"]
+        df_all['Total'] = df_all['Nordic'] + df_all['Baltic']
+    elif resolution == "d":
+        df_all['Nordic'] = df_all['Nordic'].fillna(df_all.iloc[:, 1:5].sum(axis=1))
+        df_all['Baltic'] = df_all['Baltic'].fillna(df_all.iloc[:, 6:9].sum(axis=1))
+        df_all["Demand"] = df_all["Nordic"] + df_all["Baltic"]
+        df_all = df_all[["Date", "Demand"]]
+    assert [i == 0 for i in df_all.isna().sum().tolist()]
+    df_all.to_csv(out_path, index=False, float_format='%g')
+    assert len(df_all) == len(all_data)
+    if resolution == "d":
+        all_data = all_data.merge(df_all, on="Date", how="outer")
+        assert [i == 0 for i in all_data.isna().sum().tolist()]
+        all_data.to_csv("..\\data\\input\\combined\\all_data_daily.csv", index=False, float_format='%g')
 
 
 def combine_all_data(resolution):
@@ -495,7 +517,7 @@ def write_daily_hydro_deviations_to_combined():
     mask = (hydro_df['Date'] >= start) & (hydro_df['Date'] <= end)
     hydro_df = hydro_df.loc[mask].reset_index()
     average_year_df = hydro_df.groupby(
-       [hydro_df["Date"].dt.month.rename("Month"), hydro_df["Date"].dt.day.rename("Day")]).mean()
+        [hydro_df["Date"].dt.month.rename("Month"), hydro_df["Date"].dt.day.rename("Day")]).mean()
     column_rename_dict = {"NO Hydro": "NO Mean", "SE Hydro": "SE Mean", "FI Hydro": "FI Mean",
                           "Total Hydro": "Total Mean"}
     average_year_df = rename_column_names(average_year_df, column_rename_dict)
@@ -567,8 +589,8 @@ def remove_summer_winter_time():
         to_winter_dates.append(datetime(year, 10, to_winter[year]).date())
     for index, row in df.iterrows():
         if row["Date"] in to_summer_dates and row["Hour"] == 2:
-            prev_row = df.iloc[index-1]
-            next_row = df.iloc[index+1]
+            prev_row = df.iloc[index - 1]
+            next_row = df.iloc[index + 1]
             for col in df.columns[2:]:
                 past_val = prev_row[col]
                 next_val = next_row[col]
@@ -589,27 +611,52 @@ def remove_summer_winter_time():
 
 
 def write_daily_temperature_to_combined():
+    coordinates = {
+        "Temp Hamar": "SN12290",
+        "Temp Krsand": "SN39100",
+        "Temp Namsos": "SN72710",
+        "Temp Troms": "SN91500",
+        "Temp Bergen": "SN50500"
+    }
+    element = 'mean(air_temperature P1D)'
+    time_offset = "PT0H"
+    tol_col = "Temp Norway"
+    tot_operation = "mean"
+    out_file = "temp_daily"
+    write_weather_df_to_combined_helping_method(element, time_offset, coordinates, tol_col, tot_operation, out_file)
+
+
+def write_daily_precipitation_to_combined():
+    coordinates = {
+        "Prec Hamar": "SN12290",
+        "Prec Kvin": "SN42520",
+        "Prec Oppdal": "SN63580",
+        "Prec Troms": "SN91500",
+        "Prec Bergen": "SN50810"
+    }
+    element = 'sum(precipitation_amount P1D)'
+    time_offset = "PT6H"
+    tot_col = "Prec Norway"
+    tot_operation = "add"
+    out_file = "precip_daily"
+    write_weather_df_to_combined_helping_method(element, time_offset, coordinates, tot_col, tot_operation, out_file)
+
+
+def write_weather_df_to_combined_helping_method(element, time_offset, coordinates, tot_name, tot_op, out_file):
     from datetime import datetime as dt
     import requests
-    coordinates = {
-        "T Hamar": "SN12290",
-        "T Krsand": "SN39100",
-        "T Namsos": "SN72710",
-        "T Troms": "SN91500",
-        "T Bergen": "SN50500"
-    }
     years = [y for y in range(2014, 2021)]
     client_id = 'f2acda91-356a-4475-b815-17214a0c7f14'
     endpoint = 'https://frost.met.no/observations/v0.jsonld'
-    temp_df = pd.DataFrame()
+    weather_df = pd.DataFrame()
     for year in years:
         start = dt(year, 1, 1).date()
         end = dt(year, 12, 31).date()
         locations = ",".join(coordinates.values())
         parameters = {
             'sources': locations,
-            'elements': 'mean(air_temperature P1D)',
-            'referencetime': '{}-01-01/{}-1-1'.format(year, year+1),
+            'elements': element,
+            'referencetime': '{}-01-01/{}-1-1'.format(year, year + 1),
         }
         r = requests.get(endpoint, parameters, auth=(client_id, ''))
         json = r.json()
@@ -631,7 +678,7 @@ def write_daily_temperature_to_combined():
         df = df[columns]
         df = df.rename(columns={"referenceTime": "Date"})
         df['Date'] = pd.to_datetime(df['Date']).dt.date
-        df = df[df["timeOffset"].isin(["PT0H"])]
+        df = df[df["timeOffset"].isin([time_offset])]
         dates = pd.date_range(start, end, freq='d')
         year_df = pd.DataFrame()
         year_df["Date"] = dates
@@ -644,22 +691,60 @@ def write_daily_temperature_to_combined():
             sub_df = sub_df.rename(columns={"value": city})
             sub_df['Date'] = pd.to_datetime(sub_df['Date'])
             year_df = pd.merge(year_df, sub_df, on="Date", how="outer")
-        temp_df = temp_df.append(year_df, ignore_index=True)
-    temp_df["T Nor"] = temp_df[[y for y in coordinates.keys()]].mean(axis=1)
-    temp_df = temp_df.fillna(method="bfill")
-    temp_df.to_csv("input/combined/temp_daily.csv", index=False, float_format='%g')
-    print("Number of nan rows: {}".format(temp_df.isna().sum()))
+        weather_df = weather_df.append(year_df, ignore_index=True)
+    if tot_op == "mean":
+        weather_df[tot_name] = weather_df[[y for y in coordinates.keys()]].mean(axis=1)
+    elif tot_op == "add":
+        weather_df[tot_name] = weather_df[[y for y in coordinates.keys()]].sum(axis=1)
+    weather_df = weather_df.fillna(method="bfill")
+    weather_df.to_csv("input/combined/{}.csv".format(out_file), index=False, float_format='%g')
+    print("Number of nan rows: {}".format(weather_df.isna().sum()))
 
 
-def write_wind_to_combined(resolution,convert_to_csv, replace_commas):
+def append_weather_to_all_data():
+    path_ = "..\\data\\input\\combined\\"
+    df_all = pd.read_csv(path_ + "all_data_daily.csv", sep=",")
+    df_temp = pd.read_csv(path_ + "temp_daily.csv", sep=",")
+    df_prec = pd.read_csv(path_ + "precip_daily.csv", sep=",")
+    for df in [df_all, df_temp, df_prec]:
+        df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    orig_len = len(df_all)
+    df_all = df_all.merge(df_temp, on="Date", how="outer")
+    df_all = df_all.merge(df_prec, on="Date", how="outer")
+    new_len = len(df_all)
+    assert orig_len == new_len
+    df_all.to_csv(path_ + "all_data_daily.csv", index=False, float_format='%g')
+
+
+def add_prec_next_week_col():
+    # method adding column for how much total rain norawy today + next 7 days
+    path_ = "..\\data\\input\\combined\\"
+    df = pd.read_csv(path_ + "all_data_daily.csv", sep=",")
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    orig_len = len(df)
+    days_ahead = 8
+    for i in range(1, days_ahead):
+        df["{} prec lag".format(i)] = df["Prec Norway"].shift(-i)
+    prec_cols = ["{} prec lag".format(i) for i in range(1, days_ahead)]
+    df["Prec Norway"] = df[prec_cols].sum(axis=1)
+    last_correct_value = df.loc[len(df) - days_ahead, "Prec Norway"]
+    for i in range(1, days_ahead):
+        df.loc[len(df) - i, "Prec Norway"] = last_correct_value
+    df = df.drop(columns=prec_cols)
+    new_len = len(df)
+    assert orig_len == new_len
+    df.to_csv(path_ + "all_data_daily.csv", index=False, float_format='%g')
+
+
+def write_wind_to_combined(resolution, convert_to_csv, replace_commas):
     if resolution == "h":
         path = "..\\data\\input\\wind_hourly"
         out_path = "..\\data\\input\\combined\\wind_hourly.csv"
-        out_col = ["Date", "Hour", "Wind DK"]
+        out_col = ["Date", "Hour", "Wind"]
     elif resolution == "d":
         path = "..\\data\\input\\wind_daily"
         out_path = "..\\data\\input\\combined\\wind_daily.csv"
-        out_col = ["Date", "Wind DK"]
+        out_col = ["Date", "Wind"]
     if convert_to_csv:
         raw_path = path + "\\raw"
         raw_paths = sorted(Path(raw_path).iterdir())  # list all raw xls files
@@ -674,6 +759,14 @@ def write_wind_to_combined(resolution,convert_to_csv, replace_commas):
     if resolution == "h":
         df_all['Hour'] = df_all['Hour'].str[:2].astype(int)
     df_all["Wind DK"] = df_all["DK1"] + df_all["DK2"]
+    df_se = df_all[["Date", "SE1", "SE2", "SE3", "SE4", "Wind DK"]]
+    df_se_clean = df_se.dropna(subset=["SE1", "SE2", "SE3", "SE4"], how="any")
+    df_se_clean["Wind SE"] = df_se_clean[["SE1", "SE2", "SE3", "SE4"]].sum(axis=1)
+    df_se_clean["SE factor"] = df_se_clean["Wind SE"] / df_se_clean["Wind DK"]
+    print(df_se_clean)
+    df_factor_se = df_se_clean["SE factor"].mean()
+    print(df_factor_se)
+    assert False
     df_all = df_all[out_col]
     df_all = df_all.interpolate(method='linear', axis=0)
     assert df_all["Wind DK"].isnull().sum(axis=0) == 0
@@ -692,11 +785,81 @@ def append_data_to_all_data(data, resolution):
     all_data.to_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution), index=False, float_format='%g')
 
 
+def append_arcshinh_to_all_data(col_name, resolution):
+    df = pd.read_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution))
+    orig_len = len(df)
+    df, a, b = to_arcsinh(df, col_name)
+    df = df.rename(columns={"Trans {}".format(col_name): "Asinh {}".format(col_name)})
+    new_len = len(df)
+    assert orig_len == new_len
+    df.to_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution), index=False, float_format='%g')
+
+
+def remove_column_from_all_data(col_name, resolution):
+    df = pd.read_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution))
+    orig_len = len(df)
+    no_cols = len(df.columns)
+    df = df.drop(columns=[col_name])
+    new_len = len(df)
+    assert orig_len == new_len
+    assert len(df.columns) == no_cols - 1
+    df.to_csv("..\\data\\input\\combined\\all_data_{}.csv".format(resolution), index=False, float_format='%g')
+
+
+def add_lagged_col_to_all_data(col_name, res, lag):
+    df = pd.read_csv("..\\data\\input\\combined\\all_data_{}.csv".format(res))
+    orig_len = len(df)
+    df[col_name + " {} lag".format(lag)] = df[col_name].shift(lag)
+    df = df.fillna(method='ffill')
+    new_len = len(df)
+    assert orig_len == new_len
+    df.to_csv("..\\data\\input\\combined\\all_data_{}.csv".format(res), index=False, float_format='%g')
+
+
+def write_fossil_prices_to_combined():
+    curr_df = get_df_end_path("/currency.xlsx")
+    oil_df = get_df_end_path("/oil_prices.xlsx")
+    oil_df["Oil"] = oil_df["Oil"] * (1 / curr_df["EUR to USD"])
+    coal_df = get_df_end_path("/coal_prices.xlsx")
+    coal_df["Coal"] = coal_df["Coal"] * (1 / curr_df["EUR to USD"])
+    gas_df = get_df_end_path("/gas_prices_2.xlsx")
+    carbon_df = get_df_end_path("/low_carbon_prices.xlsx")
+    df = oil_df.merge(coal_df, on="Date", how="outer")
+    df = df.merge(gas_df, on="Date", how="outer")
+    df = df.merge(carbon_df, on="Date", how="outer")
+    df.to_csv("input/combined/fossil_daily.csv", index=False, float_format='%g')
+
+
+def get_df_end_path(end_path):
+    dir_path = "input/eikon/raw"
+    if end_path == "/currency.xlsx":
+        head_no = 0
+    else:
+        head_no = 1
+    df = pd.read_excel(dir_path + end_path, header=head_no, usecols=[0, 1])
+    full_date = get_data(datetime(2014, 1, 1), datetime(2020, 12, 31), [], os.getcwd(), "d")
+    df = full_date.merge(df, on="Date", how="outer").interpolate(method="linear")
+    df = df[df["Date"].dt.year.isin(range(2014, 2021))]
+    df = df.fillna(method="bfill")
+    df = df.fillna(method="ffill")
+    return df
+
+
+def add_fossil_to_all_data():
+    df_f = pd.read_csv("input/combined/fossil_daily.csv")
+    df_all = pd.read_csv("input/combined/all_data_daily.csv")
+    assert len(df_all) == len(df_f)
+    df_all = df_all.merge(df_f, on="Date", how="outer")
+    assert [i == 0 for i in df_all.isna().sum()]
+    df_all.to_csv("..\\data\\input\\combined\\all_data_daily.csv", index=False, float_format='%g')
+
 if __name__ == '__main__':
     print("Running method.." + "\n")
     # write_price_to_combined("h", convert_to_csv=True, replace_commas=True)
     # write_price_to_combined("d", convert_to_csv=True, replace_commas=True)
     # write_volume_to_combined("d", convert_to_csv=True, replace_commas=True)
+    # write_supply_to_all_data("d", convert_to_csv=False, replace_commas=True)
+    # write_demand_to_all_data("d", convert_to_csv=False, replace_commas=True)
     # write_volume_to_combined("h", convert_to_csv=True, replace_commas=True)
     # write_hydro_all_weekly(convert_to_csv=True, replace_commas=False)  # replace_commas=False, always
     # write_hydro_daily_to_combined()
@@ -707,10 +870,17 @@ if __name__ == '__main__':
     # write_hourly_temperature_to_combined()
     # combine_all_data("daily")
     # combine_all_data("hourly")
-    remove_summer_winter_time()
+    # remove_summer_winter_time()
     # add_time_columns_to_all_data("d")
     # add_time_columns_to_all_data("h")
     # write_daily_temperature_to_combined()
+    # write_daily_precipitation_to_combined()
+    # add_prec_next_week_col()
+    # append_weather_to_all_data()
     # write_wind_to_combined("d", convert_to_csv=False, replace_commas=True)
     # write_wind_to_combined("h", convert_to_csv=False, replace_commas=True)
     # append_data_to_all_data("wind", "daily")
+    # append_arcshinh_to_all_data("Total Hydro Dev", "daily")
+    # add_lagged_col_to_all_data("Total Hydro Dev", "daily", -11)
+    # remove_column_from_all_data("Total Hydro Dev -11 lag", "daily")
+    add_fossil_to_all_data()

@@ -1,30 +1,50 @@
-                                 OLS Regression Results                                
-=======================================================================================
-Dep. Variable:           System Price   R-squared (uncentered):                   0.990
-Model:                            OLS   Adj. R-squared (uncentered):              0.990
-Method:                 Least Squares   F-statistic:                          2.992e+04
-Date:                Wed, 17 Mar 2021   Prob (F-statistic):                        0.00
-Time:                        16:24:44   Log-Likelihood:                         -4663.0
-No. Observations:                1812   AIC:                                      9338.
-Df Residuals:                    1806   BIC:                                      9371.
-Df Model:                           6                                                  
-Covariance Type:            nonrobust                                                  
-=========================================================================================
-                            coef    std err          t      P>|t|      [0.025      0.975]
------------------------------------------------------------------------------------------
-Trans Total Hydro Dev     0.1094      0.087      1.250      0.211      -0.062       0.281
-1 day lag                 0.7599      0.023     32.658      0.000       0.714       0.806
-2 day lag                -0.1217      0.029     -4.183      0.000      -0.179      -0.065
-3 day lag                 0.1326      0.023      5.720      0.000       0.087       0.178
-1 week lag                0.1515      0.018      8.248      0.000       0.115       0.187
-2 week lag                0.0779      0.015      5.175      0.000       0.048       0.107
+                            OLS Regression Results                            
 ==============================================================================
-Omnibus:                      488.643   Durbin-Watson:                   1.921
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):            27841.158
-Skew:                           0.368   Prob(JB):                         0.00
-Kurtosis:                      22.189   Cond. No.                         82.7
+Dep. Variable:           System Price   R-squared:                       0.920
+Model:                            OLS   Adj. R-squared:                  0.919
+Method:                 Least Squares   F-statistic:                     890.2
+Date:                Thu, 18 Mar 2021   Prob (F-statistic):               0.00
+Time:                        16:37:24   Log-Likelihood:                -4457.8
+No. Observations:                1812   AIC:                             8964.
+Df Residuals:                    1788   BIC:                             9096.
+Df Model:                          23                                         
+Covariance Type:            nonrobust                                         
+=================================================================================
+                    coef    std err          t      P>|t|      [0.025      0.975]
+---------------------------------------------------------------------------------
+Prec Forecast    -0.0073      0.001     -7.731      0.000      -0.009      -0.005
+1 day lag         0.7505      0.023     32.329      0.000       0.705       0.796
+2 day lag        -0.0411      0.029     -1.410      0.159      -0.098       0.016
+3 day lag         0.1347      0.024      5.559      0.000       0.087       0.182
+1 week lag        0.0820      0.017      4.739      0.000       0.048       0.116
+2 week lag        0.0495      0.014      3.470      0.001       0.022       0.078
+d1                3.7531      0.246     15.255      0.000       3.271       4.236
+d2                1.5940      0.259      6.160      0.000       1.086       2.102
+d3                1.5724      0.260      6.048      0.000       1.063       2.082
+d4                1.1430      0.246      4.649      0.000       0.661       1.625
+d5                0.5717      0.245      2.336      0.020       0.092       1.052
+d6               -1.0016      0.243     -4.123      0.000      -1.478      -0.525
+d7                0.0590      0.243      0.243      0.808      -0.418       0.536
+m1                0.8592      0.256      3.360      0.001       0.358       1.361
+m2                0.6924      0.255      2.720      0.007       0.193       1.192
+m3                0.2712      0.237      1.145      0.252      -0.193       0.736
+m4                0.2248      0.236      0.954      0.340      -0.237       0.687
+m5                0.1143      0.230      0.498      0.619      -0.336       0.565
+m6                0.4584      0.233      1.965      0.050       0.001       0.916
+m7                0.5967      0.237      2.517      0.012       0.132       1.062
+m8                1.1716      0.248      4.726      0.000       0.685       1.658
+m9                0.5050      0.259      1.953      0.051      -0.002       1.012
+m10               1.1656      0.252      4.633      0.000       0.672       1.659
+m11               1.0371      0.259      3.998      0.000       0.528       1.546
+m12               0.5955      0.268      2.225      0.026       0.071       1.120
+==============================================================================
+Omnibus:                      518.682   Durbin-Watson:                   2.029
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):            49415.389
+Skew:                           0.223   Prob(JB):                         0.00
+Kurtosis:                      28.579   Cond. No.                     1.44e+18
 ==============================================================================
 
 Notes:
-[1] R² is computed without centering (uncentered) since the model does not contain a constant.
-[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The smallest eigenvalue is 2.41e-29. This might indicate that there are
+strong multicollinearity problems or that the design matrix is singular.

@@ -9,8 +9,9 @@ import os
 
 def plot_correlation_matrix_first():
     replace_dict = {"System Price": "Price", "Total Vol": "Volume", "Total Hydro": "Hydro", "Total Hydro Dev":
-                    "Hydro Dev", "T Nor": "Temp. Nor"}
-    columns = ["System Price", "Total Vol", "Total Hydro", "Total Hydro Dev", "T Nor", "Wind DK"]
+                    "Hydro Dev", "Temp Norway": "Temp Nor", "Prec Norway 7": "Prec Nor. 7"}
+    columns = ["System Price", "Total Vol", "Supply", "Demand", "Total Hydro", "Total Hydro Dev", "Temp Norway",
+               "Wind DK", "Prec Norway 7", "Oil", "Gas", "Coal", "Low Carbon"]
     df = get_data("01.01.2014", "31.12.2019", columns, os.getcwd(), "d")
     df = df[columns]
     col = "System Price"
@@ -25,7 +26,7 @@ def plot_correlation_matrix_first():
     f, ax = plt.subplots(figsize=(11, 9))
     corr = df.corr()
     sns.heatmap(corr, mask=np.zeros_like(corr, dtype=np.bool), cmap=sns.diverging_palette(220, 10, as_cmap=True),
-                square=True, ax=ax, annot=True, fmt=".2f", annot_kws={'size': 12})
+                square=True, ax=ax, annot=True, fmt=".2f", annot_kws={'size': 10})
     plt.xticks(np.arange(len(df.columns)) + 0.5, ticks, rotation=45, size=10)
     plt.yticks(np.arange(len(df.columns)) + 0.5, ticks, rotation='horizontal', size=10)
     plt.title("Correlation Matrix", pad=20)

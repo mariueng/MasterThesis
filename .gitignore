@@ -10,15 +10,23 @@ __pycache__/
 
 # data files
 data/input/consumption_hourly
+data/input/auction
 data/input/hydro_weekly
 data/input/price_hourly
 data/input/price_daily
 data/input/production_hourly
 data/input/volume_hourly
 data/input/volume_daily
+data/output/plots/all_bids
+data/output/auction
 
 # Preliminary results
 src/results/validation/*
+src/models/expert_mlp/results
+src/models/expert_mlp/models
+src/models/expert_day/validation
+src/models/mlp_day_profile/validation
+src/models/mlp_day_profile/first_model
 
 # Venv-config
 .idea

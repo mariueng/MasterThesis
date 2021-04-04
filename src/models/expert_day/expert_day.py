@@ -1,18 +1,14 @@
-# script for the most naive model: copy the 24 hours of last day for the following 14 weekdays
 from datetime import datetime as dt
 from datetime import timedelta
 import pandas as pd
 import os
 from pathlib import Path
 import numpy as np
-import math
 from src.system.generate_periods import get_random_periods
 from src.system.scores import get_all_point_metrics
 from src.system.generate_periods import get_all_2019_periods
 from data.data_handler import get_data
-from src.models.naive_day.naive_day import get_prob_forecast
 from src.preprocessing.arcsinh import arcsinh
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Avoid warnings from Tensorflow or any {'0', '1', '2'}
 from keras.models import load_model
 import statsmodels.api as sm
@@ -41,32 +37,18 @@ class ExpertDay:
 
     def get_forecast(self, forecast_df):
         model_fit = self.get_model()
+        params = get_parameters_dataframe(model_fit).columns.tolist()
+        input_cols = [i for i in params if i != "Period" and "lag" not in i]
         start_date = forecast_df.at[0, "Date"]
         train_start = start_date - timedelta(days=14)
         train_end = train_start + timedelta(days=13)
-        df = get_data(train_start, train_end, ["System Price", "Weekday", "Week"], os.getcwd(), "d")
-        temp_df = get_data(start_date, start_date + timedelta(days=13), ["T Nor"], os.getcwd(), "d")
         # df, a, b = arcsinh.to_arcsinh(df, "System Price")
         col = "System Price"
-        past_prices = df[col].tolist()
+        past_prices = get_data(train_start, train_end, ["System Price"], os.getcwd(), "d")[col].tolist()
+        data_df = get_data(start_date, start_date + timedelta(days=13), input_cols, os.getcwd(), "d")
         forecast = []
-        last_week_in_training = df.loc[len(df) - 1, "Week"]
-        last_day_in_training = df.loc[len(df) - 1, "Weekday"]
         for i in range(14):
-            x = {"Temp. Norway": temp_df.loc[i, "T Nor"], "1 day lag": past_prices[-1], "2 day lag": past_prices[-2],
-                 "3 day lag": past_prices[-3],
-                 "1 week lag": past_prices[-7], "2 week lag": past_prices[-14]}
-            weekday = df.loc[i % 7, "Weekday"]
-            for val in weekdays.values():
-                x[val] = 0
-            day = weekdays[weekday]
-            x[day] = 1
-            for week in weeks:
-                x[week] = 0
-            current_week = last_week_in_training + math.floor((last_day_in_training + i) / 7)
-            string_week = "w{}".format(current_week)
-            x[string_week] = 1
-            x = pd.DataFrame.from_dict(x, orient="index").transpose()
+            x = get_x_input(i, model_fit.params, past_prices, data_df, input_cols)
             prediction = model_fit.get_prediction(exog=x)
             forecasted_value = prediction.predicted_mean[0]
             forecast.append(forecasted_value)
@@ -89,7 +71,7 @@ class ExpertDay:
 
     @staticmethod
     def get_hour_forecast_from_mlp(forecast, start):
-        day_df = get_data(start, start + timedelta(days=13), ["Weekday", "Month", "T Nor"], os.getcwd(), "d")
+        day_df = get_data(start, start + timedelta(days=13), ["Weekday", "Month", "Temp Norway"], os.getcwd(), "d")
         hour_forecast = []
         model = load_model(r"../models/mlp_day_profile/first_model")
         # model = load_model(r"../mlp_day_profile/first_model")
@@ -109,7 +91,7 @@ class ExpertDay:
                     row["m{}".format(j)] = 1
                 else:
                     row["m{}".format(j)] = 0
-            row["Temp Norway"] = day_df.loc[i, "T Nor"]
+            row["Temp Norway"] = day_df.loc[i, "Temp Norway"]
             data = data.append(row, ignore_index=True)
         rows = []
         for index, row in data.iterrows():
@@ -183,34 +165,28 @@ def validate_day_model(input_col):
     plot_weights(weights_df)
 
 
-def get_x_input(id, params, past_prices, data_df, input_col):
+def get_x_input(id_x, params, past_prices, data_df, input_col):
     variables = params.keys().tolist()
     x_df = pd.DataFrame(columns=variables)
     x_dict = {}
     for c in divide_on_thousand_list:
         if c in variables:
-            x_dict[c] = data_df.loc[id, c] / 1000
-    if "Temp. Norway" in variables:
-        x_dict["Temp. Norway"] = data_df.loc[id, "T Nor"]
+            x_dict[c] = data_df.loc[id_x, c] / 1000
+    time_cols = {"Weekday": "d", "Week": "w", "Month": "m", "Season": "s"}
+    time_list = {"Weekday": weekdays, "Week": weeks, "Month": months}
+    for c in input_col:
+        if c not in divide_on_thousand_list and c not in time_cols.keys():
+            x_dict[c] = data_df.loc[id_x, c]
     lags = ["1 day lag", "2 day lag", "3 day lag", "1 week lag", "2 week lag"]
     idx_back = [-1, -2, -3, -7, -14]
     for j in range(len(lags)):
         x_dict[lags[j]] = past_prices[idx_back[j]]
-    if "Weekday" in input_col:
-        current_day = data_df.loc[id, "Weekday"]
-        for val in weekdays:
-            x_dict[val] = 0
-        x_dict["d{}".format(current_day)] = 1
-    if "Week" in input_col:
-        current_week = data_df.loc[id, "Week"]
-        for week in weeks:
-            x_dict[week] = 0
-        x_dict["w{}".format(current_week)] = 1
-    if "Month" in input_col:
-        current_month = data_df.loc[id, "Month"]
-        for month in months:
-            x_dict[month] = 0
-        x_dict["m{}".format(current_month)] = 1
+    for col in time_cols.keys():
+        if col in input_col:
+            current = data_df.loc[id_x, col]
+            for val in time_list[col]:
+                x_dict[val] = 0
+            x_dict["{}{}".format(time_cols[col], current)] = 1
     x_df = x_df.append(x_dict, ignore_index=True)
     return x_df
 
@@ -346,8 +322,6 @@ def get_x_and_y_dataset(start, end, columns):
     if start > dt(2014, 1, 14):
         start = start - timedelta(days=13)
     data = get_data(start, end, columns, os.getcwd(), "d")
-    if "T Nor" in columns:
-        data = data.rename(columns={"T Nor": "Temp. Norway"})
     for c in divide_on_thousand_list:
         if c in columns:
             data[c] = data[c] / 1000
@@ -410,16 +384,18 @@ def run(model, periods):
 if __name__ == '__main__':
     col_1 = ["Weekday", "Month"]
     col_2 = ["Weekday", "Week"]
-    col_3 = ["Weekday", "Month", "T Nor"]
-    col_4 = ["Weekday", "Week", "T Nor"]
+    col_3 = ["Weekday", "Month", "Temp Norway"]
+    col_4 = ["Weekday", "Week", "Temp Norway"]
     col_5 = ["Weekday", "Month", "Total Hydro"]
     col_6 = ["Weekday", "Month", "Total Hydro Dev"]
     col_7 = ["Weekday", "Month", "Wind DK"]
-    col_8 = ["Weekday", "Month", "T Nor", "Wind DK"]
+    col_8 = ["Weekday", "Month", "Temp Nor", "Wind DK"]
     col_9 = ["Weekday", "Month", "Total Vol"]
-    col_10 = ["Weekday", "Month", "Total Vol", "T Nor"]
+    col_10 = ["Weekday", "Month", "Total Vol", "Temp Norway"]
     col_11 = ["Total Hydro Dev"]
-    inputs = [col_11]
+    col_12 = ["Weekday", "Month", "Prec Forecast"]
+    col_13 = ["Weekday", "Month", "Temp Norway", "Prec Forecast"]
+    inputs = [col_12]
     # --------------------------------------------
     for col_ in inputs:
         input_col_ = col_

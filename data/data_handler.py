@@ -23,6 +23,7 @@ def get_data(from_date, to_date, column_list, work_dir, resolution):  # dates on
         elif resolution == "d":
             columns = ["Date"] + column_list
         all_data = pd.read_csv(path, usecols=columns)
+        all_data = all_data[columns] # order same as input
         all_data["Date"] = pd.to_datetime(all_data["Date"], format='%Y-%m-%d')
         mask = (all_data['Date'] >= first_date) & (all_data['Date'] <= last_date)
         df = all_data.loc[mask]
