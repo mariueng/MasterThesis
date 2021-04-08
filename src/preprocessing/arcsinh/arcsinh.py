@@ -14,6 +14,12 @@ def to_arcsinh(df, col):
     return df, a, b
 
 
+def to_arcsinh_from_a_and_b(value, a, b):
+    value = (1/b) * (value - a)
+    value = np.arcsinh(value)
+    return value
+
+
 def from_arcsin_to_original(array_like, a, b):
     array_like = [b*i + a for i in array_like]
     return array_like

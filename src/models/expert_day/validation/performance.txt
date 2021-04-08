@@ -1,0 +1,11 @@
+-- Performance Summary for 'Expert Day', created 2021-03-18 16:37 --
+
+Point performance:
+Mape:	 8.058
+Smape:	7.608
+Mae:	2.867
+Rmse:	3.458
+
+
+Three best SMAPE performances:	{201.0: 1.74, 202.0: 1.87, 209.0: 2.18}
+Three worst SMAPE performances:	{148.0: 25.17, 149.0: 27.27, 150.0: 28.9}

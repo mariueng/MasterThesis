@@ -1,0 +1,11 @@
+-- Performance Summary for 'MLP', created 2021-03-16 11:16:24.122046 --
+
+Point performance:
+Mape:	 5.658
+Smape:	4.988
+Mae:	1.775
+Rmse:	2.14
+
+
+Three best SMAPE performances:	{189.0: 0.75, 250.0: 0.92, 215.0: 0.97}
+Three worst SMAPE performances:	{158.0: 40.08, 121.0: 41.92, 159.0: 54.58}
