@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from data_handler import get_data
+from data_handler import get_auction_data
 from shapely.geometry import LineString
 import random
 
@@ -681,6 +682,16 @@ def plot_visual_price_class(classes, curve, df):  # Helping method
     plt.close()
 
 
+def fix_summer_winter_time_bid_csv():
+    all_times_df = get_data("01.07.2014", "02.06.2020", [], os.getcwd(), "h")
+    all_bids_df = get_auction_data("01.07.2014", "02.06.2020", ["d", "s"], os.getcwd())
+    all_bids_df = all_times_df.merge(all_bids_df, on=["Date", "Hour"], how="outer")
+    all_bids_df = all_bids_df.interpolate(method='linear', axis=0)
+    missing_df = all_bids_df[all_bids_df.isna().any(axis=1)]
+    assert len(missing_df) == 0
+    all_bids_df.to_csv("input/auction/time_series.csv", index=False, float_format='%.2f')
+
+
 if __name__ == '__main__':
     print("Running bid curve script..\n")
     # auction_data()
@@ -694,4 +705,5 @@ if __name__ == '__main__':
     # make_price_classes_from_mean_curves(16, 18)
     # create_auction_subset()
     # evaluate_mean_price_classes(create_csv=False)
-    create_best_price_classes(plot=False, make_csv_files=False)
+    # create_best_price_classes(plot=False, make_csv_files=False)
+    # fix_summer_winter_time_bid_csv()

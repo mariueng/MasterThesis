@@ -33,7 +33,7 @@ def get_data(from_date, to_date, column_list, work_dir, resolution):  # dates on
         assert False
 
 
-def get_auction_data(from_date, to_date, curve, work_dir):
+def get_auction_data(from_date, to_date, curves, work_dir):
     path_to_project = "/".join(work_dir.split("\\")[0:5])
     path_to_all_data = "/data/input/auction/time_series.csv"
     path = path_to_project + path_to_all_data
@@ -45,6 +45,9 @@ def get_auction_data(from_date, to_date, curve, work_dir):
         last_date = datetime.datetime.strptime(to_date, '%d.%m.%Y')
     else:
         last_date = datetime.datetime(to_date.year, to_date.month, to_date.day)
+    if last_date > datetime.datetime(2020, 6, 2):
+        print("Last date must be before 2nd july 2020")
+        assert False
     valid_dates = check_valid_dates(first_date, last_date)
     if valid_dates:
         demand_classes = [-10, 0, 1, 5, 11, 20, 32, 46, 75, 107, 195, 210]
@@ -56,10 +59,11 @@ def get_auction_data(from_date, to_date, curve, work_dir):
         dates_df = all_dates.loc[mask]
         first_index = dates_df.index[0]
         length = len(dates_df)
-        if curve == "d":
-            columns = ["Date", "Hour"] + ["d {}".format(price) for price in demand_classes]
-        else:
-            columns = ["Date", "Hour"] + ["s {}".format(price) for price in supply_classes]
+        columns = ["Date", "Hour"]
+        if "d" in curves:
+            columns += ["d {}".format(price) for price in demand_classes]
+        if "s" in curves:
+            columns += ["s {}".format(price) for price in supply_classes]
         bids_df = pd.read_csv(path, usecols=columns, header=0, skiprows=range(1, first_index), nrows=length+1)
         bids_df = bids_df[columns]
         bids_df["Date"] = pd.to_datetime(bids_df["Date"], format='%Y-%m-%d')
