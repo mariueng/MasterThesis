@@ -58,7 +58,7 @@ def auction_data():
                 0]
             exc_volume = vol_price_df_date[vol_price_df_date["Hour"] == hour]["Total Vol"].tolist()[0]
             exc_price = vol_price_df_date[vol_price_df_date["Hour"] == hour]["System Price"].tolist()[0]
-            idx_vol_demand, idx_vol_supply, idx_net_flow, acs_demand, acs_supply, net_flows, idx_bid_start,\
+            idx_vol_demand, idx_vol_supply, idx_net_flow, acs_demand, acs_supply, net_flows, idx_bid_start, \
                 = get_initial_info_raw(df_h)
             add_flow_to_demand = net_flows < 0
             add_flow_to_supply = net_flows > 0
@@ -485,7 +485,7 @@ def evaluate_mean_price_classes(create_csv):
             df.to_csv("output/auction/price_class_evaluation.csv", index=False)
     df["Improvement Demand"] = df["Demand MAE"].shift(1) - df["Demand MAE"]
     df["Improvement Supply"] = df["Supply MAE"].shift(1) - df["Supply MAE"]
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(full_fig[0]+3, full_fig[1]))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(full_fig[0] + 3, full_fig[1]))
     plot_mae_improvement(ax1, "demand", df, 16)
     plot_mae_improvement(ax2, "supply", df, 18)
     plt.tight_layout()
@@ -601,16 +601,19 @@ def create_best_price_classes(plot, make_csv_files):
                 df = pd.read_csv(day_file)
                 number_of_hours = int((len(df.columns) - 1) / 2)
                 for i in range(number_of_hours):
-                    demand = df[["Price", df.columns[i*2 + 1]]]
-                    supply = df[["Price", df.columns[i*2 + 2]]]
+                    demand = df[["Price", df.columns[i * 2 + 1]]]
+                    supply = df[["Price", df.columns[i * 2 + 2]]]
                     hour = demand.columns[1][9:]
                     time_df = {"Date": date, "Hour": hour}
                     if "_" not in hour:  # drop extra hour day light saving time
-                        df_demand, df_demand_error = add_vol_rows(time_df.copy(), time_df.copy(), demand, demand_cl, "d")
-                        df_supply, df_supply_error = add_vol_rows(time_df.copy(), time_df.copy(), supply, supply_cl, "s")
+                        df_demand, df_demand_error = add_vol_rows(time_df.copy(), time_df.copy(), demand, demand_cl,
+                                                                  "d")
+                        df_supply, df_supply_error = add_vol_rows(time_df.copy(), time_df.copy(), supply, supply_cl,
+                                                                  "s")
                         volume_hour_df = df_demand.join(df_supply.set_index(["Date", "Hour"]), on=["Date", "Hour"])
                         price_classes_df = price_classes_df.append(volume_hour_df, ignore_index=True)
-                        error_hour_df = df_demand_error.join(df_supply_error.set_index(["Date", "Hour"]), on=["Date", "Hour"])
+                        error_hour_df = df_demand_error.join(df_supply_error.set_index(["Date", "Hour"]),
+                                                             on=["Date", "Hour"])
                         error_df = error_df.append(error_hour_df, ignore_index=True)
                 price_classes_df.to_csv(save_path, index=False)  # save time series every day
                 error_df.to_csv(error_path, index=False)  # save error time series every day
@@ -670,12 +673,12 @@ def plot_visual_price_class(classes, curve, df):  # Helping method
         x_max = h_line.intersection(orig_line).y
         plt.hlines(c, x_lim[0], x_max, color="grey", label=label)
     plt.xlim(x_lim)
-    plt.ylim(y_lim[0], y_lim[1]*1.03) if curve == "supply" else plt.ylim(y_lim)
+    plt.ylim(y_lim[0], y_lim[1] * 1.03) if curve == "supply" else plt.ylim(y_lim)
     plt.title("Visual Price Classes for {}".format(curve.capitalize()), pad=title_pad)
     plt.xlabel("Volume [MWh]", labelpad=label_pad)
     plt.ylabel("Price [€]", labelpad=label_pad)
     for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                          shadow=True).get_lines():
+                           shadow=True).get_lines():
         line.set_linewidth(2)
     plt.tight_layout()
     plt.savefig("output/auction/price_classes/{}_best_classes_{}.png".format(len(classes), curve))
@@ -690,6 +693,126 @@ def fix_summer_winter_time_bid_csv():
     missing_df = all_bids_df[all_bids_df.isna().any(axis=1)]
     assert len(missing_df) == 0
     all_bids_df.to_csv("input/auction/time_series.csv", index=False, float_format='%.2f')
+
+
+def test_supply_change_next_14_days():
+    all_dates = [i for i in pd.date_range(dt(2014, 7, 1), dt(2020, 6, 3)-timedelta(days=14), freq='d')]
+    number_of_auctions = len(all_dates)
+    res_length = 300  # pick out n random dates
+    random.seed(1)
+    random_list = random.sample(range(number_of_auctions), res_length)
+    dates_list = [all_dates[i].date() for i in random_list]
+    demand, supply, _, _ = get_best_price_classes(plot=False)
+    supply_classes = ["s {}".format(i) for i in supply]
+    mape_df = pd.DataFrame(columns=supply_classes).T
+    for i in range(1, 15):
+        mape_df["MAPE {} day".format(i)] = np.PZERO
+    for i in range(len(dates_list)):
+        day = dates_list[i]
+        print("{}\tChecking predictive power for {}".format(i, day))
+        supply = get_auction_data(day, day+timedelta(days=14), "s", os.getcwd())
+        for hour in range(24):
+            current_supply = supply[hour:hour+1]
+            for j in range(1, 15):
+                index_day = j*24 + hour
+                day_ahead_supply = supply[index_day: index_day + 1]
+                for price in supply_classes:
+                    ae = abs(current_supply.loc[hour, price] - day_ahead_supply.loc[index_day, price])
+                    mape = 100 * ae / day_ahead_supply.loc[index_day, price]
+                    prev_mean = mape_df.loc[price, "MAPE {} day".format(j)]
+                    new_mean = prev_mean * (i / (i + 1)) + mape * (1 / (i + 1))
+                    mape_df.loc[price, "MAPE {} day".format(j)] = new_mean
+    print(mape_df)
+    print("\n-------------------------------")
+    print(mape_df.mean(axis=0))
+    print("\n")
+    print(mape_df.mean(axis=1))
+
+
+def make_sensitivity_columns_demand():
+    sens = [-8, -1, 1, 8]
+    save_path = "input/auction/price_sensitivities.csv"
+    if os.path.exists(save_path):
+        df = pd.read_csv(save_path)
+    else:
+        columns = ["Est price", "Est volume",  "Demand {}".format(sens[0]), "Demand {}".format(sens[1]), "Demand "
+                   "{}".format(sens[2]), "Demand {}".format(sens[3])]
+        df = pd.DataFrame(columns=["Date", "Hour"] + columns)
+        df.to_csv("input/auction/price_sensitivities.csv", index=False)
+    to_date = "02.06.2020"
+    time_df = get_data("01.07.2014", to_date, [], os.getcwd(), "h")
+    auctions = get_auction_data("01.07.2014", to_date, ["d", "s"], os.getcwd())
+    demand_cl, supply_cl, _, _ = get_best_price_classes(plot=False)
+    random.seed(1)
+    plot_list = random.sample(range(len(auctions)), 30)
+    for i in range(len(time_df)):
+        row = {"Date": time_df.loc[i, "Date"].date(), "Hour": time_df.loc[i, "Hour"]}
+        demand_volumes = [auctions.loc[i, j] for j in auctions.columns if "d" in j]
+        demand_line = LineString(np.column_stack((demand_volumes, demand_cl)))
+        supply_volumes = [auctions.loc[i, j] for j in auctions.columns if "s" in j]
+        min_supply = min(supply_volumes)
+        max_supply = max(supply_volumes)
+        supply_line = LineString(np.column_stack((supply_volumes, supply_cl)))
+        price = demand_line.intersection(supply_line).y
+        volume = demand_line.intersection(supply_line).x
+        df.loc[i, "Est price"] = round(price, 2)
+        df.loc[i, "Est volume"] = round(volume, 2)
+        for s in sens:
+            vol = get_volume_sensitivity(price, volume, min_supply, max_supply, supply_line, s)
+            row["Demand {}".format(s)] = vol
+        if i % 24 == 0:
+            print(row["Date"])
+        if i in plot_list or price > 197 or price < 0:
+            plot_sensitivity(demand_volumes, supply_volumes, demand_cl, supply_cl,volume, row, sens)
+        df = df.append(row, ignore_index=True)
+        save_list = [row["Date"], row["Hour"]] + [row["Demand {}".format(i)] for i in sens]
+        append_list_as_row(save_path, save_list)
+
+
+def append_list_as_row(file_name, list_of_elem):
+    from csv import writer
+    with open(file_name, 'a+', newline='') as write_obj:
+        csv_writer = writer(write_obj)
+        csv_writer.writerow(list_of_elem)
+
+def plot_sensitivity(demand_vol, supply_vol, dem_classes, sup_classes, est_vol, row, sens):
+    plt.subplots(figsize=full_fig)
+    plt.title("Sensitivity Plot for {}, h {}".format(row["Date"], row["Hour"]), pad=title_pad)
+    plt.xlabel("Volume [MWh]", labelpad=label_pad)
+    plt.ylabel("Price [€]", labelpad=label_pad)
+    col_1 = plt.get_cmap("tab10")(0)
+    col_2 = plt.get_cmap("tab10")(1)
+    plt.plot(demand_vol, dem_classes, color=col_1, label="Demand", linewidth=3)
+    plt.plot(supply_vol, sup_classes, color=col_2, label="Supply", linewidth=3)
+    y_lim = plt.gca().get_ylim()
+    for i in range(len(sens)):
+        if i == 0:
+            lab = "Sensitivity lines ({})".format(", ".join([str(s) for s in sens]))
+        else:
+            lab = "_nolabel_"
+        s = sens[i]
+        demand = est_vol + row["Demand {}".format(s)]
+        plt.vlines(demand, y_lim[0], 210, color="black", label=lab, linestyles="dotted", linewidth=2)
+
+    for line in plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.03),
+                           fancybox=True, shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.gca().set_ylim(y_lim)
+    plt.tight_layout()
+    print("-- saved plot hour {} --".format(row["Hour"]))
+    plt.savefig("output/auction/price_sensitivities/{}_{}.png".format(row["Date"], row["Hour"]))
+    plt.close()
+
+
+def get_volume_sensitivity(price, volume, min_s, max_s, supply_line, s):
+    if price + s < -10:
+        h_line = LineString([(min_s, -10), (max_s, -10)])
+    elif price + s > 210:
+        h_line = LineString([(min_s, 210), (max_s, 210)])
+    else:
+        h_line = LineString([(min_s, price+s), (max_s, price+s)])
+    sens_vol = h_line.intersection(supply_line).x
+    return round(sens_vol - volume, 2)
 
 
 if __name__ == '__main__':
@@ -707,3 +830,5 @@ if __name__ == '__main__':
     # evaluate_mean_price_classes(create_csv=False)
     # create_best_price_classes(plot=False, make_csv_files=False)
     # fix_summer_winter_time_bid_csv()
+    # test_supply_change_next_14_days()
+    make_sensitivity_columns_demand()
