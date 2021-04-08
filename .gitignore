@@ -10,7 +10,9 @@ __pycache__/
 
 # data files
 data/input/consumption_hourly
-data/input/auction
+data/input/auction/csv_disc
+data/input/auction/csv_wrong_2020
+data/input/auction/raw
 data/input/hydro_weekly
 data/input/price_hourly
 data/input/price_daily

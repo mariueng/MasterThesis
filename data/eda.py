@@ -454,11 +454,11 @@ def plot_random_auctions(n):
         hour = str(auction.hour)
         true_demand, true_supply = get_true_volumes(date_string, hour)
         date_string_2 = dt.strftime(auction, "%d.%m.%Y")
-        demand_day = get_auction_data(date_string_2, date_string_2, "d", os.getcwd())
+        demand_day = get_auction_data(date_string_2, date_string_2, ["d"], os.getcwd())
         est_demand = demand_day[demand_day["Hour"] == int(hour)].T[2:]
         est_demand["Price"] = [int(i[2:]) for i in est_demand.index]
         est_demand = est_demand.rename(columns={est_demand.columns[0]: "Est. demand"})
-        supply_day = get_auction_data(date_string_2, date_string_2, "s", os.getcwd())
+        supply_day = get_auction_data(date_string_2, date_string_2, ["s"], os.getcwd())
         est_supply = supply_day[supply_day["Hour"] == int(hour)].T[2:]
         est_supply["Price"] = [int(i[2:]) for i in est_supply.index]
         col_1 = plt.get_cmap("tab10")(0)
