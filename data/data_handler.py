@@ -33,8 +33,42 @@ def get_data(from_date, to_date, column_list, work_dir, resolution):  # dates on
         assert False
 
 
-def get_index(string_start_date):
-    return 100
+def get_auction_data(from_date, to_date, curve, work_dir):
+    path_to_project = "/".join(work_dir.split("\\")[0:5])
+    path_to_all_data = "/data/input/auction/time_series.csv"
+    path = path_to_project + path_to_all_data
+    if isinstance(from_date, str):
+        first_date = datetime.datetime.strptime(from_date, '%d.%m.%Y')
+    else:
+        first_date = datetime.datetime(from_date.year, from_date.month, from_date.day)
+    if isinstance(to_date, str):
+        last_date = datetime.datetime.strptime(to_date, '%d.%m.%Y')
+    else:
+        last_date = datetime.datetime(to_date.year, to_date.month, to_date.day)
+    valid_dates = check_valid_dates(first_date, last_date)
+    if valid_dates:
+        demand_classes = [-10, 0, 1, 5, 11, 20, 32, 46, 75, 107, 195, 210]
+        supply_classes = [-10, -4, -1, 0, 1, 3, 5, 8, 12, 15, 19, 22, 24, 26, 28, 30, 32, 35, 39, 42, 46, 51, 56, 66,
+                          75, 105, 165, 210]
+        all_dates = pd.read_csv(path, usecols=["Date", "Hour"])
+        all_dates["Date"] = pd.to_datetime(all_dates["Date"], format='%Y-%m-%d')
+        mask = (all_dates['Date'] >= first_date) & (all_dates['Date'] <= last_date)
+        dates_df = all_dates.loc[mask]
+        first_index = dates_df.index[0]
+        length = len(dates_df)
+        if curve == "d":
+            columns = ["Date", "Hour"] + ["d {}".format(price) for price in demand_classes]
+        else:
+            columns = ["Date", "Hour"] + ["s {}".format(price) for price in supply_classes]
+        bids_df = pd.read_csv(path, usecols=columns, header=0, skiprows=range(1, first_index), nrows=length+1)
+        bids_df = bids_df[columns]
+        bids_df["Date"] = pd.to_datetime(bids_df["Date"], format='%Y-%m-%d')
+        mask = (bids_df['Date'] >= first_date) & (bids_df['Date'] <= last_date)
+        df = bids_df.loc[mask]
+        df = df.reset_index(drop=True)
+        return df
+    else:
+        assert False
 
 
 def check_valid_dates(from_date, to_date):  # helping method checking that dates are valid

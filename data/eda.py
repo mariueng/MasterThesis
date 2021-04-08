@@ -1,19 +1,19 @@
-import matplotlib.pyplot as plt
+import os
+import warnings
 from datetime import datetime as dt
 from datetime import timedelta
-import requests
-from pathlib import Path
-import os
-from data.data_handler import get_data
-import pandas as pd
-import warnings
+import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from src.system.scores import get_all_point_metrics
 import numpy as np
-from scipy import stats
+import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
-from shapely.geometry import LineString
+from data.data_handler import get_data
+from data.data_handler import get_auction_data
+from scipy import stats
+from src.system.scores import get_all_point_metrics
+from data.bid_curves import get_original_bid_methods
+import random
 
 label_pad = 12
 title_pad = 20
@@ -444,257 +444,75 @@ def explore_eikon_data():
     plt.close()
 
 
-def auction_data():
-    raw_folder = "input/auction/raw"
-    vol_price_df = get_data("01.07.2014", "31.12.2020", ["Total Vol", "System Price"], os.getcwd(), "h")
-    net_flow_df = pd.DataFrame(
-        columns=["Date", "Hour", "Acs demand", "Acs supply", "Net flow", "Total Volume", "Int Volume"])
-    vol_price_df["Full vol"] = np.nan
-    vol_price_df["Full price"] = np.nan
-    vol_price_df["Disc vol"] = np.nan
-    vol_price_df["Disc price"] = np.nan
-    for file in sorted(Path(raw_folder).iterdir()):  # list all raw xls files
-        date_string = str(file).split("\\")[3].split("_")[-1][:-4]
-        date = dt.strptime(date_string, "%Y-%m-%d").date()
-        print(date)
-        vol_price_df_date = vol_price_df[vol_price_df["Date"].dt.date == date]
-        if not os.path.exists('output/plots/all_bids/{}'.format(date)):
-            os.makedirs('output/plots/all_bids/{}'.format(date))
-        df_result = pd.DataFrame()
-        lower_lim = -10
-        upper_lim = 210
-        df_result["Price"] = range(lower_lim, upper_lim + 1)
-        df_raw = pd.read_excel(file)
-        df_raw.columns = [str(i) for i in df_raw.columns]
-        all_columns = [i for i in df_raw.columns]
-        all_hour_columns = [i for i in all_columns if "Bid curve chart data (Reference time)" not in i]
-        for i in range(len(all_hour_columns)):
-            cols = [i * 2, i * 2 + 1]
-            df_h = df_raw[df_raw.columns[cols]]
-            hour = int(df_h.columns[1].split(" ")[1][0:2])
-            print("Hour {}".format(hour))
-            row_index = vol_price_df.loc[(vol_price_df["Date"].dt.date == date) & (vol_price_df["Hour"] == hour)].index[
-                0]
-            exc_volume = vol_price_df_date[vol_price_df_date["Hour"] == hour]["Total Vol"].tolist()[0]
-            exc_price = vol_price_df_date[vol_price_df_date["Hour"] == hour]["System Price"].tolist()[0]
-            idx_vol_demand = \
-                df_h[df_h[df_h.columns[0]] == "Bid curve chart data (Volume for accepted blocks buy)"].index[0]
-            idx_vol_supply = \
-                df_h[df_h[df_h.columns[0]] == "Bid curve chart data (Volume for accepted blocks sell)"].index[0]
-            idx_net_flow = df_h[df_h[df_h.columns[0]] == "Bid curve chart data (Volume for net flows)"].index[0]
-            acs_demand = df_h.loc[idx_vol_demand, df_h.columns[1]]
-            acs_supply = df_h.loc[idx_vol_supply, df_h.columns[1]]
-            net_flows = df_h.loc[idx_net_flow, df_h.columns[1]]
-            add_flow_to_demand = net_flows < 0
-            add_flow_to_supply = net_flows > 0
-            idx_bid_start = df_h[df_h[df_h.columns[0]] == "Buy curve"].index[0] + 1
-            df_h = df_h.iloc[idx_bid_start:].reset_index(drop=True)
-            df_h = df_h.rename(columns={df_h.columns[0]: 'Category', df_h.columns[1]: 'Value'})
-            df_h = df_h.dropna(how='all')
-            index_sell = df_h[df_h["Category"] == "Sell curve"].index[0]
-            df_buy = df_h[0:index_sell]
-            df_d = pd.DataFrame(columns=["Price", "Volume"])
-            df_d["Price"] = df_buy[df_buy["Category"] == "Price value"]["Value"].tolist()
-            df_d["Volume"] = df_buy[df_buy["Category"] == "Volume value"]["Value"].tolist()
-            df_d = df_d[lower_lim < df_d["Price"]]
-            df_d = df_d[upper_lim > df_d["Price"]].reset_index(drop=True)
-            df_d["Volume"] = df_d["Volume"] + acs_demand
-            if add_flow_to_demand:
-                df_d["Volume"] = df_d["Volume"] + abs(net_flows)
-            demand_line_full = LineString(np.column_stack((df_d["Volume"], df_d["Price"])))
-            df_d = get_discrete_bid_df(df_d, lower_lim, upper_lim)
-            demand_line_discrete = LineString(np.column_stack((df_d["Volume"], df_d["Price"])))
-            plt.subplots(figsize=full_fig)
-            plt.plot(df_d["Volume"], df_d["Price"], label="Demand", zorder=1)
-            df_sell = df_h[index_sell + 1:]
-            df_s = pd.DataFrame(columns=["Price", "Volume"])
-            df_s["Price"] = df_sell[df_sell["Category"] == "Price value"]["Value"].tolist()
-            df_s["Volume"] = df_sell[df_sell["Category"] == "Volume value"]["Value"].tolist()
-            df_s = df_s[lower_lim < df_s["Price"]]
-            df_s = df_s[upper_lim > df_s["Price"]].reset_index(drop=True)
-            df_s["Volume"] = df_s["Volume"] + acs_supply
-            if add_flow_to_supply:
-                df_s["Volume"] = df_s["Volume"] + abs(net_flows)
-            supply_line_full = LineString(np.column_stack((df_s["Volume"], df_s["Price"])))
-            df_s = get_discrete_bid_df(df_s, lower_lim, upper_lim)
-            demand_col_name = "Demand h {}".format(hour)
-            if demand_col_name in df_result.columns:
-                demand_col_name = demand_col_name + "_2"
-            supply_col_name = "Supply h {}".format(hour)
-            if supply_col_name in df_result.columns:
-                supply_col_name = demand_col_name + "_2"
-            df_result[demand_col_name] = df_d["Volume"]
-            df_result[supply_col_name] = df_s["Volume"]
-            supply_line_discrete = LineString(np.column_stack((df_s["Volume"], df_s["Price"])))
-            plt.plot(df_s["Volume"], df_s["Price"], label="Supply", zorder=2)
-            full_intersect = supply_line_full.intersection(demand_line_full)
-            full_vol = full_intersect.x
-            full_price = full_intersect.y
-            vol_price_df.loc[row_index, "Full vol"] = full_vol
-            vol_price_df.loc[row_index, "Full price"] = full_price
-            discrete_intersect = supply_line_discrete.intersection(demand_line_discrete)
-            if type(discrete_intersect) == LineString:
-                disc_price = upper_lim
-                disc_vol = max(df_d["Volume"])
-                print("In date {} hour {} we found no intersection".format(date, hour))
-            else:
-                disc_vol = discrete_intersect.x
-                disc_price = discrete_intersect.y
-            vol_price_df.loc[row_index, "Disc vol"] = disc_vol
-            vol_price_df.loc[row_index, "Disc price"] = disc_price
-            plt.scatter(disc_vol, disc_price, color="red", zorder=3, s=140,
-                        label="Disc. intersect ({:.2f}, {:.2f})".format(disc_vol, disc_price))
-            plt.scatter(exc_volume, exc_price, color="green", zorder=4,
-                        label="True intersect ({:.2f}, {:.2f})".format(exc_volume, exc_price))
-            plt.legend()
-            plt.ylim(lower_lim, max(100, disc_price * 1.1))
-            plt.ylabel("Price")
-            plt.xlabel("Volume")
-            plt.title("Discrete Bid Curves {} - {}".format(date, hour))
-            plt.tight_layout()
-            save_curve_path = 'output/plots/all_bids/{}/{}.png'.format(date, hour)
-            if os.path.exists(save_curve_path):
-                plt.savefig('output/plots/all_bids/{}/{}_2'.format(date, hour))
-            else:
-                plt.savefig('output/plots/all_bids/{}/{}'.format(date, hour))
-            plt.close()
-            flow_dict = {"Date": date, "Hour": hour, "Acs demand": acs_demand, "Acs supply": acs_supply,
-                         "Net flow": net_flows, "Total Volume": exc_volume, "Int Volume": disc_vol}
-            net_flow_df = net_flow_df.append(flow_dict, ignore_index=True)
-        cols = [i for i in df_result.columns if "Demand" in i or "Supply" in i]
-        df_result[cols] = df_result[cols].astype(float).round(2)
-        save_disc_path = "input/auction/csv_disc/{}.csv".format(date)
-        df_result.to_csv(save_disc_path, index=False, float_format='%.2f')
-    vol_price_df = vol_price_df.dropna()
-    vol_price_df.to_csv("output/auction/vol_price_auction.csv", index=False, float_format='%.2f')
-    net_flow_df.to_csv("output/auction/volume_analyses.csv", index=False, float_format='%.2f')
+def plot_random_auctions(n):
+    random.seed(1)
+    all_hours = [i for i in pd.date_range(dt(2014, 7, 1), dt(2020, 6, 3), freq='h')]
+    chosen_auctions = random.sample(all_hours, n)
+    for auction in chosen_auctions:
+        print(auction)
+        date_string = dt.strftime(auction, "%Y-%m-%d")
+        hour = str(auction.hour)
+        true_demand, true_supply = get_true_volumes(date_string, hour)
+        date_string_2 = dt.strftime(auction, "%d.%m.%Y")
+        demand_day = get_auction_data(date_string_2, date_string_2, "d", os.getcwd())
+        est_demand = demand_day[demand_day["Hour"] == int(hour)].T[2:]
+        est_demand["Price"] = [int(i[2:]) for i in est_demand.index]
+        est_demand = est_demand.rename(columns={est_demand.columns[0]: "Est. demand"})
+        supply_day = get_auction_data(date_string_2, date_string_2, "s", os.getcwd())
+        est_supply = supply_day[supply_day["Hour"] == int(hour)].T[2:]
+        est_supply["Price"] = [int(i[2:]) for i in est_supply.index]
+        col_1 = plt.get_cmap("tab10")(0)
+        col_2 = plt.get_cmap("tab10")(1)
+        est_supply = est_supply.rename(columns={est_supply.columns[0]: "Est. supply"})
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(full_fig[0]+8, full_fig[1]))
+        fig.suptitle("Supply and Demand from Price Classes {}, h {}".format(date_string, hour))
+        ax1.plot(true_demand["True demand"], true_demand["Price"], linestyle="dotted", color=col_1,
+                 label="True demand", linewidth=2)
+        ax1.plot(est_demand["Est. demand"], est_demand["Price"], color=col_1, label="Est. demand")
+        ax2.plot(true_supply["True supply"], true_supply["Price"], linestyle="dotted", color=col_2,
+                 label="True supply", linewidth=2)
+        ax2.plot(est_supply["Est. supply"], est_supply["Price"], color=col_2, label="Est. supply")
+        ax3.plot(est_demand["Est. demand"], est_demand["Price"], color=col_1, label="Est. demand")
+        ax3.plot(est_supply["Est. supply"], est_supply["Price"], color=col_2, label="Est. supply")
+        for ax in [ax1, ax2, ax3]:
+            ax.set_ylabel("Price [€]", labelpad=label_pad)
+            ax.set_xlabel("Volume [MWh]", labelpad=label_pad)
+            for line in ax.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                                  shadow=True).get_lines():
+                line.set_linewidth(2)
+        plt.tight_layout()
+        plt.savefig("output/auction/price_classes/random_auctions/{}_{}.png".format(date_string, hour))
+        plt.close()
 
 
-def get_discrete_bid_df(df, lower, upper):
-    price_range = range(lower, upper + 1)
-    result = pd.DataFrame(columns=df.columns)
-    result["Price"] = price_range
-    for i in range(len(result)):
-        closest = df.iloc[(df["Price"] - price_range[i]).abs().argsort()[:1]].reset_index(drop=True).loc[0, "Volume"]
-        result.loc[i, "Volume"] = closest
-    return result
+def get_true_volumes(date_string, hour):  # Helping method
+    columns = [int(hour) * 2, int(hour) * 2 + 1]
+    path_to_orig = "input/auction/raw/mcp_data_report_{}.xls".format(date_string)
+    df = pd.read_excel(path_to_orig, usecols=columns)
+    df = df.rename(columns={df.columns[0]: 'Category', df.columns[1]: 'Value'})
+    df = df.dropna(how='all')
+    get_initial_info_raw, get_buy_and_sell_dfs, get_auction_df = get_original_bid_methods()
+    idx_demand, idx_supply, idx_flow, acs_demand, acs_supply, flow, idx_bid = get_initial_info_raw(df)
+    add_flow_demand = flow < 0
+    add_flow_supply = flow > 0
+    lower_lim = -10
+    upper_lim = 210
+    df_buy, df_sell = get_buy_and_sell_dfs(df, idx_bid)
+    df_buy = get_auction_df(df_buy, add_flow_demand, lower_lim, upper_lim, acs_demand, flow)
+    df_sell = get_auction_df(df_sell, add_flow_supply, lower_lim, upper_lim, acs_supply, flow)
+    df_buy = df_buy.rename(columns={"Volume": "True demand"})
+    df_sell = df_sell.rename(columns={"Volume": "True supply"})
+    return df_buy, df_sell
 
 
-
-
-
-def rename_folders_from_raw():
-    raw_folder = "input/auction/raw_s"
-    # dates = [(dt(2015, 1, 1) + timedelta(days=x)).date() for x in range(365)]
-    all_files = sorted(Path(raw_folder).iterdir())
-    for file in all_files:  # list all raw xls files
-        date_string = str(file).split("_")[-3][:-3]
-        date = dt.strptime(date_string, "%d-%m-%Y").date()
-        print(date)
-        # dates.remove(date)
-        first_path = "\\".join(str(file).split("\\")[0:3])
-        mcp_name = "_".join(str(file).split("\\")[3].split("_")[0:3])
-        save_path = first_path + "\\" + mcp_name + "_" + str(date) + ".xls"
-        os.rename(file, save_path)
-    # print(dates)
-
-
-
-
-def min_max_price():
-    price = get_data("01.01.2014", "31.12.2020", ["System Price"], os.getcwd(), "h")["System Price"].tolist()
-    max_price = max(price)
-    min_price = min(price)
-    print("Max {}, min {}".format(max_price, min_price))
-
-
-def eda_disc_auction_data(overview, make_analysis_csv):
-    if overview:
-        all_dates = [i.strftime("%Y-%m-%d") + ".csv" for i in
-                     pd.date_range(dt(2014, 7, 1), dt(2021, 1, 1) - timedelta(days=1), freq='d')]
-        all_files = sorted(Path("input/auction/csv_disc").iterdir())
-        all_end_files = [str(i).split("\\")[-1] for i in all_files]
-        print("--------------------------------\n")
-        print("There are {} csv-files in folder ranging {} dates".format(len(all_end_files), len(all_dates)))
-        for d in all_dates:
-            if d not in all_end_files:
-                print("Missing csv file for {}".format(d))
-        number_of_auctions = len(all_dates) * 24 + 1  # adding one as 2014 has +1 hour but no -1 hour
-        print("Number of auctions during period: {}".format(number_of_auctions))
-        prices_vol = get_data("01.07.2014", "31.12.2020", ["System Price", "Total Vol"], os.getcwd(), "h")
-        max_p = prices_vol[prices_vol["System Price"] == prices_vol["System Price"].max()].iloc[0]
-        print("Max price: {} h{}:\t {} (volume {})".format(max_p["Date"].date(), max_p["Hour"], max_p["System Price"],
-                                                           max_p["Total Vol"]))
-        min_p = prices_vol[prices_vol["System Price"] == prices_vol["System Price"].min()].iloc[0]
-        print("Min price: {} h{}:\t {} (volume {})".format(min_p["Date"].date(), min_p["Hour"], min_p["System Price"],
-                                                           min_p["Total Vol"]))
-        max_v = prices_vol[prices_vol["Total Vol"] == prices_vol["Total Vol"].max()].iloc[0]
-        print("Max vol: {} h{}:\t {} (price {})".format(max_v["Date"].date(), max_v["Hour"], max_v["Total Vol"],
-                                                        max_v["System Price"]))
-        min_v = prices_vol[prices_vol["Total Vol"] == prices_vol["Total Vol"].min()].iloc[0]
-        print("Min vol: {} h{}:\t {} (price {})".format(min_v["Date"].date(), min_v["Hour"], min_v["Total Vol"],
-                                                        min_v["System Price"]))
-        print("--------------------------------\n")
-    if make_analysis_csv:
-        years = range(2014, 2021)
-        all_files = sorted(Path("input/auction/csv_disc").iterdir())
-        true_df = get_data("01.07.2014", "31.12.2020", ["System Price", "Total Vol"], os.getcwd(), "h")
-        df = pd.DataFrame(columns=["Date", "Hour", "True price", "True vol", "Disc price", "Disc vol"])
-        for f in all_files:
-            date = dt.strptime(str(f).split("\\")[-1][:-4], "%Y-%m-%d").date()
-            print(date)
-            data = pd.read_csv(f)
-            for i in range(int((len(data.columns) - 1) / 2)):
-                demand = data[["Price"]+[data.columns[1+i*2]]]
-                hour = demand.columns[1].split(" ")[-1]
-                if "_" not in hour:
-                    row = true_df[(true_df["Date"].dt.date==date) & (true_df["Hour"]==int(hour))].reset_index(drop=True)
-                    demand_line = LineString(np.column_stack((demand["Price"], demand[demand.columns[1]])))
-                    supply = data[["Price"]+[data.columns[1+i*2+1]]]
-                    supply_line = LineString(np.column_stack((supply["Price"], supply[supply.columns[1]])))
-                    intersect = supply_line.intersection(demand_line)
-                    new = {"Date": date, "Hour": hour, "True price": row.loc[0, "System Price"], "True vol": row.loc[0, "Total Vol"],
-                           "Disc price": round(intersect.x, 4), "Disc vol": round(intersect.y, 2)}
-                    df = df.append(new, ignore_index=True)
-                    df.to_csv("output/auction/vol_price_disc_analysis.csv", index=False)
-    df = pd.read_csv("output/auction/vol_price_disc_analysis.csv")
-    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
-    df["Mae price"] = abs(df["True price"] - df["Disc price"])
-    df["Mape price"] = 100 * df["Mae price"] / df["True price"]
-    df["Mae vol"] = abs(df["True vol"] - df["Disc vol"])
-    df["Mape vol"] = 100 * df["Mae vol"] / df["True vol"]
-    df_wrong_2020 = df[df["Date"] >= dt(2020, 6, 3)]
-    df = df[df["Date"] < dt(2020, 6, 3)]
-    print("MAE price discrete bids: {:.3f}".format(df["Mae price"].mean()))
-    print("MAPE price discrete bids: {:.3f}%".format(df["Mape price"].mean()))
-    print("MAE volume discrete bids: {:.3f}".format(df["Mae vol"].mean()))
-    print("MAPE volume discrete bids: {:.3f}\n".format(df["Mape vol"].mean()))
-    df_grouped = df.groupby(by=df["Date"].dt.year).mean()[["Mae price", "Mape price", "Mae vol", "Mape vol"]]
-    # print(df_grouped)
-    print("MAE price discrete bids wrong 2020: {:.3f}".format(df_wrong_2020["Mae price"].mean()))
-    print("MAE volume discrete bids wrong 2020: {:.3f}\n".format(df_wrong_2020["Mae vol"].mean()))
-
-
-def investigate_unit_price_information_loss():
-    df_2014 = pd.read_csv("output/vol_price_auction_2014.csv")
-    df_2019 = pd.read_csv("output/vol_price_auction_2019.csv")
-    df_2020 = pd.read_csv("output/vol_price_auction_2020.csv")
-    for year, df in {2014: df_2014, 2019: df_2019, 2020: df_2020}.items():
-        print("\n{} ----------------------".format(year))
-        df["full_vol_dev"] = 100 * (df["Total Vol"] - df["Full vol"]) / df["Total Vol"]
-        print("Full: Mean error in volume {:.3f}%".format(df["full_vol_dev"].mean()))
-        print("Full: Abs mean error in volume {:.3f}%".format(abs(df["full_vol_dev"]).mean()))
-        df["disc_vol_dev"] = 100 * (df["Total Vol"] - df["Disc vol"]) / df["Total Vol"]
-        print("Disc: Mean error in volume {:.3f}%".format(df["disc_vol_dev"].mean()))
-        print("Disc: Abs mean error in volume {:.3f}%".format(abs(df["disc_vol_dev"]).mean()))
-        df["full_price_dev"] = 100 * (df["System Price"] - df["Full price"]) / df["System Price"]
-        print("Full: Mean error in price {:.3f}%".format(df["full_price_dev"].mean()))
-        print("Full: Abs mean error in price {:.3f}%".format(abs(df["full_price_dev"]).mean()))
-        df["disc_price_dev"] = 100 * (df["System Price"] - df["Disc price"]) / df["System Price"]
-        print("Disc: Mean error in price {:.3f}%".format(df["disc_price_dev"].mean()))
-        print("Disc: Abs mean error in price {:.3f}%".format(abs(df["disc_price_dev"]).mean()))
-
-
+def eda_auction_data():
+    hourly_errors = pd.read_csv("input/auction/time_series_errors.csv")
+    mae_demand = hourly_errors["MAE d"].mean()
+    mae_supply = hourly_errors["MAE s"].mean()
+    max_mae_dem = hourly_errors["MAE d"].max()
+    max_mae_sup = hourly_errors["MAE s"].max()
+    print("For all hours in dataset:\tMAE demand = {:.2f}, MAE supply = {:.2f}".format(mae_demand, mae_supply))
+    print("For all hours in dataset:\tMax MAE dem = {:.2f}, Max MAE sup = {:.2f}".format(max_mae_dem, max_mae_sup))
 
 
 if __name__ == '__main__':
@@ -713,11 +531,6 @@ if __name__ == '__main__':
     # lin_model_test_norm_per_year()
     # plot_autocorrelation()
     # explore_eikon_data()
-    # auction_data()
-    # min_max_price()
-    # rename_folders_from_raw()
-    # auction_data()
-    # merge_same_dates_in_one_csv()
-    # plot_mean_curves()
-    eda_disc_auction_data(overview=False, make_analysis_csv=False)
-    # investigate_unit_price_information_loss()
+    # plot_random_auctions(10)
+    eda_auction_data()
+
