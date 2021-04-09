@@ -515,6 +515,24 @@ def eda_auction_data():
     print("For all hours in dataset:\tMax MAE dem = {:.2f}, Max MAE sup = {:.2f}".format(max_mae_dem, max_mae_sup))
 
 
+def plot_european_prices():
+    data = get_data("01.01.2019", "31.12.2019", ["System Price", "APX", "OMEL", "EEX"], os.getcwd(), "d")
+    data = data.rename(columns={"System Price": "Nord Pool"})
+    plt.subplots(figsize=full_fig)
+    for col in ["Nord Pool", "EEX", "APX", "OMEL"]:
+        avg_price = data[col].mean()
+        plt.plot(data["Date"], data[col], label="{} (€{:.2f})".format(col, avg_price))
+    plt.ylim(-1, 100)
+    for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                          shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.title("Daily European Spot Prices 2019", pad=title_pad)
+    plt.xlabel("Date", labelpad=label_pad)
+    plt.ylabel("Price [€]", labelpad=label_pad)
+    plt.tight_layout()
+    plt.savefig("output/plots/eda/european_market_prices.png")
+    plt.close()
+
 if __name__ == '__main__':
     print("Running eda..")
     # plot_norm_weekday()
@@ -532,5 +550,6 @@ if __name__ == '__main__':
     # plot_autocorrelation()
     # explore_eikon_data()
     # plot_random_auctions(10)
-    eda_auction_data()
+    # eda_auction_data()
+    plot_european_prices()
 
