@@ -9,6 +9,8 @@ from data_handler import get_data
 from data_handler import get_auction_data
 from shapely.geometry import LineString
 import random
+import warnings
+from scipy import stats
 
 label_pad = 12
 title_pad = 20
@@ -730,6 +732,8 @@ def test_supply_change_next_14_days():
 
 
 def make_sensitivity_columns_demand():
+    print("Already completed")
+    assert False
     sens = [-8, -1, 1, 8]
     save_path = "input/auction/price_sensitivities.csv"
     if os.path.exists(save_path):
@@ -755,25 +759,27 @@ def make_sensitivity_columns_demand():
         supply_line = LineString(np.column_stack((supply_volumes, supply_cl)))
         price = demand_line.intersection(supply_line).y
         volume = demand_line.intersection(supply_line).x
-        df.loc[i, "Est price"] = round(price, 2)
-        df.loc[i, "Est volume"] = round(volume, 2)
+        row["Est price"] = round(price, 2)
+        row["Est volume"] = round(volume, 2)
         for s in sens:
             vol = get_volume_sensitivity(price, volume, min_supply, max_supply, supply_line, s)
             row["Demand {}".format(s)] = vol
         if i % 24 == 0:
             print(row["Date"])
         if i in plot_list or price > 197 or price < 0:
-            plot_sensitivity(demand_volumes, supply_volumes, demand_cl, supply_cl,volume, row, sens)
+            plot_sensitivity(demand_volumes, supply_volumes, demand_cl, supply_cl, volume, row, sens)
         df = df.append(row, ignore_index=True)
-        save_list = [row["Date"], row["Hour"]] + [row["Demand {}".format(i)] for i in sens]
+        save_list = [row["Date"], row["Hour"], row["Est price"], row["Est volume"]] + [row["Demand {}".format(i)]
+                                                                                       for i in sens]
         append_list_as_row(save_path, save_list)
 
 
-def append_list_as_row(file_name, list_of_elem):
+def append_list_as_row(file_name, list_of_elem):  # Helping method
     from csv import writer
     with open(file_name, 'a+', newline='') as write_obj:
         csv_writer = writer(write_obj)
         csv_writer.writerow(list_of_elem)
+
 
 def plot_sensitivity(demand_vol, supply_vol, dem_classes, sup_classes, est_vol, row, sens):
     plt.subplots(figsize=full_fig)
@@ -815,6 +821,144 @@ def get_volume_sensitivity(price, volume, min_s, max_s, supply_line, s):
     return round(sens_vol - volume, 2)
 
 
+# def spike source: outside Gaussian 90%, 60 day moving average and variance. Borovkova and Permana (2006)
+def define_and_plot_spikes():
+    start_date = dt(2014, 1, 1)
+    last_date = dt(2020, 1, 1)
+    price_df = get_data(start_date, last_date, ["System Price"], os.getcwd(), "h")
+    df = pd.read_csv("output/auction/price_sensitivities.csv")
+    df = df[[i for i in df.columns if "Est" not in i]]
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    df = df[(df["Date"] > start_date) & (df["Date"] < last_date)].reset_index(drop=True)
+    df = price_df.merge(df, on=["Date", "Hour"])
+    df["Spike"] = np.NAN
+    for i in range(len(df)):
+        price_this_hour = df.loc[i, "System Price"]
+        df.loc[i, "Spike"] = check_if_spike(price_this_hour, i, df["System Price"])
+    share_pos_spike_three = 100 * len(df[df["Spike"] == 1]) / len(df)
+    share_neg_spike_three = 100 * len(df[df["Spike"] == -1]) / len(df)
+    print("Spike occurrence:\tpos {:.2f}%, neg {:.2f}%".format(share_pos_spike_three, share_neg_spike_three))
+    df.to_csv("output/auction/spike.csv", index=False, float_format="%.2f")
+    plot_spikes(df)
+
+
+def plot_spikes(df_all):
+    warnings.filterwarnings("ignore")
+    for year in range(2014, 2020):
+        print("Plotting for year {}".format(year))
+        df = df_all[df_all["Date"].dt.year == year]
+        if len(df) > 0:
+            df["Hour Time"] = pd.to_datetime(df['Hour'], format="%H").dt.time
+            df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour Time']), 1)
+            plt.subplots(figsize=full_fig)
+            plt.title("Spike Detection for {}".format(year), pad=title_pad)
+            plt.plot(df["DateTime"], df["System Price"], color=first_color, label="SYS")
+            outlier_df = df[df["Spike"] != 0]
+            share = 100 * len(outlier_df) / len(df)
+            plt.scatter(outlier_df["DateTime"], outlier_df["System Price"], color=sec_color,
+                        label="Spike ({:.2f}%)".format(share))
+            plt.xlabel("Date", labelpad=label_pad)
+            plt.ylabel("Price [€]", labelpad=label_pad)
+            for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                                   shadow=True).get_lines():
+                line.set_linewidth(2)
+            plt.tight_layout()
+            y_lim = plt.gca().get_ylim()
+            if y_lim[1] > 100:
+                plt.ylim(0, 100)
+            plt.savefig("output/plots/eda/spikes_{}.png".format(year))
+            plt.close()
+
+
+def check_if_spike(price, i, df):  # Helping method
+    spike = 0
+    number_of_days_in_window = min(30, len(df) // 24)
+    threshold = 3
+    number_of_hours_in_window = 24 * number_of_days_in_window
+    if i < number_of_hours_in_window:
+        window_prices = df[0:number_of_hours_in_window]
+    else:
+        window_prices = df[i-number_of_hours_in_window:i]
+    mean = window_prices.mean()
+    std_dev = window_prices.std()
+    if price > mean + threshold * std_dev:
+        spike = 1
+    elif price < mean - threshold * std_dev:
+        spike = -1
+    return spike
+
+
+def check_spike_and_sensitivity_correlation():
+    df = pd.read_csv("output/auction/spike.csv")
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    columns = ["Demand {}".format(i) for i in [-8, -1, 1, 8]]
+    for c in columns:
+        r_coeff = round(stats.pearsonr(df["Spike"], df[c])[0], 3)
+        print("Spike correlation coefficient for demand volume {}:\t{}".format(c, r_coeff))
+    print("\n")
+    no_df = df[df["Spike"] == 0]
+    pos_df = df[df["Spike"] == 1]
+    neg_df = df[df["Spike"] == -1]
+    for c in columns:
+        mean_no = no_df[c].mean()
+        mean_pos = pos_df[c].mean()
+        mean_neg = neg_df[c].mean()
+        pos_diff = round(100*((mean_pos-mean_no)/mean_no), 2)
+        neg_diff = round(100*((mean_neg-mean_no)/mean_no), 2)
+        print("{}, mean no spike = {:.2f}, mean pos {:.2f} ({}%), mean neg {:.2f} "
+              "({}%)".format(c, mean_no, mean_pos, pos_diff, mean_neg, neg_diff))
+
+
+def verify_est_curve_accuracy():
+    df = pd.read_csv("output/auction/price_sensitivities.csv")
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    df = df[["Date", "Hour", "Est price", "Est volume"]]
+    data = get_data("01.07.2014", "31.12.2020", ["System Price", "Total Vol"], os.getcwd(), "h")
+    df = df.merge(data, on=["Date", "Hour"])
+    df["Price MAE"] = abs(df["System Price"] - df["Est price"])
+    df["Volume MAE"] = abs(df["Total Vol"] - df["Est volume"])
+    df["Price MAPE"] = 100 * df["Price MAE"] / df["System Price"]
+    df["Volume MAPE"] = 100 * df["Volume MAE"] / df["Total Vol"]
+    for col in ["Price", "Volume"]:
+        print("{} MAE:  {:.2f}".format(col, df["{} MAE".format(col)].mean()))
+        print("{} MAPE: {:.2f}".format(col, df["{} MAPE".format(col)].mean()))
+    mean_c = pd.read_csv("output/auction/mean_curves.csv")
+    demand_line = LineString(np.column_stack((mean_c["Mean demand"], mean_c["Price"])))
+    supply_line = LineString(np.column_stack((mean_c["Mean supply"], mean_c["Price"])))
+    est_p = demand_line.intersection(supply_line).y
+    est_v = demand_line.intersection(supply_line).x
+    true_p = df["System Price"].mean()
+    true_v = df["Total Vol"].mean()
+    print("True mean price {:.2f}, est mean price {:.2f} (diff = {:.2f})".format(true_p, est_p, (true_p-est_p)))
+    print("True mean vol {:.2f}, est mean vol {:.2f} (diff = {:.2f})".format(true_v, est_v, (true_v-est_v)))
+
+
+def explore_daily_curves():
+    df = get_auction_data("01.07.2014", "02.06.2020", ["d", "s"], os.getcwd())
+    data = get_data("01.07.2014", "02.06.2020", ["System Price", "Total Vol"], os.getcwd(), "d")
+    data["Total Vol"] = data["Total Vol"] / 24
+    data["Est price"], data["Est volume"] = (np.NAN, np.NAN)
+    d_classes, s_classes, _, _ = get_best_price_classes(plot=False)
+    for i in range(len(data)):
+        date = data.loc[i, "Date"]
+        auctions = df[df["Date"] == date]
+        auctions = auctions.drop(columns=["Date", "Hour"])
+        mean_auction = auctions.mean()
+        demand = mean_auction[0:len(d_classes)]
+        supply = mean_auction[len(d_classes):]
+        demand_line = LineString(np.column_stack((demand.values, d_classes)))
+        supply_line = LineString(np.column_stack((supply.values, s_classes)))
+        data.loc[i, "Est price"] = demand_line.intersection(supply_line).y
+        data.loc[i, "Est volume"] = demand_line.intersection(supply_line).x
+    data["Price MAE"] = abs(data["System Price"] - data["Est price"])
+    data["Price MAPE"] = 100 * data["Price MAE"] / data["System Price"]
+    data["Volume MAE"] = abs(data["Total Vol"] - data["Est volume"])
+    data["Volume MAPE"] = 100 * data["Volume MAE"] / data["Total Vol"]
+    print("Price MAE : {:.2f}".format(data["Price MAE"].mean()))
+    print("Price MAPE : {:.2f}".format(data["Price MAPE"].mean()))
+    print("Volume MAE : {:.2f}".format(data["Volume MAE"].mean()))
+    print("Volume MAPE : {:.2f}".format(data["Volume MAPE"].mean()))
+
 if __name__ == '__main__':
     print("Running bid curve script..\n")
     # auction_data()
@@ -831,4 +975,8 @@ if __name__ == '__main__':
     # create_best_price_classes(plot=False, make_csv_files=False)
     # fix_summer_winter_time_bid_csv()
     # test_supply_change_next_14_days()
-    make_sensitivity_columns_demand()
+    # make_sensitivity_columns_demand()
+    # define_and_plot_spikes()
+    # check_spike_and_sensitivity_correlation()
+    # verify_est_curve_accuracy()
+    explore_daily_curves()

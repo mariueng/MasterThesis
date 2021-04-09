@@ -853,6 +853,41 @@ def add_fossil_to_all_data():
     assert [i == 0 for i in df_all.isna().sum()]
     df_all.to_csv("..\\data\\input\\combined\\all_data_daily.csv", index=False, float_format='%g')
 
+
+def add_european_prices_all_data():
+    apx = get_price_df("apx")
+    currency_df = get_price_df("pound_to_euro")
+    apx["APX"] = apx["APX"] * currency_df["EUR"]
+    omel = get_price_df("omel")
+    eex = get_price_df("eex")
+    df = apx.merge(omel, on="Date", how="outer")
+    df = df.merge(eex, on="Date", how="outer")
+    full_date = get_data(datetime(2014, 1, 1), datetime(2020, 12, 31), [], os.getcwd(), "d")
+    df = full_date.merge(df, on="Date", how="outer").interpolate(method="linear")
+    df = df[df["Date"].dt.year.isin(range(2014, 2021))]
+    df = df.fillna(method="bfill")
+    df = df.fillna(method="ffill")
+    df = df.round(decimals=2)
+    df_all = pd.read_csv("input/combined/all_data_daily.csv")
+    df_all["Date"] = pd.to_datetime(df_all["Date"], format="%Y-%m-%d")
+    orig_len = len(df_all)
+    df_all = df_all.merge(df, on="Date")
+    assert len(df_all) == orig_len
+    assert [i == 0 for i in df_all.isna().sum()]
+    df_all.to_csv("input/combined/all_data_daily.csv")
+
+
+def get_price_df(exchange):  # Helping method
+    if exchange == "pound_to_euro":
+        columns = ["Date", "GBP", "EUR".format(exchange.upper())]
+        file_path = "input/eikon/raw/{}.xlsx".format(exchange)
+    else:
+        file_path = "input/eikon/raw/{}_prices.xlsx".format(exchange)
+        columns = ["Date", "{}".format(exchange.upper())]
+    df = pd.read_excel(file_path, header=1, usecols=columns)
+    df = df[(df["Date"] >= datetime(2014, 1, 1)) & (df["Date"] <= datetime(2020, 12, 31))]
+    return df
+
 if __name__ == '__main__':
     print("Running method.." + "\n")
     # write_price_to_combined("h", convert_to_csv=True, replace_commas=True)
@@ -883,4 +918,5 @@ if __name__ == '__main__':
     # append_arcshinh_to_all_data("Total Hydro Dev", "daily")
     # add_lagged_col_to_all_data("Total Hydro Dev", "daily", -11)
     # remove_column_from_all_data("Total Hydro Dev -11 lag", "daily")
-    add_fossil_to_all_data()
+    # add_fossil_to_all_data()
+    add_european_prices_all_data()
