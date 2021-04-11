@@ -16,6 +16,7 @@ data/input/price_daily
 data/input/production_hourly
 data/input/volume_hourly
 data/input/volume_daily
+data/input/auction_data
 
 # Preliminary results
 src/results/validation/*
