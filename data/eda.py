@@ -163,21 +163,19 @@ def plot_temperatures():
 
 
 def plot_precipitation():
-    t_columns = ["Norway", "Hamar", "Kvin", "Troms", "Oppdal", "Bergen"]
-    t_columns = ["Prec {}".format(i) for i in t_columns]
-    df = get_data("01.01.2019", "31.12.2019", t_columns, os.getcwd(), "d")
+    df = get_data("01.01.2019", "31.12.2019", ["Prec Norway", "Prec Norway 7"], os.getcwd(), "d")
     plt.subplots(figsize=full_fig)
-    for col in t_columns:
-        plt.plot(df["Date"], df[col], label=col[5:], linewidth=1)
-    for line in plt.legend(loc='upper center', ncol=6, bbox_to_anchor=(0.5, 1.02),
+    plt.plot(df["Date"], df["Prec Norway"], label="Acc. precipitation Norway", color=first_color)
+    plt.plot(df["Date"], df["Prec Norway 7"], label="Acc. precipitation 7 days ahead Norway", color=sec_color)
+    for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.02),
                            fancybox=True, shadow=True).get_lines():
         line.set_linewidth(2)
     plt.title("Precipitation Norway 2019", pad=title_pad)
     plt.ylabel("Mm", labelpad=label_pad)
     plt.xlabel("Date", labelpad=label_pad)
-    ymax = max(df[t_columns].max()) * 1.1
-    ymin = min(df[t_columns].min()) * 0.9
-    plt.ylim(ymin, ymax)
+    # ymax = df["Prec Norway 7"].max() * 1.03
+    ymax = 1400
+    plt.ylim(0, ymax)
     plt.tight_layout()
     path = "output/plots/eda/precipitation_norway_2019.png"
     plt.savefig(path)
@@ -242,12 +240,16 @@ def plot_all_variables_per_year():
     col_name = "Total Hydro"
     plot_col_per_year(col_name, title, ylabel)
     ylabel = "Production MWh"
-    title = "Wind Production Denmark per Year"
-    col_name = "Wind DK"
+    title = "Wind Production Sweden and Denmark per Year"
+    col_name = "Wind Prod"
     plot_col_per_year(col_name, title, ylabel)
     ylabel = "Mm"
-    title = "Precipitation Seven Days Ahead"
-    col_name = "Prec Forecast"
+    title = "Precipitation Norway"
+    col_name = "Prec Norway"
+    plot_col_per_year(col_name, title, ylabel)
+    ylabel = "Mm"
+    title = "Precipitation Norway Seven Days Ahead"
+    col_name = "Prec Norway 7"
     plot_col_per_year(col_name, title, ylabel)
 
 
@@ -540,9 +542,9 @@ if __name__ == '__main__':
     # plot_daily_vs_hourly_prices()
     # plot_norm_week()
     # plot_temperatures()
-    # plot_precipitation()
+    plot_precipitation()
     # plot_all_variables_per_year()
-    # plot_correlation("System Price", "Coal")
+    # plot_correlation("System Price", "Prec Norway 7")
     # plot_correlation_norm_price_per_year("System Price", "Total Hydro Dev")
     # check_lagged_correlation("System Price", "Total Hydro Dev")
     # lin_model_test()
@@ -551,5 +553,5 @@ if __name__ == '__main__':
     # explore_eikon_data()
     # plot_random_auctions(10)
     # eda_auction_data()
-    plot_european_prices()
+    # plot_european_prices()
 

@@ -11,7 +11,7 @@ def plot_correlation_matrix_first():
     replace_dict = {"System Price": "Price", "Total Vol": "Volume", "Total Hydro": "Hydro", "Total Hydro Dev":
                     "Hydro Dev", "Temp Norway": "Temp Nor", "Prec Norway 7": "Prec Nor. 7"}
     columns = ["System Price", "Total Vol", "Supply", "Demand", "Total Hydro", "Total Hydro Dev", "Temp Norway",
-               "Wind DK", "Prec Norway 7", "Oil", "Gas", "Coal", "Low Carbon"]
+               "Wind Prod", "Prec Norway 7", "Oil", "Gas", "Coal", "Low Carbon"]
     df = get_data("01.01.2014", "31.12.2019", columns, os.getcwd(), "d")
     df = df[columns]
     col = "System Price"
