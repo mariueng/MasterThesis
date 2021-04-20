@@ -11,6 +11,7 @@ from src.models.naive_week import naive_week
 from src.models.sarimax import sarimax
 from src.models.expert_model import expert_model
 from src.models.expert_day import expert_day
+from src.models.curve_model import curve_model
 from src.models.ets import ets
 from data.data_handler import get_data
 import os
@@ -182,7 +183,8 @@ if __name__ == '__main__':
     # model_ = sarimax.Sarimax()
     # model_ = sarimax.Sarimax()
     # model_ = expert_model.ExpertModel()
-    model_ = expert_day.ExpertDay()
+    # model_ = expert_day.ExpertDay()
+    model_ = curve_model.CurveModel()
     # periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_random_periods(4)
     periods_ = get_all_2019_periods()

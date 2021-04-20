@@ -29,6 +29,7 @@ src/models/expert_mlp/models
 src/models/expert_day/validation
 src/models/mlp_day_profile/validation
 src/models/mlp_day_profile/first_model
+src/models/curve_model/daily_demand_plots
 
 # Venv-config
 .idea
