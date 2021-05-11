@@ -24,9 +24,9 @@ data/output/auction
 
 # Preliminary results
 src/results/validation/*
-src/results/short
-src/results/old
-src/models/expert_mlp/results
+src/results/short/*
+src/results/old/*
+src/models/expert_mlp/results/*
 src/models/expert_mlp/models
 src/models/expert_day_old/validation
 src/models/mlp_day_profile/validation
