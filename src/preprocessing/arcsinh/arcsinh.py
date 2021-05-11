@@ -21,7 +21,7 @@ def to_arcsinh_from_a_and_b(value, a, b):
 
 
 def from_arcsin_to_original(array_like, a, b):
-    array_like = [b*i + a for i in array_like]
+    array_like = [b*np.sinh(i) + a for i in array_like]
     return array_like
 
 
@@ -53,5 +53,10 @@ def plot_distribution(img_size, label_pad, title_pad, color, data, bins, titles)
     plt.savefig(titles[2].replace(" ", "_") + ".png")
     plt.close()
 
+
 if __name__ == '__main__':
-    validate_method()
+    # validate_method()
+    a_ = from_arcsin_to_original([1.405482], 31.55199967556544, 9.147642000000003)
+    print(a_)
+    b_ = to_arcsinh_from_a_and_b(49.08, 31.55199967556544, 9.147642000000003)
+    print(b_)

@@ -1,0 +1,17 @@
+-- Performance Summary for 'Expert Model', created 2021-05-06 12:21 --
+
+Point performance:
+Mape:	 15.036 (10.358)
+Smape:	13.448 (6.207)
+Mae:	5.887 (2.947)
+Rmse:	6.903 (3.217)
+
+Interval performance: 
+Cov:	94.44% (7.009)
+ACE:	5.13% (4.752)
+MIS:	45.53 (20.999)
+
+Three best SMAPE performances:	{38: 2.847, 37: 3.996, 43: 4.023}
+Three worst SMAPE performances:	{15: 24.858, 19: 24.91, 33: 26.392}
+Three best IS performances:	{44: 28.371, 49: 28.862, 43: 29.744}
+Three worst IS performances:	{34: 99.456, 33: 101.808, 14: 114.24}

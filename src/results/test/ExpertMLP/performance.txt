@@ -1,0 +1,17 @@
+-- Performance Summary for 'Expert MLP', created 2021-05-07 18:36 --
+
+Point performance:
+Mape:	 51.907 (60.762)
+Smape:	30.564 (24.065)
+Mae:	6.169 (2.483)
+Rmse:	7.216 (2.618)
+
+Interval performance: 
+Cov:	70.62% (33.972)
+ACE:	26.88% (32.028)
+MIS:	62.08 (43.902)
+
+Three best SMAPE performances:	{51: 5.95, 52: 5.98, 143: 6.284}
+Three worst SMAPE performances:	{303: 92.02, 351: 93.201, 305: 94.126}
+Three best IS performances:	{31: 25.052, 33: 25.142, 267: 25.344}
+Three worst IS performances:	{2: 189.575, 351: 214.858, 4: 222.903}

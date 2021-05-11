@@ -20,6 +20,7 @@ from src.system.scores import calculate_coverage_error
 from data.data_handler import get_data
 import numpy as np
 from src.preprocessing.arcsinh import arcsinh
+from src.system.scores import calculate_smape
 
 
 class Ets:
@@ -36,17 +37,18 @@ class Ets:
         return self.creation_date
 
     def forecast(self, forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
+        filterwarnings("ignore")
         start_date = forecast_df.at[0, "Date"]
-        pre_proc = False
-        train, a, b = get_training_data(start_date, pre_proc, days_back=7)
-        conf = get_best_params(train)
-        ets = ExponentialSmoothing(train, trend=conf["Trend"], seasonal=24, damped_trend=conf["Damped"])
-        model_fit = ets.fit(disp=0, optimized=True, use_boxcox=conf["Box"], remove_bias=conf["Remove"])
+        data = get_data(start_date, start_date+timedelta(days=13), ["Weekday", "Holiday"], os.getcwd(), "h")
+        pre_proc = True
+        train, a, b, hist = get_training_data(start_date, pre_proc, days_back=14)
+        ets = ExponentialSmoothing(train, seasonal=24)
+        model_fit = ets.fit(disp=0, optimized=True, use_boxcox=True, remove_bias=True)
         forecast = model_fit.get_prediction(start=len(train), end=len(train) + len(forecast_df) - 1)
         prediction = forecast.predicted_mean
         if pre_proc:
             prediction = arcsinh.from_arcsin_to_original(prediction, a, b)
-            conf_int = forecast.conf_int(alpha=0.04)
+            conf_int = forecast.conf_int(alpha=0.12)
             lowers = arcsinh.from_arcsin_to_original([conf_int[i][0] for i in range(len(conf_int))], a, b)
             uppers = arcsinh.from_arcsin_to_original([conf_int[i][1] for i in range(len(conf_int))], a, b)
         else:
@@ -56,19 +58,29 @@ class Ets:
         forecast_df["Forecast"] = prediction
         forecast_df["Upper"] = uppers
         forecast_df["Lower"] = lowers
+        for i in range(len(forecast_df)):
+            if data.loc[i, "Holiday"] == 1 and data.loc[i, "Weekday"] != 7:
+                for col in ["Forecast", "Upper", "Lower"]:
+                    forecast_df.loc[i, col] /= get_hol_factor()
+            for col in ["Forecast", "Upper", "Lower"]:
+                forecast_df.loc[i, col] *= hist.loc[i, "Factor"]
         return forecast_df
 
 
 def get_training_data(start_date, pre_proc, days_back):
     train_start_date = start_date - timedelta(days=days_back)
     train_end_date = train_start_date + timedelta(days=days_back - 1)
-    train = data_handler.get_data(train_start_date, train_end_date, ["System Price"], os.getcwd(), "h")
+    hist = get_data(train_start_date, train_end_date, ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
+    hist["System Price"] = hist.apply(lambda row: row["System Price"] * get_hol_factor() if
+    row["Holiday"] == 1 and row["Weekday"] != 7 else row["System Price"], axis=1)
+    hist["Factor"] = [get_weekday_c()[weekday] for weekday in hist["Weekday"]]
+    hist["System Price"] = hist["System Price"] / hist["Factor"]
     if pre_proc:
-        train, a, b = arcsinh.to_arcsinh(train, "System Price")
-        data = train["Trans System Price"].tolist()
-        return data, a, b
+        hist, a, b = arcsinh.to_arcsinh(hist, "System Price")
+        data = hist["Trans System Price"].tolist()
+        return data, a, b, hist
     else:
-        return train["System Price"].tolist(), None, None
+        return hist["System Price"].tolist(), None, None, hist
 
 
 # Exponential Smoothing forecast
@@ -208,17 +220,12 @@ def get_forecast(train, conf, test):
     return forecast
 
 
-def plot(train, test, forecast):
-    df = pd.DataFrame(columns=["Hour", "True", "Forecast", "Upper", "Lower"])
-    for i in range(len(train)):
-        row = {"Hour": i, "True": train[i], "Forecast": None, "Upper": None, "Lower": None}
-        df = df.append(row, ignore_index=True)
-    for i in range(len(test)):
-        row = {"Hour": i + len(train), "True": test[i], "Forecast": forecast[i], "Upper": None, "Lower": None}
-        df = df.append(row, ignore_index=True)
-    fig, ax = plt.subplots(figsize=(13, 7))
-    plt.plot(df["Hour"], df["True"], label="True")
-    plt.plot(df["Hour"], df["Forecast"], label="Forecast")
+def plot(df):
+    df["Hour"] = pd.to_datetime(df['Hour'], format="%H").dt.time
+    df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour']), 1)
+    plt.subplots(figsize=(13, 7))
+    plt.plot(df["DateTime"], df["System Price"], label="True")
+    plt.plot(df["DateTime"], df["Forecast"], label="Forecast")
     plt.legend()
     plt.show()
     plt.close()
@@ -247,6 +254,48 @@ def tune_best_alpha():
     print("Min ACE up and down: " + str(min(results, key=results.get)))
 
 
+def run():
+    # stat_test(train_)
+    start_date = dt(2019, 1, 3)
+    end_date = start_date + timedelta(days=13)
+    forecast_df = get_empty_forecast(start_date, end_date)
+    model = Ets()
+    result = model.forecast(forecast_df)
+    true_test = get_data(start_date, end_date, ["System Price"], os.getcwd(), "h")
+    result = result.merge(true_test, on=["Date", "Hour"], how="outer")
+    pre_proc = False
+    if pre_proc:
+        path = dt.strftime(start_date, "%d_%m_%Y") + "_trans"
+        print("Trans SMAPE {}".format(calculate_smape(result)))
+    else:
+        path = dt.strftime(start_date, "%d_%m_%Y") + "_orig"
+        print("Orig SMAPE {}".format(calculate_smape(result)))
+    plot(result)
+    # result.to_csv(path + '.csv')
+
+
+def get_empty_forecast(start_date_, end_date_):
+    time_df = get_data(start_date_, end_date_, [], os.getcwd(), "h")
+    if len(time_df) != 336:
+        print("Length of horizon: {}".format(len(time_df)))
+        print("Prediction horizon must be length 336")
+        assert False
+    time_df["Forecast"] = np.nan
+    time_df["Upper"] = np.nan
+    time_df["Lower"] = np.nan
+    return time_df
+
+
+def get_hol_factor():
+    f = 1.1158
+    return f
+
+
+def get_weekday_c():
+    d = {1: 1.028603, 2: 1.034587, 3: 1.0301834, 4: 1.033991, 5: 1.014928, 6: 0.941950, 7: 0.915758}
+    return d
+
 
 if __name__ == '__main__':
-    tune_best_alpha()
+    run()
+    # tune_best_alpha()

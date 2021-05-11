@@ -15,7 +15,7 @@ from keras.callbacks import EarlyStopping
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from src.models.expert_day.expert_day import calculate_performance
+from src.models.expert_day_old.expert_day import calculate_performance
 
 
 def get_data_set(s_date, e_date):

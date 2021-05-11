@@ -13,6 +13,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Avoid warnings from Tensorflow or an
 from keras.models import load_model
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import operator
+import warnings
 
 
 class ExpertDay:
@@ -28,102 +30,164 @@ class ExpertDay:
     def get_time(self):
         return self.creation_date
 
-    def forecast(self, forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
-        forecast = self.get_forecast(forecast_df)
-        forecast_df["Forecast"] = forecast
-        forecast_df["Upper"] = forecast_df["Forecast"] * 1.15
-        forecast_df["Lower"] = forecast_df["Forecast"] * 0.9
+    @staticmethod
+    def forecast(forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
+        forecast_df = get_forecast(forecast_df)
+        up = 1.15
+        down = 0.90
+        forecast_df = get_prob_forecast(forecast_df,  up, down)
         return forecast_df
 
-    def get_forecast(self, forecast_df):
-        model_fit = self.get_model()
-        params = get_parameters_dataframe(model_fit).columns.tolist()
-        input_cols = [i for i in params if i != "Period" and "lag" not in i]
-        start_date = forecast_df.at[0, "Date"]
-        train_start = start_date - timedelta(days=14)
-        train_end = train_start + timedelta(days=13)
-        # df, a, b = arcsinh.to_arcsinh(df, "System Price")
-        col = "System Price"
-        past_prices = get_data(train_start, train_end, ["System Price"], os.getcwd(), "d")[col].tolist()
-        data_df = get_data(start_date, start_date + timedelta(days=13), input_cols, os.getcwd(), "d")
-        forecast = []
-        for i in range(14):
-            x = get_x_input(i, model_fit.params, past_prices, data_df, input_cols)
-            prediction = model_fit.get_prediction(exog=x)
-            forecasted_value = prediction.predicted_mean[0]
-            forecast.append(forecasted_value)
-            past_prices.append(forecasted_value)
-        hour_forecast = self.get_hour_forecast_from_mlp(forecast, start_date)
-        # forecast = arcsinh.from_arcsin_to_original(forecast, a, b)
-        return hour_forecast
 
-    @staticmethod
-    def get_model():
-        dir_path = str(Path(__file__).parent)
-        m_path = dir_path + "\\expert_day.pickle"
-        model_exists = os.path.isfile(m_path)
-        if model_exists:
-            model = sm.load(m_path)
-        else:
-            train_model(dir_path)
-            model = sm.load(m_path)
-        return model
-
-    @staticmethod
-    def get_hour_forecast_from_mlp(forecast, start):
-        day_df = get_data(start, start + timedelta(days=13), ["Weekday", "Month", "Temp Norway"], os.getcwd(), "d")
-        hour_forecast = []
-        model = load_model(r"../models/mlp_day_profile/first_model")
-        # model = load_model(r"../mlp_day_profile/first_model")
-        col = ["Price"] + [w for w in weekdays] + [m for m in months] + ["Temp Norway"]
-        data = pd.DataFrame(columns=col)
-        for i in range(len(day_df)):
-            row = {"Price": forecast[i]}
-            weekday = day_df.loc[i, "Weekday"]
-            month = day_df.loc[i, "Month"]
-            for j in range(1, 8):
-                if weekday == j:
-                    row["d{}".format(j)] = 1
-                else:
-                    row["d{}".format(j)] = 0
-            for j in range(1, 13):
-                if month == j:
-                    row["m{}".format(j)] = 1
-                else:
-                    row["m{}".format(j)] = 0
-            row["Temp Norway"] = day_df.loc[i, "Temp Norway"]
-            data = data.append(row, ignore_index=True)
-        rows = []
-        for index, row in data.iterrows():
-            r = row.tolist()
-            rows.append(r)
-        test_x = np.asarray(rows).astype('float32')
-        for i in range(len(test_x)):
-            day_mean = forecast[i]
-            x = test_x[i]
-            x = x.reshape(1, len(x))
-            prediction = model.predict(x, batch_size=None, verbose=0, steps=1, callbacks=None, max_queue_size=10,
-                                       workers=1, use_multiprocessing=False)
-            hour_forecast.extend([day_mean + prediction[0][j] for j in range(len(prediction[0]))])
-        return hour_forecast
+def get_forecast(forecast_df):
+    prev_workdir = os.getcwd()
+    os.chdir("\\".join(prev_workdir.split("\\")[:6]) + "\\models\\expert_day")
+    profiles = pd.read_csv("hourly_decomp.csv")
+    start = forecast_df.loc[0, "Date"].date()
+    end = forecast_df.loc[len(forecast_df)-1, "Date"].date()
+    h_data = get_data(start, end, ["Weekday", "Month", "Holiday"], os.getcwd(), "h")
+    data = get_data(start, end, ["Weekday", "Holiday"], os.getcwd(), "d")
+    train_start = start - timedelta(days=7)
+    train_end = start - timedelta(days=1)
+    hist = get_data(train_start, train_end, ["System Price", "Weekday", "Holiday"], os.getcwd(), "d")
+    hist = adjust_for_holiday(hist, "System Price")
+    norm_hist = get_normalised_last_week(hist)
+    min_last_week = min(norm_hist["System Price"])
+    max_last_week = max(norm_hist["System Price"])
+    hist = hist.append(data, ignore_index=True)
+    daily_models = get_daily_models_as_dict()
+    for i in range(7, len(hist)):
+        weekday = hist.loc[i, "Weekday"]
+        model_fit = daily_models[weekday]
+        if i == 14:
+            norm_last_week = get_normalised_last_week(hist.loc[7:13])
+            min_last_week, max_last_week = (min(norm_last_week["System Price"]), max(norm_last_week["System Price"]))
+        one_day_lag = hist.loc[i-1, "System Price"]
+        two_day_lag = hist.loc[i-2, "System Price"]
+        one_week_lag = hist.loc[i-7, "System Price"]
+        last_sunday = hist[hist["Weekday"] == 7]["System Price"].dropna("").values[-1]
+        x = {'1 day lag':one_day_lag, '2 day lag': two_day_lag, '1 week lag': one_week_lag, 'Max Last Week':
+            max_last_week, 'Min Last Week': min_last_week, 'Last Sunday': last_sunday}
+        x = pd.DataFrame.from_dict(x, orient="index").transpose()
+        x = x.assign(intercept=1)
+        prediction = model_fit.get_prediction(x)
+        hist.loc[i, "System Price"] = prediction.predicted_mean[0]
+    df = hist.loc[7:, :].reset_index(drop=True)
+    df = df.rename(columns={"System Price": "Forecast"})
+    df = adjust_for_holiday(df, "Forecast")
+    for i in range(len(forecast_df)):
+        date = forecast_df.loc[i, "Date"]
+        day_prediction = df[df["Date"] == date]["Forecast"].values[0]
+        hour = forecast_df.loc[i, "Hour"]
+        weekday = h_data.loc[i, "Weekday"] if h_data.loc[i, "Holiday"] != 1 else 7
+        month = h_data.loc[i, "Month"]
+        profile = profiles.iloc[(month-1)*24*7 + (weekday-1)*24 + hour]
+        forecast_df.loc[i, "Forecast"] = profile["Factor"] * day_prediction
+    os.chdir(prev_workdir)
+    return forecast_df
 
 
-weekdays = ["d{}".format(d) for d in range(1, 8)]
-weeks = ["w{}".format(w) for w in range(1, 54)]
-months = ["m{}".format(m) for m in range(1, 13)]
-divide_on_thousand_list = ["Total Hydro Dev", "Total Hydro", "Wind DK", "Total Vol"]
+def get_daily_models_as_dict():
+    daily_models = {}
+    for i in range(1, 8):
+        daily_models[i] = sm.load(os.getcwd() + '\\d_models\\expert_model_{}.pickle'.format(i))
+    return daily_models
 
 
-def train_model(dir_path, input_col):
-    start_date = dt(2014, 1, 1)
-    end_date = dt(2018, 12, 31)
-    columns = ["System Price"] + input_col
-    x, y = get_x_and_y_dataset(start_date, end_date, columns)
-    model = sm.OLS(y, x).fit()
-    print_model = model.summary()
-    with open(dir_path + '\\expert_fit.txt', 'w') as fh:
-        fh.write(print_model.as_text())
-    model.save(dir_path + "\\expert_day.pickle")
+def get_prob_forecast(forecast_df, up, down):
+    for index, row in forecast_df.iterrows():
+        point_f = row["Forecast"]
+        factor_up = get_factor_up(index, len(forecast_df), up)
+        upper_f = point_f * factor_up
+        forecast_df.at[index, "Upper"] = upper_f
+        factor_down = get_factor_down(index, len(forecast_df), down)
+        lower_f = point_f * factor_down
+        forecast_df.at[index, "Lower"] = lower_f
+    return forecast_df
+
+
+def get_factor_up(index, horizon, up_factor):
+    return up_factor + ((index / horizon) / 2) * up_factor
+
+
+def get_factor_down(index, horizon, down_factor):
+    return down_factor - ((index / horizon) / 2) * down_factor
+
+
+def train_model():
+    start_date = dt(2014, 7, 1)
+    first_year = start_date.year
+    end_date = dt(2019, 6, 2)
+    training_data = get_data(start_date, end_date, ["System Price", "Weekday", "Holiday", "Week"], os.getcwd(), "d")
+    training_data = adjust_for_holiday(training_data, "System Price")
+    col = "System Price"
+    training_data["1 day lag"] = training_data[col].shift(1)
+    training_data["2 day lag"] = training_data[col].shift(2)
+    training_data["1 week lag"] = training_data[col].shift(7)
+    training_data["Week"] = (training_data["Date"].dt.year - first_year) * 52 + training_data["Week"]
+    all_weeks = training_data["Week"].unique()
+    for week in all_weeks:
+        last_week_df = training_data[training_data["Week"] == week - 1]
+        if len(last_week_df) == 7:
+            normalised_last_week = get_normalised_last_week(last_week_df)
+            this_week_df = training_data[training_data["Week"] == week]
+            max_last_week = max(normalised_last_week[col])
+            min_last_week = min(normalised_last_week[col])
+            sunday_price = last_week_df.tail(1)[col].values[0]
+            for index in this_week_df.index:
+                training_data.loc[index, "Max Last Week"] = max_last_week
+                training_data.loc[index, "Min Last Week"] = min_last_week
+                training_data.loc[index, "Last Sunday"] = sunday_price
+    training_data = training_data.dropna().reset_index(drop=True)
+    drop_cols = ["Date", "System Price", "Weekday", "Week"]
+    x_columns = [col for col in training_data.columns if col not in drop_cols]
+    for i in range(1, 8):
+        day_data = training_data.loc[training_data["Weekday"] == i]
+        y = day_data[[col]]
+        x = day_data[x_columns]
+        x = x.assign(intercept=1)
+        model = sm.OLS(y, x, hasconst=True).fit()
+        print_model = model.summary()
+        with open(os.getcwd() + '\\d_fits\\expert_fit_{}.txt'.format(i), 'w') as fh:
+            fh.write(print_model.as_text())
+            fh.close()
+        model.save(os.getcwd() + "\\d_models\\expert_model_{}.pickle".format(i))
+
+
+def get_normalised_last_week(last_week_df):
+    warnings.filterwarnings("ignore")
+    df = last_week_df.copy()
+    d = {1: 1.028603, 2: 1.034587, 3: 1.0301834, 4: 1.033991, 5: 1.014928, 6: 0.941950, 7: 0.915758}
+    df["Factor"] = [d[weekday] for weekday in df["Weekday"]]
+    df["System Price"] = df["System Price"] / df["Factor"]
+    return df[["Date", "System Price", "Weekday"]]
+
+
+def adjust_for_holiday(df, col):
+    operation = operator.mul if col == "System Price" else operator.truediv
+    df[col] = df.apply(lambda row: operation(row[col], get_hol_factor()) if
+    row["Holiday"] == 1 and row["Weekday"] != 7 else row[col], axis=1)
+    return df.drop(columns=["Holiday"])
+
+
+def get_hol_factor():
+    f = 1.1158
+    return f
+
+
+def train_hour_coefficients():
+    start = "01.07.2014"
+    df = get_data(start, "02.06.2019", ["System Price", "Weekday", "Month", "Holiday"], os.getcwd(), "h")
+    df = adjust_for_holiday(df, "System Price")
+    daily = get_data(start, "02.06.2019", ["System Price", "Weekday", "Holiday"], os.getcwd(), "d")
+    daily = adjust_for_holiday(daily, "System Price")
+    daily = daily.rename(columns={"System Price": "Daily Price"})
+    daily = daily.drop(columns=["Weekday"])
+    df = df.merge(daily, on="Date")
+    df["Factor"] = df["System Price"] / df["Daily Price"]
+    df = df.drop(columns=["System Price", "Date", "Daily Price"])
+    grouped = df.groupby(by=["Month", "Weekday", "Hour"]).median().reset_index()
+    grouped.to_csv("hourly_decomp.csv", index=False, float_format="%g")
 
 
 def validate_day_model(input_col):
@@ -163,32 +227,6 @@ def validate_day_model(input_col):
         results = results.append(point_performance, ignore_index=True)
     calculate_performance(forecasts, results, model.get_name(), model.get_time().replace("_", " "), input_col)
     plot_weights(weights_df)
-
-
-def get_x_input(id_x, params, past_prices, data_df, input_col):
-    variables = params.keys().tolist()
-    x_df = pd.DataFrame(columns=variables)
-    x_dict = {}
-    for c in divide_on_thousand_list:
-        if c in variables:
-            x_dict[c] = data_df.loc[id_x, c] / 1000
-    time_cols = {"Weekday": "d", "Week": "w", "Month": "m", "Season": "s"}
-    time_list = {"Weekday": weekdays, "Week": weeks, "Month": months}
-    for c in input_col:
-        if c not in divide_on_thousand_list and c not in time_cols.keys():
-            x_dict[c] = data_df.loc[id_x, c]
-    lags = ["1 day lag", "2 day lag", "3 day lag", "1 week lag", "2 week lag"]
-    idx_back = [-1, -2, -3, -7, -14]
-    for j in range(len(lags)):
-        x_dict[lags[j]] = past_prices[idx_back[j]]
-    for col in time_cols.keys():
-        if col in input_col:
-            current = data_df.loc[id_x, col]
-            for val in time_list[col]:
-                x_dict[val] = 0
-            x_dict["{}{}".format(time_cols[col], current)] = 1
-    x_df = x_df.append(x_dict, ignore_index=True)
-    return x_df
 
 
 def plot_weights(weights_df):
@@ -273,91 +311,6 @@ def calculate_performance(forecasts, results, m_name, m_time, inputs):
     summary.close()
 
 
-def get_parameters_dataframe(model_fit):
-    columns_to_dataframe = ["Period"]
-    p = model_fit.params
-    keys = p.keys().tolist()
-    for k in keys:
-        if k not in weekdays and k not in weeks and k not in months:
-            columns_to_dataframe.append(k)
-    if all(x in keys for x in weekdays):
-        columns_to_dataframe.append("Weekday")
-    if all(x in keys for x in weeks):
-        columns_to_dataframe.append("Week")
-    if all(x in keys for x in months):
-        columns_to_dataframe.append("Month")
-    df = pd.DataFrame(columns=columns_to_dataframe)
-    return df
-
-
-def plot_forecast(df, period_no):
-    label_pad = 12
-    title_pad = 20
-    fig, ax = plt.subplots(figsize=(13, 7))
-    plt.plot(df["Date"], df["System Price"], label="True", color="steelblue", linewidth=2)
-    plt.plot(df["Date"], df["Forecast"], label="Forecast", color="firebrick")
-    for line in plt.legend(loc='upper center', ncol=5, bbox_to_anchor=(0.5, 1.03),
-                           fancybox=True, shadow=True).get_lines():
-        line.set_linewidth(2)
-    plt.ylabel("Price [€]", labelpad=label_pad)
-    plt.xlabel("Date", labelpad=label_pad)
-    ymax = max(max(df["System Price"]), max(df["Forecast"])) * 1.1
-    ymin = min(min(df["System Price"]), min(df["Forecast"])) * 0.95
-    plt.ylim(ymin, ymax)
-    ax.xaxis.set_major_locator(plt.MaxNLocator(7))
-    end_date = df.loc[len(df) - 1, "Date"]
-    start_date = end_date - timedelta(days=13)
-    start_day_string = dt.strftime(start_date, "%d %b")
-    end_day_string = dt.strftime(end_date, "%d %b")
-    plt.title("Result from '{}' - {} to {}".format("Expert Day", start_day_string, end_day_string), pad=title_pad)
-    plt.tight_layout()
-    plot_path = str(period_no) + "_" + start_day_string.replace(" ", "") + "_" + end_day_string.replace(" ",
-                                                                                                        "") + ".png"
-    out_path = "validation/plots/" + plot_path
-    plt.savefig(out_path)
-    plt.close()
-
-
-def get_x_and_y_dataset(start, end, columns):
-    if start > dt(2014, 1, 14):
-        start = start - timedelta(days=13)
-    data = get_data(start, end, columns, os.getcwd(), "d")
-    for c in divide_on_thousand_list:
-        if c in columns:
-            data[c] = data[c] / 1000
-    # training_data, a, b = arcsinh.to_arcsinh(training_data, "System Price")
-    col = "System Price"
-    data["1 day lag"] = data[col].shift(1)
-    data["2 day lag"] = data[col].shift(2)
-    data["3 day lag"] = data[col].shift(3)
-    data["1 week lag"] = data[col].shift(7)
-    data["2 week lag"] = data[col].shift(14)
-    data = data.dropna()
-    drop_cols = ["Date", "System Price"]
-    if "Weekday" in columns:
-        data = one_hot_encoding("Weekday", "d", 7, data)
-        drop_cols.append("Weekday")
-    if "Week" in columns:
-        data = one_hot_encoding("Week", "w", 53, data)
-        drop_cols.append("Week")
-    if "Month" in columns:
-        data = one_hot_encoding("Month", "m", 12, data)
-        drop_cols.append("Month")
-    x_columns = [col for col in data.columns if col not in drop_cols]
-    x = data[x_columns]
-    y = data[[col]]
-    return x, y
-
-
-def one_hot_encoding(col, prefix, length, data):
-    for index, row in data.iterrows():
-        for j in range(1, length+1):
-            if data.loc[index, col] == j:
-                data.loc[index, "{}{}".format(prefix, j)] = 1
-            else:
-                data.loc[index, "{}{}".format(prefix, j)] = 0
-    return data
-
 def run(model, periods):
     result_list = []
     for period in periods:
@@ -382,26 +335,9 @@ def run(model, periods):
 
 
 if __name__ == '__main__':
-    col_1 = ["Weekday", "Month"]
-    col_2 = ["Weekday", "Week"]
-    col_3 = ["Weekday", "Month", "Temp Norway"]
-    col_4 = ["Weekday", "Week", "Temp Norway"]
-    col_5 = ["Weekday", "Month", "Total Hydro"]
-    col_6 = ["Weekday", "Month", "Total Hydro Dev"]
-    col_7 = ["Weekday", "Month", "Wind DK"]
-    col_8 = ["Weekday", "Month", "Temp Nor", "Wind DK"]
-    col_9 = ["Weekday", "Month", "Total Vol"]
-    col_10 = ["Weekday", "Month", "Total Vol", "Temp Norway"]
-    col_11 = ["Total Hydro Dev"]
-    col_12 = ["Weekday", "Month", "Prec Forecast"]
-    col_13 = ["Weekday", "Month", "Temp Norway", "Prec Forecast"]
-    inputs = [col_12]
-    # --------------------------------------------
-    for col_ in inputs:
-        input_col_ = col_
-        # --------------------------------------------
-        train_model(str(Path(__file__).parent), input_col_)
-        validate_day_model(input_col_)
+    print("Running methods")
+    train_model()
+    train_hour_coefficients()
     # model_ = ExpertDay()
     # periods_ = get_random_periods(1)
     # run(model_, periods_)

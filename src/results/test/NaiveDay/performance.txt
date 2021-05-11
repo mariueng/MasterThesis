@@ -1,0 +1,17 @@
+-- Performance Summary for 'Naive Day', created 2021-05-07 09:58 --
+
+Point performance:
+Mape:	 20.541 (26.265)
+Smape:	16.715 (12.747)
+Mae:	3.3 (2.033)
+Rmse:	4.163 (2.35)
+
+Interval performance: 
+Cov:	87.58% (16.737)
+ACE:	10.69% (14.857)
+MIS:	33.20 (40.362)
+
+Three best SMAPE performances:	{45: 3.383, 46: 3.504, 42: 3.745}
+Three worst SMAPE performances:	{316: 78.688, 351: 87.156, 6: 95.159}
+Three best IS performances:	{305: 5.298, 307: 5.653, 317: 5.888}
+Three worst IS performances:	{105: 169.613, 7: 381.033, 6: 565.516}

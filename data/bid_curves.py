@@ -698,7 +698,7 @@ def fix_summer_winter_time_bid_csv():
 
 
 def test_supply_change_next_14_days():
-    all_dates = [i for i in pd.date_range(dt(2014, 7, 1), dt(2020, 6, 3)-timedelta(days=14), freq='d')]
+    all_dates = [i for i in pd.date_range(dt(2014, 7, 1), dt(2020, 6, 3) - timedelta(days=14), freq='d')]
     number_of_auctions = len(all_dates)
     res_length = 300  # pick out n random dates
     random.seed(1)
@@ -712,11 +712,11 @@ def test_supply_change_next_14_days():
     for i in range(len(dates_list)):
         day = dates_list[i]
         print("{}\tChecking predictive power for {}".format(i, day))
-        supply = get_auction_data(day, day+timedelta(days=14), "s", os.getcwd())
+        supply = get_auction_data(day, day + timedelta(days=14), "s", os.getcwd())
         for hour in range(24):
-            current_supply = supply[hour:hour+1]
+            current_supply = supply[hour:hour + 1]
             for j in range(1, 15):
-                index_day = j*24 + hour
+                index_day = j * 24 + hour
                 day_ahead_supply = supply[index_day: index_day + 1]
                 for price in supply_classes:
                     ae = abs(current_supply.loc[hour, price] - day_ahead_supply.loc[index_day, price])
@@ -739,8 +739,9 @@ def make_sensitivity_columns_demand():
     if os.path.exists(save_path):
         df = pd.read_csv(save_path)
     else:
-        columns = ["Est price", "Est volume",  "Demand {}".format(sens[0]), "Demand {}".format(sens[1]), "Demand "
-                   "{}".format(sens[2]), "Demand {}".format(sens[3])]
+        columns = ["Est price", "Est volume", "Demand {}".format(sens[0]), "Demand {}".format(sens[1]), "Demand "
+                                                                                                        "{}".format(
+            sens[2]), "Demand {}".format(sens[3])]
         df = pd.DataFrame(columns=["Date", "Hour"] + columns)
         df.to_csv("input/auction/price_sensitivities.csv", index=False)
     to_date = "02.06.2020"
@@ -816,7 +817,7 @@ def get_volume_sensitivity(price, volume, min_s, max_s, supply_line, s):
     elif price + s > 210:
         h_line = LineString([(min_s, 210), (max_s, 210)])
     else:
-        h_line = LineString([(min_s, price+s), (max_s, price+s)])
+        h_line = LineString([(min_s, price + s), (max_s, price + s)])
     sens_vol = h_line.intersection(supply_line).x
     return round(sens_vol - volume, 2)
 
@@ -878,7 +879,7 @@ def check_if_spike(price, i, df):  # Helping method
     if i < number_of_hours_in_window:
         window_prices = df[0:number_of_hours_in_window]
     else:
-        window_prices = df[i-number_of_hours_in_window:i]
+        window_prices = df[i - number_of_hours_in_window:i]
     mean = window_prices.mean()
     std_dev = window_prices.std()
     if price > mean + threshold * std_dev:
@@ -903,8 +904,8 @@ def check_spike_and_sensitivity_correlation():
         mean_no = no_df[c].mean()
         mean_pos = pos_df[c].mean()
         mean_neg = neg_df[c].mean()
-        pos_diff = round(100*((mean_pos-mean_no)/mean_no), 2)
-        neg_diff = round(100*((mean_neg-mean_no)/mean_no), 2)
+        pos_diff = round(100 * ((mean_pos - mean_no) / mean_no), 2)
+        neg_diff = round(100 * ((mean_neg - mean_no) / mean_no), 2)
         print("{}, mean no spike = {:.2f}, mean pos {:.2f} ({}%), mean neg {:.2f} "
               "({}%)".format(c, mean_no, mean_pos, pos_diff, mean_neg, neg_diff))
 
@@ -929,8 +930,8 @@ def verify_est_curve_accuracy():
     est_v = demand_line.intersection(supply_line).x
     true_p = df["System Price"].mean()
     true_v = df["Total Vol"].mean()
-    print("True mean price {:.2f}, est mean price {:.2f} (diff = {:.2f})".format(true_p, est_p, (true_p-est_p)))
-    print("True mean vol {:.2f}, est mean vol {:.2f} (diff = {:.2f})".format(true_v, est_v, (true_v-est_v)))
+    print("True mean price {:.2f}, est mean price {:.2f} (diff = {:.2f})".format(true_p, est_p, (true_p - est_p)))
+    print("True mean vol {:.2f}, est mean vol {:.2f} (diff = {:.2f})".format(true_v, est_v, (true_v - est_v)))
 
 
 def explore_daily_curves():
@@ -959,6 +960,302 @@ def explore_daily_curves():
     print("Volume MAE : {:.2f}".format(data["Volume MAE"].mean()))
     print("Volume MAPE : {:.2f}".format(data["Volume MAPE"].mean()))
 
+
+def explore_volume_error():
+    start = dt(2014, 7, 1)
+    end = dt(2020, 6, 2, 23)
+    all_dates = pd.date_range(start, end, freq="d")
+    result = pd.DataFrame(columns=["Date", "Hour", "Est Price", "Est Vol", "Adj Est Vol", "Net flow", "Demand Add",
+                                   "Supply Add"])
+    d_classes, s_classes, _, _ = get_best_price_classes(plot=False)
+    curves = get_auction_data(start, end, ["d", "s"], os.getcwd())
+    for d in all_dates:
+        date_curves = curves[curves["Date"] == d].reset_index(drop=True)
+        print("Date {}".format(d.date()))
+        disc_file_path = "input/auction/csv_disc/{}.csv".format(d.date())
+        disc_file = pd.read_csv(disc_file_path)
+        d_string = "input/auction/raw/mcp_data_report_{}.xls".format(d.date())
+        if d < dt(2016, 6, 15):
+            excel_file = pd.read_excel(d_string, nrows=7)
+            net_flow_idx = 6
+        else:
+            excel_file = pd.read_excel(d_string, nrows=5)
+            net_flow_idx = 4
+        for i in range(len(excel_file.columns) // 2):
+            excel_data = excel_file.iloc[:, i * 2:i * 2 + 2]
+            hour = int(str(excel_data.columns[1]).split(" ")[1][0:2])
+            hour_curves = date_curves[date_curves["Hour"] == hour].iloc[0]
+            demand_add = excel_data.iloc[2, 1]
+            supply_add = excel_data.iloc[3, 1]
+            net_flow = excel_data.iloc[net_flow_idx, 1]
+            remove_flow_demand = True if net_flow < 0 else False
+            remove_flow_supply = True if net_flow > 0 else False
+            disc_demand = hour_curves[2:14].values
+            disc_supply = hour_curves[14:len(hour_curves)].values
+            demand_line = LineString(np.column_stack((disc_demand, d_classes)))
+            supply_line = LineString(np.column_stack((disc_supply, s_classes)))
+            intersection = demand_line.intersection(supply_line)
+            adj_disc_demand = disc_demand - abs(net_flow) if remove_flow_demand else disc_demand
+            adj_disc_supply = disc_supply - abs(net_flow) if remove_flow_supply else disc_supply
+            adj_demand_line = LineString(np.column_stack((adj_disc_demand, d_classes)))
+            adj_supply_line = LineString(np.column_stack((adj_disc_supply, s_classes)))
+            adj_intersection = adj_supply_line.intersection(adj_demand_line)
+            if type(adj_intersection) == LineString:
+                adj_est_vol = intersection.x
+            else:
+                adj_est_vol = adj_supply_line.intersection(adj_demand_line).x
+            row = {"Date": d.date(), "Hour": hour, "Est Price": round(intersection.y, 3), "Est Vol": round(
+                intersection.x, 1), "Net flow": net_flow, "Demand Add": demand_add, "Supply Add": supply_add,
+                   "Adj Est Vol": round(adj_est_vol, 1)}
+            result = result.append(row, ignore_index=True)
+        # result.to_csv("input/auction/volume_analyses.csv", index=False)
+    data = get_data(start, end.date(), ["System Price", "Total Vol"], os.getcwd(), "h")
+    data["Date"] = data["Date"].dt.date
+    result = result.merge(data, on=["Date", "Hour"], how="outer")
+    result["Price AE"] = abs(result["System Price"] - result["Est Price"])
+    result["Price APE"] = 100 * result["Price AE"] / result["System Price"]
+    result["Vol AE"] = abs(result["Total Vol"] - result["Est Vol"])
+    result["Vol APE"] = 100 * result["Vol AE"] / result["Total Vol"]
+    result["Adj Vol AE"] = result["Total Vol"] - result["Adj Est Vol"]
+    result["Adj Vol AE"] = result["Adj Vol AE"] - abs(result["Net flow"])
+    result["Adj Vol APE"] = 100 * result["Adj Vol AE"] / result["Total Vol"]
+    result = result.round(2)
+    result.to_csv("input/auction/volume_analyses.csv", index=False)
+    print("\nPrice MAE: {:.2f}, price MAPE {:.2f}".format(result["Price AE"].mean(), result["Price APE"].mean()))
+    print("Volume MAE: {:.2f}, volume MAPE {:.2f}".format(result["Vol AE"].mean(), result["Vol APE"].mean()))
+    print("Adj Volume MAE: {:.2f}, Adj volume MAPE {:.2f}".format(result["Adj Vol AE"].mean(),
+                                                                  result["Adj Vol APE"].mean()))
+
+
+def eda_net_flow():
+    df = pd.read_csv("input/auction/volume_analyses.csv", usecols=["Date", "Hour", "Net flow"])
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    df = df.groupby(by="Date").sum()
+    df["Date"] = df.index
+    df = df.reset_index(drop=True)[["Date", "Net flow"]]
+    print("Mean daily net flow {:.2f} MWh".format(df["Net flow"].mean()))
+    print("Abs daily net flow {:.2f} MWh".format(abs(df["Net flow"]).mean()))
+    df = df[(df["Date"] >= dt(2019, 1, 1)) & (df["Date"] <= dt(2019, 12, 31))]
+    data = get_data("01.01.2019", "31.12.2019", ["Total Vol", "Curve Demand"], os.getcwd(), "d")
+    fig, axs = plt.subplots(2, figsize=(13, 8))
+    fig.suptitle("Daily Volumes and Net Flows 2019")
+    axs[0].plot(data["Date"], data["Curve Demand"], label="Equilibrium volume", color=sec_color)
+    axs[0].plot(data["Date"], data["Total Vol"], label="Nord Pool volume", color=first_color)
+    axs[1].plot(df["Date"], df["Net flow"], label="Daily net flow", color=sec_color)
+    for ax in axs:
+        for line in ax.legend(loc='upper center', ncol=7, bbox_to_anchor=(0.5, 1.06), fancybox=True,
+                              shadow=True).get_lines():
+            line.set_linewidth(2)
+    for ax in axs:
+        ax.set_ylabel("Volume [MWh]", labelpad=label_pad)
+        ax.set_xlabel("Date", labelpad=label_pad)
+    plt.tight_layout()
+    plt.savefig("output/auction/eda/net_flow.png")
+
+
+def eda_supply_weekends():
+    days = get_data("31.12.2018", "29.12.2019", ["Weekend", "Week"], os.getcwd(), "h")
+    bids = get_auction_data("31.12.2018", "29.12.2019", "s", os.getcwd())
+    df = days.merge(bids, on=["Date", "Hour"])
+    _, s_prices, _, _ = get_best_price_classes(plot=False)
+    plt.subplots(figsize=full_fig)
+    result = pd.DataFrame(columns=["Week", "Error", "MAE", "MAPE"])
+    for week in range(1, 53):
+        week_df = df[df["Week"] == week]
+        weekdays_mean, weekend_mean = get_week_means(week_df)
+        l1, l2 = ("Weekday", "Weekend") if week == 1 else ('_nolegend_', '_nolegend_')
+        plt.plot(weekdays_mean, s_prices, label= l1, color=first_color, linestyle="dotted", linewidth=0.5)
+        plt.plot(weekend_mean, s_prices, label=l2, color=sec_color, linestyle="dotted", linewidth=0.5)
+        errors = []
+        aes = []
+        apes = []
+        for key in weekend_mean.keys():
+            errors.append(weekdays_mean[key] - weekend_mean[key])
+            ae = abs(weekdays_mean[key] - weekend_mean[key])
+            aes.append(ae)
+            apes.append(100 * ae / weekdays_mean[key])
+        error = sum(errors) / len(errors)
+        mae = sum(aes) / len(aes)
+        ape = sum(apes) / len(apes)
+        row = {"Week": week, "Error": error, "MAE": mae, "MAPE": ape}
+        result = result.append(row, ignore_index=True)
+    print("Mean error {:.2f} MWh. (Error = mean_weekday_curve - mean_weekend_curve)".format(result["Error"].mean()))
+    print("Mean abs weekly error {:.2f} MWh".format(result["MAE"].mean()))
+    print("Mean percentage weekly error {:.2f}".format(result["MAPE"].mean()))
+    weekdays_mean, weekend_mean = get_week_means(df)
+    plt.plot(weekdays_mean, s_prices, label="Mean weekday", color=first_color, linewidth=3)
+    plt.plot(weekend_mean, s_prices, label="Mean weekend", color=sec_color, linewidth=3)
+    plt.ylim(-10, 100)
+    plt.title("Strategic Supply Bidding during Weekends - 2019", pad=title_pad)
+    plt.ylabel("Price [€]", labelpad=label_pad)
+    plt.xlabel("Volume [MWh]", labelpad=label_pad)
+    for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                           shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.tight_layout()
+    #plt.savefig("output/auction/eda/strategic_bidding_weekends.png")
+    plt.close()
+
+
+def get_week_means(df):
+    weekdays = df[df["Weekend"] == 0].iloc[:, 4:]
+    weekend = df[df["Weekend"] == 1].iloc[:, 4:]
+    return weekdays.mean(axis=0), weekend.mean(axis=0)
+
+
+def eda_special_days():
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    cal = USFederalHolidayCalendar()
+    holidays = cal.holidays(start='2014-01-01', end='2014-12-31').to_pydatetime()
+    for d in pd.date_range(dt(2014, 1, 1), dt(2014, 12, 31)):
+        if d in holidays:
+            print("{}: {}".format(d, True))
+
+
+def eda_water_values():
+    start = dt(2014, 7, 1).date()
+    end = dt(2019, 6, 2).date()
+    df = get_auction_data(start, end, "s", os.getcwd()).drop(columns=["Hour"])
+    df = df.groupby(by=["Date"]).mean().reset_index()
+    _, s_classes, _, _ = get_best_price_classes(plot=False)
+    result = get_data(start, end, ["System Price", "Total Hydro Dev", "Prec Norway 7"], os.getcwd(), "d")
+    for col in ["Water Value", "WL Upper", "WL Lower"]:
+        result[col] = np.NAN
+    last_printed_date = None
+    for i in range(len(df)):
+        row = df.iloc[i]
+        date = row[0].date()
+        if last_printed_date != date:
+            print(date)
+            last_printed_date = date
+        wl, wl_upper, wl_lower = get_water_values(row, s_classes)
+        #print("wl {}, upper {}, lower {}".format(wl, wl_upper, wl_lower))
+        plot_supply(row, wl, wl_upper, wl_lower, s_classes)
+        for key, value in {"Water Value": wl, "WL Upper": wl_upper, "WL Lower": wl_lower}.items():
+            result.loc[i, key] = value
+    result.to_csv("output/auction/water_values.csv", index=False, float_format="%g")
+
+
+def get_water_values(row, prices):
+    df = row.iloc[1:].to_frame().reset_index()
+    df = df.rename(columns={"index": "Classes", df.columns[1]: "Volume"})
+    df["Prices"] = prices
+    df["P Diff"] = df["Prices"] - df["Prices"].shift(1)
+    df["Diff"] = df["Volume"] - df["Volume"].shift(1)
+    df.loc[0:4, "Diff"] = np.NAN
+    df.loc[len(df)-3:len(df)-1, "Diff"] = np.NAN
+    df["Derivative"] = df["Diff"] / df["P Diff"]
+    #print(df)
+    df["Derivative"] = df.apply(lambda row: np.NAN if row["Derivative"] <= 350 else row["Derivative"], axis=1)
+    keep_idx = []
+    for i in range(len(df)):
+        if not np.isnan(df.loc[i, "Derivative"]):
+            keep_idx.append(i)
+    #print(df)
+    keep_idx = check_if_one_class_misses(keep_idx)
+    df = df.loc[keep_idx]
+    keep_idx = get_longest_index_flow(df)
+    df = df.loc[keep_idx].reset_index(drop=True)
+    lower, upper = (df.loc[0, "Prices"], df.loc[len(df)-1, "Prices"])
+    supply_line = LineString(np.column_stack((df["Volume"], df["Prices"])))
+    mid_volume = 1 / 2 * (df.loc[0, "Volume"] + df.loc[len(df)-1, "Volume"])
+    mid_line = LineString([(mid_volume, -10), (mid_volume, 210)])
+    wl = supply_line.intersection(mid_line).y
+    return wl, upper, lower
+
+
+def check_if_one_class_misses(keep_idx):
+    full_sequence = range(keep_idx[0], keep_idx[-1]+1)
+    number_of_missing = len([a for a in full_sequence if a not in keep_idx])
+    if number_of_missing == 1:
+        return [a for a in full_sequence]
+    else:
+        return keep_idx
+
+
+def get_longest_index_flow(df):
+    df = df.reset_index()
+    options = []
+    cur_option = []
+    for i in range(len(df)-1):
+        if len(cur_option) == 0:
+            cur_option.append(df.loc[i, "index"])
+        if df.loc[i+1, "index"] == df.loc[i, "index"] + 1:
+            cur_option.append(df.loc[i+1, "index"])
+        else:
+            options.append(cur_option)
+            cur_option = []
+        if i == len(df) - 2:
+            options.append(cur_option)
+    longest_flow = []
+    for flow in options:
+        if len(flow) >= len(longest_flow):
+            longest_flow = flow
+    return longest_flow
+
+
+def plot_supply(row, wl, wl_upper, wl_lower, s_classes):
+    volumes = row[1:].values
+    plt.subplots(figsize=full_fig)
+    color = plt.get_cmap("tab10")(1)
+    plt.plot(volumes, s_classes, label="Supply", color=color, linewidth=2)
+    x_lim = plt.gca().get_xlim()
+    plt.hlines(wl, x_lim[0], x_lim[1], label="water value {:.1f}".format(wl), color=first_color, linewidth=2)
+    plt.hlines(wl_upper, x_lim[0], x_lim[1], label="wl upper {:.0f}".format(wl_upper), linestyles="dotted", color=first_color, linewidth=2)
+    plt.hlines(wl_lower, x_lim[0], x_lim[1], label="wl lower{:.0f}".format(wl_lower), linestyles="dotted", color=first_color, linewidth=2)
+    plt.ylim(-11, wl_upper+35)
+    for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                           shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.title("Water Value Estimation  - {}".format(row[0].date()), pad=title_pad)
+    plt.xlabel("Volume [MWh]", labelpad=label_pad)
+    plt.ylabel("Price [€]", labelpad=label_pad)
+    plt.xlim(x_lim[0], x_lim[1])
+    plt.tight_layout()
+    plt.savefig("output/auction/eda/water_values/water_value_{}.png".format(row[0].date()))
+    #plt.savefig("output/auction/eda/water_values_test_period/water_value_{}.png".format(row[0].date()))
+    plt.close()
+
+
+def eda_water_value_model():
+    wv_data = pd.read_csv("output/auction/water_values.csv")
+    wv_data["Date"] = pd.to_datetime(wv_data["Date"], format="%Y-%m-%d")
+    plot = True
+    if plot:
+        wv_plot = wv_data[(wv_data["Date"] > dt(2018, 6, 4)) & (wv_data["Date"] < dt(2019, 6, 2))]
+        plt.subplots(figsize=full_fig)
+        plt.plot(wv_plot["Date"], wv_plot["System Price"], label="SYS", color=first_color)
+        plt.plot(wv_plot["Date"], wv_plot["Water Value"], label="Est water value", color=sec_color)
+        for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                               shadow=True).get_lines():
+            line.set_linewidth(2)
+        plt.title("System Price and Est. Water Value during Validation Period", pad=title_pad)
+        plt.xlabel("Date", labelpad=label_pad)
+        plt.ylabel("Price [€]", labelpad=label_pad)
+        plt.tight_layout()
+        plt.savefig("output/auction/eda/water_value_and_sys.png")
+    for col in ["System Price", "Total Hydro Dev", "Prec Norway 7"]:
+        r_coeff = round(stats.pearsonr(wv_data["Water Value"], wv_data[col])[0], 3)
+        print("Pearson coeff for water values and {}: {:.2f}".format(col, r_coeff))
+
+
+def eda_wv_hydro_dev():
+    df = pd.read_csv("output/auction/water_values.csv")
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    for year in range(2014, 2020):
+        df_2018 = df[df["Date"].dt.year==year]
+        fig, ax_1 = plt.subplots(figsize=full_fig)
+        ax_1.plot(df_2018["Date"], df_2018["Total Hydro Dev"], label="Hydro Dev", color=first_color)
+        ax_2 = ax_1.twinx()
+        ax_2.plot(df_2018["Date"], df_2018["Water Value"], label="Water Value", color=sec_color)
+        fig.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 0.94), fancybox=True, shadow=True)
+        r_coeff = round(stats.pearsonr(df_2018["Water Value"], df_2018["Total Hydro Dev"])[0], 3)
+        plt.title("Water Values and Hydro Dev {} (R = {:.2f})".format(year, r_coeff), pad=title_pad)
+        fig.tight_layout()
+        plt.show()
+        plt.close()
+
+
 if __name__ == '__main__':
     print("Running bid curve script..\n")
     # auction_data()
@@ -979,4 +1276,11 @@ if __name__ == '__main__':
     # define_and_plot_spikes()
     # check_spike_and_sensitivity_correlation()
     # verify_est_curve_accuracy()
-    explore_daily_curves()
+    # explore_daily_curves()
+    # explore_volume_error()
+    # eda_net_flow()
+    # eda_supply_weekends()
+    # eda_special_days()
+    # eda_water_values()
+    # eda_water_value_model()
+    eda_wv_hydro_dev()

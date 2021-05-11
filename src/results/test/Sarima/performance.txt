@@ -1,0 +1,17 @@
+-- Performance Summary for 'Sarima', created 2021-05-07 14:14 --
+
+Point performance:
+Mape:	 22.985 (22.758)
+Smape:	18.301 (12.784)
+Mae:	3.48 (1.737)
+Rmse:	4.278 (1.962)
+
+Interval performance: 
+Cov:	97.63% (5.874)
+ACE:	4.80% (4.281)
+MIS:	37.41 (22.908)
+
+Three best SMAPE performances:	{79: 4.006, 80: 4.024, 130: 4.1}
+Three worst SMAPE performances:	{349: 52.192, 350: 58.544, 351: 66.791}
+Three best IS performances:	{323: 11.111, 321: 11.168, 318: 11.7}
+Three worst IS performances:	{10: 128.41, 11: 130.958, 245: 181.469}

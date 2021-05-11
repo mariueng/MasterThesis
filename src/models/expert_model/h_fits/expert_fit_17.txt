@@ -1,0 +1,41 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:     Trans System Price   R-squared:                       0.983
+Model:                            OLS   Adj. R-squared:                  0.983
+Method:                 Least Squares   F-statistic:                     7465.
+Date:                Thu, 06 May 2021   Prob (F-statistic):               0.00
+Time:                        11:18:47   Log-Likelihood:                 1216.5
+No. Observations:                1791   AIC:                            -2403.
+Df Residuals:                    1776   BIC:                            -2321.
+Df Model:                          14                                         
+Covariance Type:            nonrobust                                         
+======================================================================================
+                         coef    std err          t      P>|t|      [0.025      0.975]
+--------------------------------------------------------------------------------------
+1 hour lag             1.3647      0.035     38.922      0.000       1.296       1.433
+2 hour lag            -0.4335      0.038    -11.552      0.000      -0.507      -0.360
+1 day lag              0.0301      0.016      1.822      0.069      -0.002       0.062
+2 day lag              0.0121      0.009      1.277      0.202      -0.006       0.031
+1 week lag             0.0116      0.006      1.830      0.067      -0.001       0.024
+Max Yesterday          0.0585      0.013      4.491      0.000       0.033       0.084
+Min Yesterday         -0.0264      0.012     -2.274      0.023      -0.049      -0.004
+Midnight Yesterday    -0.0189      0.015     -1.278      0.201      -0.048       0.010
+Mon                    0.0367      0.008      4.614      0.000       0.021       0.052
+Tue                    0.0037      0.008      0.462      0.644      -0.012       0.019
+Wed                   -0.0023      0.007     -0.321      0.748      -0.017       0.012
+Thu                   -0.0061      0.007     -0.833      0.405      -0.020       0.008
+Fri                   -0.0104      0.007     -1.432      0.152      -0.025       0.004
+Sat                   -0.0121      0.008     -1.571      0.116      -0.027       0.003
+Sun                    0.0144      0.008      1.838      0.066      -0.001       0.030
+intercept              0.0239      0.005      4.878      0.000       0.014       0.033
+==============================================================================
+Omnibus:                     1595.334   Durbin-Watson:                   1.632
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):            73359.618
+Skew:                           4.018   Prob(JB):                         0.00
+Kurtosis:                      33.306   Cond. No.                     1.01e+16
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The smallest eigenvalue is 1.06e-28. This might indicate that there are
+strong multicollinearity problems or that the design matrix is singular.

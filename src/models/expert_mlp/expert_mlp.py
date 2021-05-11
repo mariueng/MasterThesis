@@ -20,6 +20,8 @@ from keras.callbacks import EarlyStopping
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import math
+import operator
+import pickle
 
 
 class ExpertMLP:
@@ -28,6 +30,13 @@ class ExpertMLP:
         today = dt.today()
         self.creation_date = str(today)[0:10] + "_" + str(today)[11:16]
         print("'{}' is instantiated\n".format(self.name))
+        self.prev_workdir = os.getcwd()
+        os.chdir("\\".join(self.prev_workdir.split("\\")[:6]) + "\\models\\expert_mlp")
+        self.model_fit = load_model("expert_mlp.pickle")
+        self.scaler = pickle.load(open("scaler.pickle", 'rb'))
+        with open("mlp_input.txt", 'r') as fh:
+            self.columns = fh.readline().replace("\n", "").split(",")
+            fh.close()
 
     def get_name(self):
         return self.name
@@ -36,116 +45,133 @@ class ExpertMLP:
         return self.creation_date
 
     def forecast(self, forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
-        forecast = self.get_forecast(forecast_df)
-        forecast_df["Forecast"] = forecast
-        forecast_df["Upper"] = forecast_df["Forecast"] * 1.15
-        forecast_df["Lower"] = forecast_df["Forecast"] * 0.9
+        forecast_df = self.get_forecast(forecast_df)
+        up = 1.15
+        down = 0.90
+        forecast_df = get_prob_forecast(forecast_df,  up, down)
         return forecast_df
 
     def get_forecast(self, forecast_df):
-        model_fit = self.get_model()
-        params = get_parameters_dataframe(model_fit).columns.tolist()
-        input_cols = [i for i in params if i != "Period" and "lag" not in i]
-        start_date = forecast_df.at[0, "Date"]
-        train_start = start_date - timedelta(days=14)
-        train_end = train_start + timedelta(days=13)
-        # df, a, b = arcsinh.to_arcsinh(df, "System Price")
-        col = "System Price"
-        past_prices = get_data(train_start, train_end, ["System Price"], os.getcwd(), "d")[col].tolist()
-        data_df = get_data(start_date, start_date + timedelta(days=13), input_cols, os.getcwd(), "d")
-        forecast = []
-        for i in range(14):
-            x = get_x_input(i, model_fit.params, past_prices, data_df, input_cols)
-            prediction = model_fit.get_prediction(exog=x)
-            forecasted_value = prediction.predicted_mean[0]
-            forecast.append(forecasted_value)
-            past_prices.append(forecasted_value)
-        hour_forecast = self.get_hour_forecast_from_mlp(forecast, start_date)
-        # forecast = arcsinh.from_arcsin_to_original(forecast, a, b)
-        return hour_forecast
-
-    @staticmethod
-    def get_model(input_cols):
-        dir_path = str(Path(__file__).parent)
-        model_name = dir_path + "\\models\\" + "_".join(input_cols)
-        model_exists = os.path.exists(model_name)
-        if model_exists:
-            print("Retrieving model from {}".format(model_name))
-            model = load_model(model_name)
-        else:
-            print("Training model from {}".format(input_cols))
-            train_model(dir_path, input_cols)
-            model = load_model(model_name)
-        return model
-
-    @staticmethod
-    def get_hour_forecast_from_mlp(forecast, start):
-        day_df = get_data(start, start + timedelta(days=13), ["Weekday", "Month", "Temp Norway"], os.getcwd(), "d")
-        hour_forecast = []
-        model = load_model(r"../models/mlp_day_profile/first_model")
-        # model = load_model(r"../mlp_day_profile/first_model")
-        col = ["Price"] + [w for w in weekdays] + [m for m in months] + ["Temp Norway"]
-        data = pd.DataFrame(columns=col)
-        for i in range(len(day_df)):
-            row = {"Price": forecast[i]}
-            weekday = day_df.loc[i, "Weekday"]
-            month = day_df.loc[i, "Month"]
-            for j in range(1, 8):
-                if weekday == j:
-                    row["d{}".format(j)] = 1
-                else:
-                    row["d{}".format(j)] = 0
-            for j in range(1, 13):
-                if month == j:
-                    row["m{}".format(j)] = 1
-                else:
-                    row["m{}".format(j)] = 0
-            row["Temp Norway"] = day_df.loc[i, "Temp Norway"]
-            data = data.append(row, ignore_index=True)
-        rows = []
-        for index, row in data.iterrows():
-            r = row.tolist()
-            rows.append(r)
-        test_x = np.asarray(rows).astype('float32')
-        for i in range(len(test_x)):
-            day_mean = forecast[i]
-            x = test_x[i]
-            x = x.reshape(1, len(x))
-            prediction = model.predict(x, batch_size=None, verbose=0, steps=1, callbacks=None, max_queue_size=10,
-                                       workers=1, use_multiprocessing=False)
-            hour_forecast.extend([day_mean + prediction[0][j] for j in range(len(prediction[0]))])
-        return hour_forecast
+        start = forecast_df.loc[0, "Date"]
+        end = forecast_df.loc[len(forecast_df)-1, "Date"]
+        data = get_data(start, end, ["Weekday", "Holiday"], os.getcwd(), "h")
+        train_start = start - timedelta(days=7)
+        train_end = start - timedelta(days=1)
+        df = get_data(train_start, train_end, ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
+        df = adjust_for_holiday(df, "System Price")
+        df = df.append(data, ignore_index=True)
+        idx = {'1 hour lag': 1, '2 hour lag': 2, '1 day lag': 24, '2 day lag': 48, '1 week lag': 168}
+        weekdays = {1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
+        for i in range(168, 168 + len(forecast_df)):
+            #print("i {}".format(i))
+            x = pd.DataFrame(columns=self.columns)
+            for key, value in idx.items():
+                x.loc[0, key] = df.loc[i-value, "System Price"]
+            yest_df = df[df["Date"] == df.loc[i, "Date"] - timedelta(days=1)]
+            x.loc[0, "Max Yesterday"] = max(yest_df["System Price"])
+            x.loc[0, "Min Yesterday"] = min(yest_df["System Price"])
+            x.loc[0, "Midnight Yesterday"] = yest_df["System Price"].values[-1]
+            for key, value in weekdays.items():
+                x.loc[0, value] = 1 if df.loc[i, "Weekday"] == key else 0
+            for h in range(24):
+                x.loc[0, "h{}".format(h)] = 1 if df.loc[i, "Hour"] == h else 0
+            #print(x.transpose())
+            x = self.scaler.transform(x)
+            #print(x)
+            df.loc[i, "System Price"] = self.model_fit.predict(x)[0][0]
+            #print("Predicted value {}".format(df.loc[i, "System Price"]))
+            #print("-------------------------------\n")
+        result = df.tail(336).reset_index(drop=True)
+        result = result.rename(columns={"System Price": "Forecast"})
+        result = adjust_for_holiday(result, "Forecast")
+        forecast_df["Forecast"] = result["Forecast"]
+        os.chdir(self.prev_workdir)
+        return forecast_df
 
 
-weekdays = ["d{}".format(d) for d in range(1, 8)]
-months = ["m{}".format(m) for m in range(1, 13)]
+def get_prob_forecast(forecast_df, up, down):
+    for index, row in forecast_df.iterrows():
+        point_f = row["Forecast"]
+        factor_up = get_factor_up(index, len(forecast_df), up)
+        upper_f = point_f * factor_up
+        forecast_df.at[index, "Upper"] = upper_f
+        factor_down = get_factor_down(index, len(forecast_df), down)
+        lower_f = point_f * factor_down
+        forecast_df.at[index, "Lower"] = lower_f
+    return forecast_df
 
 
-def train_model(dir_path, input_col):
-    print("Training model for {}".format(", ".join(input_col)))
-    model_name = dir_path + "\\models\\" + "_".join(input_col)
-    if not os.path.exists(model_name):
-        start_date = dt(2014, 1, 1)
-        end_date = dt(2018, 12, 31)
-        columns = ["System Price"] + input_col
-        x, y = get_x_and_y_dataset(start_date, end_date, columns)
-        scaler.fit(x)
-        x_scaled = scaler.transform(x)
-        model = get_mlp_model(len(x.columns), 2 * math.ceil(len(x.columns) / 3))
-        callback = EarlyStopping(monitor="loss", patience=20)
-        # model.fit(x, y, epochs=1000, batch_size=32, callbacks=[callback])
-        # epocks = 100 + 50 * (len(input_col)-2)
-        epocks = 1000
-        model.fit(x_scaled, y, epochs=epocks, batch_size=32, callbacks=[callback])
-        model.save(model_name)
+def get_factor_up(index, horizon, up_factor):
+    return up_factor + ((index / horizon) / 2) * up_factor
 
 
-def get_mlp_model(input_layer, hidden_layer):
+def get_factor_down(index, horizon, down_factor):
+    return down_factor - ((index / horizon) / 2) * down_factor
+
+
+def train_model():
+    df = get_data("01.07.2014", "02.06.2019", ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
+    df = adjust_for_holiday(df, "System Price")
+    col = "System Price"
+    df["1 hour lag"] = df[col].shift(1)
+    df["2 hour lag"] = df[col].shift(2)
+    df["1 day lag"] = df[col].shift(24)
+    df["2 day lag"] = df[col].shift(48)
+    df["1 week lag"] = df[col].shift(168)
+    all_dates = pd.date_range(df.loc[0, "Date"], df.loc[len(df)-1, "Date"], freq="d")
+    for date in all_dates:
+        yesterday_df = df[df["Date"] == date - timedelta(days=1)]
+        if not yesterday_df.empty:
+            max_yesterday = max(yesterday_df[col])
+            min_yesterday = min(yesterday_df[col])
+            midnight_price = yesterday_df.tail(1)[col].values[0]
+            todays_df = df[df["Date"] == date]
+            for index in todays_df.index:
+                df.loc[index, "Max Yesterday"] = max_yesterday
+                df.loc[index, "Min Yesterday"] = min_yesterday
+                df.loc[index, "Midnight Yesterday"] = midnight_price
+    df = df.dropna().reset_index(drop=True)
+    weekdays = {1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
+    for key, value in weekdays.items():
+        df[value] = df.apply(lambda row: 1 if key == row["Weekday"] else 0, axis=1)
+    for i in range(24):
+        df["h{}".format(i)] = df.apply(lambda row: 1 if row["Hour"] == i else 0, axis=1)
+    drop_cols = ["Date", "Hour", "System Price", "Weekday"]
+    x_columns = [col for col in df.columns if col not in drop_cols]
+    y = df[[col]].values
+    scaler.fit(df[x_columns])
+    pickle.dump(scaler, open("scaler.pickle", 'wb'))
+    with open("mlp_input.txt", 'w') as fh:
+        fh.write(",".join(x_columns) + "\n")
+        fh.close()
+    x = scaler.transform(df[x_columns])
+    model = get_mlp_model(x.shape[1])
+    print(model.summary())
+    epocks = 100
+    earlystopping = EarlyStopping(monitor="loss", mode="min", patience=5, restore_best_weights=True)
+    model.fit(x, y, epochs=epocks, batch_size=32,  callbacks=[earlystopping])
+    model.save("expert_mlp.pickle")
+
+
+def adjust_for_holiday(df, col):
+    operation = operator.mul if col == "System Price" else operator.truediv
+    df[col] = df.apply(lambda row: operation(row[col], get_hol_factor()) if
+    row["Holiday"] == 1 and row["Weekday"] != 7 else row[col], axis=1)
+    return df.drop(columns=["Holiday"])
+
+
+def get_hol_factor():
+    f = 1.1158
+    return f
+
+
+def get_mlp_model(input_dim):
     model = Sequential()
-    model.add(Dense(units=hidden_layer, input_dim=input_layer, activation='tanh'))
-    model.add(Dense(math.ceil(hidden_layer / 2)))
-    model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse', 'mae'])
+    model.add(Dense(units=input_dim, input_dim=input_dim))
+    model.add(Dense(math.ceil(input_dim * 2)))
+    model.add(Dense(math.ceil(input_dim / 2)))
+    model.add(Dense(1, activation="relu"))
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model
 
 
@@ -197,29 +223,6 @@ def reset_result_directory(input_col):
     return res_dir
 
 
-def get_x_input(id_x, past_prices, data_df, input_col):
-    lags = ["1 day lag", "2 day lag", "3 day lag", "1 week lag", "2 week lag"]
-    idx_back = [-1, -2, -3, -7, -14]
-    data_cols = [i for i in input_col if i not in ["Weekday", "Month"]]
-    variables = data_cols + lags + weekdays + months
-    x_df = pd.DataFrame(columns=variables)
-    x_dict = {}
-    for c in data_cols:
-        x_dict[c] = data_df.loc[id_x, c]
-    time_cols = {"Weekday": "d", "Month": "m"}
-    time_list = {"Weekday": weekdays, "Month": months}
-    for j in range(len(lags)):
-        x_dict[lags[j]] = past_prices[idx_back[j]]
-    for col in time_cols.keys():
-        if col in input_col:
-            current = data_df.loc[id_x, col]
-            for val in time_list[col]:
-                x_dict[val] = 0
-            x_dict["{}{}".format(time_cols[col], current)] = 1
-    x_df = x_df.append(x_dict, ignore_index=True)
-    return x_df
-
-
 def calculate_performance(forecasts, results, m_name, m_time, inputs, res_path):
     forecasts.to_csv(res_path + "/forecast.csv", index=False, float_format='%.3f')
     results.to_csv(res_path + "/metrics.csv", index=False, float_format='%.3f')
@@ -251,22 +254,6 @@ def calculate_performance(forecasts, results, m_name, m_time, inputs, res_path):
     summary.close()
 
 
-def get_parameters_dataframe(model_fit):
-    columns_to_dataframe = ["Period"]
-    p = model_fit.params
-    keys = p.keys().tolist()
-    for k in keys:
-        if k not in weekdays and k not in weeks and k not in months:
-            columns_to_dataframe.append(k)
-    if all(x in keys for x in weekdays):
-        columns_to_dataframe.append("Weekday")
-    if all(x in keys for x in weeks):
-        columns_to_dataframe.append("Week")
-    if all(x in keys for x in months):
-        columns_to_dataframe.append("Month")
-    df = pd.DataFrame(columns=columns_to_dataframe)
-    return df
-
 
 def plot_forecast(df, period_no, result_path):
     label_pad = 12
@@ -296,37 +283,6 @@ def plot_forecast(df, period_no, result_path):
     plt.close()
 
 
-def get_x_and_y_dataset(start, end, columns):
-    if start > dt(2014, 1, 14):
-        start = start - timedelta(days=13)
-    data = get_data(start, end, columns, os.getcwd(), "d")
-    col = "System Price"
-    data["1 day lag"] = data[col].shift(1)
-    data["2 day lag"] = data[col].shift(2)
-    data["3 day lag"] = data[col].shift(3)
-    data["1 week lag"] = data[col].shift(7)
-    data["2 week lag"] = data[col].shift(14)
-    data = data.dropna().reset_index()
-    drop_cols = ["index", "Date", "System Price", "Month", "Weekday"]
-    if "Weekday" in columns:
-        data = one_hot_encoding("Weekday", "d", 7, data)
-    if "Month" in columns:
-        data = one_hot_encoding("Month", "m", 12, data)
-    x_columns = [col for col in data.columns if col not in drop_cols]
-    x = data[x_columns]
-    y = data[[col]]
-    return x, y
-
-
-def one_hot_encoding(col, prefix, length, data):
-    for index, row in data.iterrows():
-        for j in range(1, length + 1):
-            if data.loc[index, col] == j:
-                data.loc[index, "{}{}".format(prefix, j)] = 1
-            else:
-                data.loc[index, "{}{}".format(prefix, j)] = 0
-    return data
-
 
 def run(model, periods):
     result_list = []
@@ -352,17 +308,8 @@ def run(model, periods):
 
 
 if __name__ == '__main__':
-    data_sources = ["Temp Norway", "Total Hydro Dev", "Wind DK", "Prec Forecast"]
-    time_dummies = ["Weekday", "Month"]
-    length = len(data_sources)
-    all_inputs = {frozenset({e for e, b in zip(data_sources, f'{i:{length}b}') if b == '1'}) for i in
-                  range(2 ** length)}
-    for i_set in all_inputs:
-        # inputs = time_dummies + list(i_set)
-        inputs = time_dummies + ["Demand", "Coal"]
-        train_model(str(Path(__file__).parent), inputs)
-        validate_day_model(inputs)
-        assert False
+    print("Running models")
+    train_model()
     # model_ = ExpertDay()
     # periods_ = get_random_periods(1)
     # run(model_, periods_)
