@@ -15,11 +15,16 @@ sec_col = "firebrick"
 fig_size = (13, 7)
 
 
-def plot_montlhy_error(folder_path):
+def plot_monthly_error(folder_path):
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     result = pd.DataFrame(columns=["Month", "E", "AE", "APE", "Pos error", "Neg error"])
-    df = pd.read_csv(folder_path+"/forecast.csv", usecols=["Period", "DateTime", "System Price", "Forecast"])
-    df["DateTime"] = pd.to_datetime(df["DateTime"])
+    df = pd.read_csv(folder_path+"/forecast.csv")
+    if "DateTime" not in df.columns:
+        df["Date"] = pd.to_datetime(df["Date"])
+        df["Hour"] = pd.to_datetime(df['Hour'], format="%H").dt.time
+        df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour']), 1)
+    else:
+        df["DateTime"] = pd.to_datetime(df["DateTime"])
     for month in months:
         month_int = months.index(month) + 1
         last_date = calendar.monthrange(2019, month_int)[1]
@@ -74,6 +79,7 @@ def bar_plot(result, n, width, columns, legends, labels, colors, title, x_ticks,
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     plt.savefig(dir_path+"/monthly_errors.png")
+    print("Saved to {}/monthly_errors.png".format(dir_path))
 
 
 def ratio_plot(result, width, columns, legends, labels, colors, title, months, folder_path):
@@ -92,7 +98,30 @@ def ratio_plot(result, width, columns, legends, labels, colors, title, months, f
         os.makedirs(dir_path)
     plt.tight_layout()
     plt.savefig(dir_path+"/monthly_error_ratio.png")
+    print("Saved to {}/monthly_error_ratio.png".format(dir_path))
+
+
+def compare_results_two_models(path_names):
+    m_1_name = path_names[0]
+    m_2_name = path_names[1]
+    p_1 = pd.read_csv("../results/validation/" + path_names[0] + "/performance.csv")
+    p_2 = pd.read_csv("../results/validation/" + path_names[1] + "/performance.csv")
+    for c in ["MAPE", "SMAPE", "MAE", "RMSE"]:
+        m_1 = p_1[c]
+        m_2 = p_2[c]
+        m_3 = pd.DataFrame(data={"M1": m_1.values, "M2": m_2.values})
+        best = m_3.min(axis=1).mean()
+        m_1_best = 0
+        for i in range(len(m_1)):
+            m_1_best += 1 if m_1[i] < m_2[i] else 0
+        m_1_best = 100 * m_1_best / len(m_1)
+        winner = m_1_name if m_1_best > 50 else m_2_name
+        print("{}:\t{} is best in {:.2f}% periods".format(c, winner, max(m_1_best, 100-m_1_best)))
+        print("\t\t{}: {:.2f}, {}: {:.2f}. Best: {:.2f}".format(m_1_name, m_1.mean(), m_2_name, m_2.mean(), best))
+
 
 if __name__ == '__main__':
-    path = "../results/validation/ExpertDay"
-    plot_montlhy_error(path)
+    path = "../results/validation/CurveModel_351_1"
+    plot_monthly_error(path)
+    # path_names_ = ["CurveModel_mean_supply", "CurveModel_351_1"]
+    # compare_results_two_models(path_names_)

@@ -1,0 +1,17 @@
+-- Performance Summary for 'ETS', created 2021-05-05 21:13 --
+
+Point performance:
+Mape:	 13.118 (13.226)
+Smape:	10.235 (6.682)
+Mae:	4.402 (2.39)
+Rmse:	5.613 (2.874)
+
+Interval performance: 
+Cov:	97.38% (4.056)
+ACE:	4.08% (2.294)
+MIS:	50.87 (18.519)
+
+Three best SMAPE performances:	{9: 2.802, 12: 3.132, 10: 3.309}
+Three worst SMAPE performances:	{15: 27.722, 14: 29.299, 19: 35.214}
+Three best IS performances:	{11: 27.433, 39: 28.873, 40: 29.425}
+Three worst IS performances:	{21: 84.854, 15: 92.636, 14: 105.202}

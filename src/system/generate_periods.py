@@ -134,6 +134,26 @@ def get_all_2019_periods():
     return periods
 
 
+def get_validation_periods():
+    periods = []
+    first_date = dt.datetime(2018, 6, 4).date()
+    while first_date != dt.datetime(2019, 5, 21).date():
+        last_date = first_date + dt.timedelta(days=13)
+        periods.append((first_date, last_date))
+        first_date = first_date + dt.timedelta(days=1)
+    return periods
+
+
+def get_testing_periods():
+    periods = []
+    first_date = dt.datetime(2019, 6, 3).date()
+    while first_date != dt.datetime(2020, 5, 19).date():
+        last_date = first_date + dt.timedelta(days=13)
+        periods.append((first_date, last_date))
+        first_date = first_date + dt.timedelta(days=1)
+    return periods
+
+
 def get_one_period():
     periods = []
     first_date = dt.datetime(2019, 1, 28).date()
@@ -144,20 +164,14 @@ def get_one_period():
 
 def get_random_periods(number):
     periods = []
-    limit = dt.datetime(2019, 12, 17).date()
     random.seed(1)
-    while len(periods) != number:
-        month = random.randint(1, 12)
-        date = random.randint(1, 31)
-        try:
-            first_day = dt.datetime(2019, month, date).date()
-            if not first_day in [d[0] for d in periods] and first_day <= limit:
-                last_day = first_day + dt.timedelta(days=13)
-                periods.append((first_day, last_day))
-        except Exception as e:
-            print(e)
-    periods = sorted(periods)
+    all_val_dates = pd.date_range(dt.datetime(2018, 6, 4), dt.datetime(2019, 5, 19), freq="d").tolist()
+    chosen_dates = random.sample(all_val_dates, number)
+    chosen_dates.sort()
+    for d in chosen_dates:
+        periods.append((d.date(), d.date()+dt.timedelta(days=13)))
     return periods
+
 
 if __name__ == '__main__':
     # periods_ = get_four_periods_median_method(write_summary=False)
@@ -165,5 +179,7 @@ if __name__ == '__main__':
     # plot_price_year_and_periods(periods_, write_dates=True)
     #periods_2019 = get_all_2019_periods()
     #print(periods_2019)
-    periods_ = get_one_period()
+    # periods_ = get_one_period()
+    # periods_ = get_testing_periods()
+    periods_ = get_random_periods(10)
     print(periods_)

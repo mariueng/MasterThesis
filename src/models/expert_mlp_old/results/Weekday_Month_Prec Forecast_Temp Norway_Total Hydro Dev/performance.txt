@@ -1,0 +1,11 @@
+-- Performance Summary for 'Expert MLP', created 2021-03-23 12:31 --
+
+Point performance:
+Mape:	 9.871
+Smape:	9.162
+Mae:	3.543
+Rmse:	4.078
+
+
+Three best SMAPE performances:	{198.0: 2.16, 202.0: 2.31, 207.0: 2.39}
+Three worst SMAPE performances:	{148.0: 31.61, 149.0: 33.68, 150.0: 35.39}

@@ -24,11 +24,16 @@ data/output/auction
 
 # Preliminary results
 src/results/validation/*
-src/models/expert_mlp/results
+src/results/short/*
+src/results/old/*
+src/models/expert_mlp/results/*
 src/models/expert_mlp/models
-src/models/expert_day/validation
+src/models/expert_day_old/validation
 src/models/mlp_day_profile/validation
 src/models/mlp_day_profile/first_model
+src/models/curve_model/daily_demand_plots
+src/models/curve_model/hourly_demand_plots
+src/models/curve_model/price_curves
 
 # Venv-config
 .idea

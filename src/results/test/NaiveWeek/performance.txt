@@ -1,0 +1,17 @@
+-- Performance Summary for 'Naive Week', created 2021-05-07 10:10 --
+
+Point performance:
+Mape:	 23.14 (21.847)
+Smape:	18.796 (12.511)
+Mae:	3.57 (1.695)
+Rmse:	4.463 (1.92)
+
+Interval performance: 
+Cov:	84.29% (17.494)
+ACE:	13.65% (15.302)
+MIS:	35.71 (18.581)
+
+Three best SMAPE performances:	{78: 4.183, 80: 4.201, 79: 4.22}
+Three worst SMAPE performances:	{349: 54.378, 350: 60.986, 351: 69.648}
+Three best IS performances:	{312: 9.549, 311: 10.144, 310: 10.391}
+Three worst IS performances:	{6: 112.929, 3: 114.635, 4: 117.33}

@@ -3,14 +3,17 @@ from generate_periods import get_four_periods_median_method
 from generate_periods import get_one_period
 from generate_periods import get_random_periods
 from generate_periods import get_all_2019_periods
+from generate_periods import get_validation_periods
+from generate_periods import get_testing_periods
 from scores import calculate_interval_score
 from scores import calculate_coverage_error
 from scores import get_all_point_metrics
 from src.models.naive_day import naive_day
 from src.models.naive_week import naive_week
-from src.models.sarimax import sarimax
+from src.models.sarima import sarimax
 from src.models.expert_model import expert_model
-from src.models.expert_day import expert_day
+from src.models.expert_day_old import expert_day
+from src.models.curve_model import curve_model
 from src.models.ets import ets
 from data.data_handler import get_data
 import os
@@ -64,7 +67,7 @@ def get_result_folder(model):
     # time = model.get_time() REMOVE "#" if you want to keep old folder with same model name
     # folder_name = (name+"_"+time).replace(" ", "")
     folder_name = name.replace(" ", "")
-    folder_path = "../results/validation/" + folder_name
+    folder_path = "../results/old/" + folder_name
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)  # delete old
     os.makedirs(folder_path)  # create new
@@ -110,7 +113,7 @@ def save_forecast(result_list, result_path):
         result = result_list[i]
         result["Period"] = i+1
     all_forecasts = pd.concat(result_list, ignore_index=True)
-    all_forecasts = all_forecasts[["Period", "DateTime", "System Price", "Forecast", "Upper", "Lower"]]
+    all_forecasts = all_forecasts[["Period", "Date", "Hour", "System Price", "Forecast", "Upper", "Lower"]]
     path = result_path + "/forecast.csv"
     all_forecasts.to_csv(path, index=False, float_format='%.3f')
 
@@ -179,12 +182,15 @@ def analyze_performance(result_path, model):
 if __name__ == '__main__':
     # model_ = naive_day.NaiveDay()
     # model_ = naive_week.NaiveWeek()
-    # model_ = sarimax.Sarimax()
-    # model_ = sarimax.Sarimax()
+    # model_ = sarimax.Sarima()
+    # model_ = sarimax.Sarima()
     # model_ = expert_model.ExpertModel()
-    model_ = expert_day.ExpertDay()
+    # model_ = expert_day.ExpertDay()
+    model_ = curve_model.CurveModel()
     # periods_ = get_four_periods_median_method(write_summary=False)
-    # periods_ = get_random_periods(4)
-    periods_ = get_all_2019_periods()
+    periods_ = get_random_periods(5)
+    # periods_ = get_validation_periods()
+    # periods_ = get_testing_periods()
     # periods_ = get_one_period()
+    # periods_ = [(dt.datetime(2019, 5, 27), dt.datetime(2019, 6, 9))]
     validate(model_, periods_, plot=True)

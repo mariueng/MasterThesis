@@ -1,0 +1,30 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:           System Price   R-squared:                       0.958
+Model:                            OLS   Adj. R-squared:                  0.957
+Method:                 Least Squares   F-statistic:                     902.7
+Date:                Thu, 06 May 2021   Prob (F-statistic):          1.43e-161
+Time:                        15:39:52   Log-Likelihood:                -537.40
+No. Observations:                 247   AIC:                             1089.
+Df Residuals:                     240   BIC:                             1113.
+Df Model:                           6                                         
+Covariance Type:            nonrobust                                         
+=================================================================================
+                    coef    std err          t      P>|t|      [0.025      0.975]
+---------------------------------------------------------------------------------
+1 day lag         0.9830      0.052     18.938      0.000       0.881       1.085
+2 day lag        -0.2140      0.038     -5.701      0.000      -0.288      -0.140
+1 week lag        0.2362      0.077      3.082      0.002       0.085       0.387
+Max Last Week    -0.0220      0.028     -0.777      0.438      -0.078       0.034
+Min Last Week    -0.0941      0.063     -1.488      0.138      -0.219       0.030
+Last Sunday       0.0697      0.072      0.962      0.337      -0.073       0.212
+intercept        -0.4105      0.459     -0.894      0.372      -1.315       0.494
+==============================================================================
+Omnibus:                      132.754   Durbin-Watson:                   1.957
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1006.902
+Skew:                          -2.010   Prob(JB):                    2.26e-219
+Kurtosis:                      12.038   Cond. No.                         269.
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.

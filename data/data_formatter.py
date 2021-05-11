@@ -7,6 +7,7 @@ from datetime import timedelta
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import warnings
 import math
 from data_handler import get_data
 from src.preprocessing.arcsinh.arcsinh import to_arcsinh
@@ -577,8 +578,12 @@ def write_hourly_temperature_to_combined():
 def remove_summer_winter_time():
     print("Fixing 'bugs' from summer time and winter time change")
     data_path = "..\\data\\input\\combined\\all_data_hourly.csv"
+    fix_summer_and_winter_time(data_path)
+
+
+def fix_summer_and_winter_time(data_path):
     date_format = "%Y-%m-%d"
-    df = pd.read_csv(data_path, sep=",")
+    df = pd.read_csv(data_path, sep=",").dropna()
     df['Date'] = pd.to_datetime(df['Date'], format=date_format)
     to_summer = {2014: 30, 2015: 29, 2016: 27, 2017: 26, 2018: 25, 2019: 31, 2020: 29}
     to_summer_dates = []
@@ -589,6 +594,8 @@ def remove_summer_winter_time():
         to_winter_dates.append(datetime(year, 10, to_winter[year]).date())
     for index, row in df.iterrows():
         if row["Date"] in to_summer_dates and row["Hour"] == 2:
+            print(index)
+            print(row)
             prev_row = df.iloc[index - 1]
             next_row = df.iloc[index + 1]
             for col in df.columns[2:]:
@@ -627,18 +634,13 @@ def write_daily_temperature_to_combined():
 
 
 def write_daily_precipitation_to_combined():
-    coordinates = {
-        "Prec Hamar": "SN12290",
-        "Prec Kvin": "SN42520",
-        "Prec Oppdal": "SN63580",
-        "Prec Troms": "SN91500",
-        "Prec Bergen": "SN50810"
-    }
+    codes = pd.read_csv("input/frost/frost_precip.csv", usecols=["Frost sted", "Frost kode"])
+    coordinates = dict(zip(codes["Frost sted"], codes["Frost kode"]))
     element = 'sum(precipitation_amount P1D)'
     time_offset = "PT6H"
     tot_col = "Prec Norway"
     tot_operation = "add"
-    out_file = "precip_daily"
+    out_file = "precip_daily_2"
     write_weather_df_to_combined_helping_method(element, time_offset, coordinates, tot_col, tot_operation, out_file)
 
 
@@ -650,6 +652,7 @@ def write_weather_df_to_combined_helping_method(element, time_offset, coordinate
     endpoint = 'https://frost.met.no/observations/v0.jsonld'
     weather_df = pd.DataFrame()
     for year in years:
+        print("Year: {}".format(year))
         start = dt(year, 1, 1).date()
         end = dt(year, 12, 31).date()
         locations = ",".join(coordinates.values())
@@ -704,13 +707,14 @@ def write_weather_df_to_combined_helping_method(element, time_offset, coordinate
 def append_weather_to_all_data():
     path_ = "..\\data\\input\\combined\\"
     df_all = pd.read_csv(path_ + "all_data_daily.csv", sep=",")
-    df_temp = pd.read_csv(path_ + "temp_daily.csv", sep=",")
+    df_all = df_all.drop(columns=["Prec Hamar", "Prec Kvin", "Prec Oppdal", "Prec Troms", "Prec Bergen", "Prec Norway", "Prec Norway 7"])
+    #df_temp = pd.read_csv(path_ + "temp_daily.csv", sep=",")
     df_prec = pd.read_csv(path_ + "precip_daily.csv", sep=",")
-    for df in [df_all, df_temp, df_prec]:
+    for df in [df_all, df_prec]:
         df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
     orig_len = len(df_all)
-    df_all = df_all.merge(df_temp, on="Date", how="outer")
-    df_all = df_all.merge(df_prec, on="Date", how="outer")
+    #df_all = df_all.merge(df_temp, on="Date", how="outer")
+    df_all = df_all.merge(df_prec[["Date", "Prec Norway"]], on="Date", how="outer")
     new_len = len(df_all)
     assert orig_len == new_len
     df_all.to_csv(path_ + "all_data_daily.csv", index=False, float_format='%g')
@@ -726,10 +730,10 @@ def add_prec_next_week_col():
     for i in range(1, days_ahead):
         df["{} prec lag".format(i)] = df["Prec Norway"].shift(-i)
     prec_cols = ["{} prec lag".format(i) for i in range(1, days_ahead)]
-    df["Prec Norway"] = df[prec_cols].sum(axis=1)
-    last_correct_value = df.loc[len(df) - days_ahead, "Prec Norway"]
+    df["Prec Norway 7"] = df[prec_cols].sum(axis=1)
+    mean_forecast = df["Prec Norway 7"].mean()
     for i in range(1, days_ahead):
-        df.loc[len(df) - i, "Prec Norway"] = last_correct_value
+        df.loc[len(df) - i, "Prec Norway 7"] = mean_forecast
     df = df.drop(columns=prec_cols)
     new_len = len(df)
     assert orig_len == new_len
@@ -759,18 +763,49 @@ def write_wind_to_combined(resolution, convert_to_csv, replace_commas):
     if resolution == "h":
         df_all['Hour'] = df_all['Hour'].str[:2].astype(int)
     df_all["Wind DK"] = df_all["DK1"] + df_all["DK2"]
-    df_se = df_all[["Date", "SE1", "SE2", "SE3", "SE4", "Wind DK"]]
-    df_se_clean = df_se.dropna(subset=["SE1", "SE2", "SE3", "SE4"], how="any")
-    df_se_clean["Wind SE"] = df_se_clean[["SE1", "SE2", "SE3", "SE4"]].sum(axis=1)
-    df_se_clean["SE factor"] = df_se_clean["Wind SE"] / df_se_clean["Wind DK"]
-    print(df_se_clean)
-    df_factor_se = df_se_clean["SE factor"].mean()
-    print(df_factor_se)
+    print(df_all)
+    assert False
+    df_all = df_all[["Date", "Wind DK"]]
+    print(df_all.columns)
+    print(df_all)
     assert False
     df_all = df_all[out_col]
     df_all = df_all.interpolate(method='linear', axis=0)
     assert df_all["Wind DK"].isnull().sum(axis=0) == 0
     df_all.to_csv(out_path, index=False, float_format='%g')
+
+
+def add_swedish_wind_to_all_data():
+    warnings.filterwarnings("ignore")
+    all_data = pd.read_csv("input/combined/all_data_daily.csv")
+    orig_len = len(all_data)
+    all_data["Date"] = pd.to_datetime(all_data["Date"], format="%Y-%m-%d")
+    df = pd.DataFrame(columns=["Date", "Hour", "Wind SE"])
+    for year in range(2014, 2021):
+        df_year = pd.read_csv("input/entsoe/wind_{}.csv".format(year), usecols=["MTU", "Wind Onshore  - Actual Aggregated [MW]"])
+        df_year["Date"] = pd.to_datetime(df_year["MTU"].str[0:10], format="%d.%m.%Y")
+        df_year["Hour"] = df_year["MTU"].str[11:13].astype(int)
+        df_year = df_year[["Date", "Hour", "Wind Onshore  - Actual Aggregated [MW]"]]
+        df_year = df_year.rename(columns={"Wind Onshore  - Actual Aggregated [MW]": "Wind SE"})
+        df = df.append(df_year, ignore_index=True)
+    wind_dk = all_data[["Date", "Wind DK"]]
+    df = df.groupby(by=["Date"]).sum()
+    df = df.merge(wind_dk, on=["Date"], how="outer")
+    df_complete = df[df["Wind SE"] != 0]
+    df_complete["Ratio"] = df_complete["Wind SE"] / df_complete["Wind DK"]
+    factor = df_complete["Ratio"].mean()
+    print(factor)
+    assert False
+    first_phase = df[df["Date"] < datetime(2015, 1, 5)]
+    first_phase["Wind SE"] = round(factor * first_phase["Wind DK"], 2)
+    second_phase = df[df["Date"] > datetime(2015, 1, 4)]
+    df = first_phase.append(second_phase, ignore_index=True)
+    df = df.interpolate()
+    assert [i == 0 for i in df.isnull().sum()]
+    all_data["Wind SE"] = df["Wind SE"]
+    all_data["Wind Prod"] = all_data["Wind DK"] + all_data["Wind SE"]
+    assert orig_len == len(all_data)
+    all_data.to_csv("input/combined/all_data_daily.csv", index=False, float_format="%g")
 
 
 def append_data_to_all_data(data, resolution):
@@ -874,7 +909,7 @@ def add_european_prices_all_data():
     df_all = df_all.merge(df, on="Date")
     assert len(df_all) == orig_len
     assert [i == 0 for i in df_all.isna().sum()]
-    df_all.to_csv("input/combined/all_data_daily.csv")
+    df_all.to_csv("input/combined/all_data_daily.csv", index=False)
 
 
 def get_price_df(exchange):  # Helping method
@@ -887,6 +922,90 @@ def get_price_df(exchange):  # Helping method
     df = pd.read_excel(file_path, header=1, usecols=columns)
     df = df[(df["Date"] >= datetime(2014, 1, 1)) & (df["Date"] <= datetime(2020, 12, 31))]
     return df
+
+
+def write_est_demand_to_all_data():
+    data = pd.read_csv("../data/input/auction/volume_analyses.csv", usecols=["Date", "Hour", "Est Vol", "Net flow"])
+    print("Mean net flow auction data {:.2f} MWh".format(data["Net flow"].mean()))
+    print("Abs mean net flow auction data {:.2f} MWh".format(abs(data["Net flow"]).mean()))
+    data = data.drop(columns=["Net flow"])
+    data = data.rename(columns={"Est Vol": "Curve Demand"})
+    all_data = pd.read_csv("../data/input/combined/all_data_hourly.csv")
+    all_data = all_data.drop(columns=["Curve Demand"])
+    orig_len = len(all_data)
+    all_data = all_data.merge(data, on=["Date", "Hour"], how="outer")
+    all_data['Curve Demand'] = all_data.apply(
+        lambda row: row["Total Vol"] if np.isnan(row['Curve Demand']) else row['Curve Demand'], axis=1)
+    assert orig_len == len(all_data)
+    assert [i == 0 for i in all_data.isna().sum()]
+    # all_data.to_csv("../data/input/combined/all_data_hourly.csv", index=False, float_format='%g')
+    all_data["Curve MAE"] = abs(all_data["Total Vol"] - all_data["Curve Demand"])
+    print("Mean curve difference hour {:.2f} MWh".format(all_data["Curve MAE"].mean()))
+    daily_curve_demand = all_data[["Date", "Curve Demand"]].groupby(by="Date").sum()
+    all_data_daily = pd.read_csv("../data/input/combined/all_data_daily.csv")
+    orig_len = len(all_data_daily)
+    all_data_daily = all_data_daily.merge(daily_curve_demand, on="Date")
+    assert orig_len == len(all_data_daily)
+    assert [i == 0 for i in all_data_daily.isna().sum()]
+    #all_data_daily.to_csv("../data/input/combined/all_data_daily.csv", index=False, float_format='%g')
+    all_data_daily = all_data_daily[(all_data_daily["Date"] >= datetime(2014, 7, 1)) & (all_data_daily["Date"] < datetime(2020, 6, 3))]
+    all_data_daily["Curve MAE"] = abs(all_data_daily["Total Vol"] - all_data_daily["Curve Demand"])
+    print("Mean curve difference day {:.2f} MWh".format(all_data_daily["Curve MAE"].mean()))
+
+
+def winter_summer_time_volumes_analyses():
+    data_path = "../data/input/auction/volume_analyses.csv"
+    df = pd.read_csv(data_path)
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    all_hours = pd.read_csv("../data/input/combined/all_data_hourly.csv", usecols=["Date", "Hour"])
+    all_hours["Date"] = pd.to_datetime(all_hours["Date"], format="%Y-%m-%d")
+    all_hours = all_hours[(all_hours["Date"] >= datetime(2014, 7, 1)) & (all_hours["Date"] < datetime(2020, 6, 3))]
+    df = all_hours.merge(df, on=["Date", "Hour"], how="outer")
+    df = df.interpolate().dropna()
+    df.to_csv(data_path, index=False, float_format='%g')
+
+
+def write_holiday_to_all_data():
+    import holidays
+    no_holydays = holidays.Norway()
+    paths = ["daily", "hourly"]
+    for p in paths:
+        all_data = pd.read_csv("../data/input/combined/all_data_{}.csv".format(p))
+        all_data["Date"] = pd.to_datetime(all_data["Date"], format="%Y-%m-%d")
+        all_data["Holiday"] = all_data.apply(
+            lambda row: 1 if row["Date"] in no_holydays and row["Weekday"] != 7 else 0, axis=1)
+        all_data.to_csv("../data/input/combined/all_data_{}.csv".format(p), index=False, float_format='%g')
+
+
+def shift_total_hydro_dev_test():
+    df = pd.read_csv("../data/input/combined/all_data_daily.csv")
+    orig_len = len(df)
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    add_future = False
+    if add_future:
+        df["Total Hydro Dev Shift"] = df["Total Hydro Dev"].shift(7)
+        df["Total Hydro Dev Shift"] = df["Total Hydro Dev Shift"].fillna(method='bfill')
+        assert orig_len == len(df)
+        assert [i == 0 for i in df.isna().sum()]
+    remove_future = True
+    if remove_future:
+        df = df.drop(columns=["Total Hydro Dev Shift"])
+        assert orig_len == len(df)
+        assert [i == 0 for i in df.isna().sum()]
+        df.to_csv("../data/input/combined/all_data_daily.csv", index=False, float_format='%g')
+
+
+def update_season():
+    change = {1: [12, 1, 2], 2: [3, 4, 5], 3: [6, 7, 8], 4: [9, 10, 11]}
+    for res in ["daily", "hourly"]:
+        df = pd.read_csv("../data/input/combined/all_data_{}.csv".format(res))
+        orig_len = len(df)
+        df["Season"] = df.apply(lambda row: 1 if row["Month"] in change[1] else 2 if row["Month"] in change[2] else 3 if
+                                row["Month"] in change[3] else 4, axis=1)
+        assert len(df) == orig_len
+        assert [i == 0 for i in df.isna().sum()]
+        df.to_csv("../data/input/combined/all_data_{}.csv".format(res), index=False, float_format='%g')
+
 
 if __name__ == '__main__':
     print("Running method.." + "\n")
@@ -910,13 +1029,20 @@ if __name__ == '__main__':
     # add_time_columns_to_all_data("h")
     # write_daily_temperature_to_combined()
     # write_daily_precipitation_to_combined()
-    # add_prec_next_week_col()
     # append_weather_to_all_data()
-    # write_wind_to_combined("d", convert_to_csv=False, replace_commas=True)
+    # add_prec_next_week_col()
+    # write_wind_to_combined("h", convert_to_csv=False, replace_commas=True)
+    # add_swedish_wind_to_all_data()
     # write_wind_to_combined("h", convert_to_csv=False, replace_commas=True)
     # append_data_to_all_data("wind", "daily")
     # append_arcshinh_to_all_data("Total Hydro Dev", "daily")
     # add_lagged_col_to_all_data("Total Hydro Dev", "daily", -11)
     # remove_column_from_all_data("Total Hydro Dev -11 lag", "daily")
     # add_fossil_to_all_data()
-    add_european_prices_all_data()
+    # add_european_prices_all_data()
+    # winter_summer_time_volumes_analyses()
+    # write_est_demand_to_all_data()
+    # write_holiday_to_all_data()
+    # shift_total_hydro_dev_test()
+    update_season()
+

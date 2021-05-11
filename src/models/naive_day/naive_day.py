@@ -2,7 +2,6 @@
 from datetime import datetime as dt
 from datetime import timedelta
 import pandas as pd
-from data import data_handler
 import os
 import numpy as np
 import random
@@ -27,23 +26,28 @@ class NaiveDay:
     @staticmethod
     def forecast(forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
         forecast_df = get_point_forecast(forecast_df)
-        up = 1.15
-        down = 0.90
+        up = 1.1
+        down = 0.9
         forecast_df = get_prob_forecast(forecast_df,  up, down)
         return forecast_df
 
 
 def get_point_forecast(forecast_df):
-    start_date = forecast_df.at[0, "Date"]
+    start_date = forecast_df.at[0, "Date"].date()
+    end_date = start_date + timedelta(days=13)
+    data = get_data(start_date, end_date, ["Weekday", "Holiday"], os.getcwd(), "h")
     prev_day = start_date - timedelta(days=1)
-    prev_day_string = prev_day.strftime("%d.%m.%Y")
-    prev_day_price = data_handler.get_data(prev_day_string, prev_day_string, ["System Price"], os.getcwd(), "h")
+    prev_day_price = get_data(prev_day, start_date, ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
+    last_day_weekday = prev_day_price.loc[0, "Weekday"] if prev_day_price.loc[0, "Holiday"] == 0 else 7
+    weekdays_c = get_weekday_coefficient()
+    prev_day_price["System Price"] = prev_day_price["System Price"] / weekdays_c[last_day_weekday]
     hour_price_df = prev_day_price[["Hour", "System Price"]]
     hour_price_dict = pd.Series(hour_price_df["System Price"].values, index=hour_price_df["Hour"]).to_dict()
-    for index, row in forecast_df.iterrows():
-        hour_of_day = row["Hour"]
-        forecast_hour = hour_price_dict[hour_of_day]
-        forecast_df.at[index, "Forecast"] = forecast_hour
+    for i in range(len(forecast_df)):
+        hour = forecast_df.loc[i, "Hour"]
+        weekday = data.loc[i, "Weekday"] if data.loc[i, "Holiday"] == 0 else 7
+        forecast = hour_price_dict[hour]
+        forecast_df.loc[i, "Forecast"] = forecast * weekdays_c[weekday]
     return forecast_df
 
 
@@ -99,7 +103,20 @@ def get_results(up, down, model, periods):
     return result_list
 
 
+def get_weekend_coefficient():
+    df = get_data("01.07.2014", "02.06.2019", ["System Price", "Weekday", "Holiday"], os.getcwd(), "d")
+    grouped = df[["System Price", "Weekday"]].groupby(by="Weekday").mean()
+    print(grouped)
+    grouped = grouped / grouped.mean()
+    print(grouped)
+
+
+def get_weekday_coefficient():
+    d = {1: 1.028603, 2: 1.034587, 3: 1.0301834, 4: 1.033991, 5: 1.014928, 6: 0.941950, 7: 0.915758}
+    return d
+
+
 if __name__ == '__main__':
-    model = NaiveDay()
-    periods_ = get_random_periods(20)
-    find_best_up_and_down_factor(model, periods_)
+    model_ = NaiveDay()
+    periods_ = get_random_periods(50)
+    find_best_up_and_down_factor(model_, periods_)

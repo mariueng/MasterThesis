@@ -1,0 +1,17 @@
+-- Performance Summary for 'Expert Day', created 2021-05-06 16:49 --
+
+Point performance:
+Mape:	 13.895 (15.787)
+Smape:	10.943 (7.007)
+Mae:	4.793 (2.543)
+Rmse:	5.904 (2.985)
+
+Interval performance: 
+Cov:	95.27% (8.283)
+ACE:	5.80% (5.765)
+MIS:	46.40 (26.075)
+
+Three best SMAPE performances:	{18: 3.725, 4: 3.899, 5: 5.007}
+Three worst SMAPE performances:	{8: 18.723, 20: 24.461, 7: 28.987}
+Three best IS performances:	{18: 29.625, 19: 31.092, 1: 34.514}
+Three worst IS performances:	{20: 58.15, 8: 106.211, 7: 133.271}

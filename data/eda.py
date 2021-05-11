@@ -163,21 +163,19 @@ def plot_temperatures():
 
 
 def plot_precipitation():
-    t_columns = ["Norway", "Hamar", "Kvin", "Troms", "Oppdal", "Bergen"]
-    t_columns = ["Prec {}".format(i) for i in t_columns]
-    df = get_data("01.01.2019", "31.12.2019", t_columns, os.getcwd(), "d")
+    df = get_data("01.01.2019", "31.12.2019", ["Prec Norway", "Prec Norway 7"], os.getcwd(), "d")
     plt.subplots(figsize=full_fig)
-    for col in t_columns:
-        plt.plot(df["Date"], df[col], label=col[5:], linewidth=1)
-    for line in plt.legend(loc='upper center', ncol=6, bbox_to_anchor=(0.5, 1.02),
+    plt.plot(df["Date"], df["Prec Norway"], label="Acc. precipitation Norway", color=first_color)
+    plt.plot(df["Date"], df["Prec Norway 7"], label="Acc. precipitation 7 days ahead Norway", color=sec_color)
+    for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.02),
                            fancybox=True, shadow=True).get_lines():
         line.set_linewidth(2)
     plt.title("Precipitation Norway 2019", pad=title_pad)
     plt.ylabel("Mm", labelpad=label_pad)
     plt.xlabel("Date", labelpad=label_pad)
-    ymax = max(df[t_columns].max()) * 1.1
-    ymin = min(df[t_columns].min()) * 0.9
-    plt.ylim(ymin, ymax)
+    # ymax = df["Prec Norway 7"].max() * 1.03
+    ymax = 1400
+    plt.ylim(0, ymax)
     plt.tight_layout()
     path = "output/plots/eda/precipitation_norway_2019.png"
     plt.savefig(path)
@@ -242,12 +240,16 @@ def plot_all_variables_per_year():
     col_name = "Total Hydro"
     plot_col_per_year(col_name, title, ylabel)
     ylabel = "Production MWh"
-    title = "Wind Production Denmark per Year"
-    col_name = "Wind DK"
+    title = "Wind Production Sweden and Denmark per Year"
+    col_name = "Wind Prod"
     plot_col_per_year(col_name, title, ylabel)
     ylabel = "Mm"
-    title = "Precipitation Seven Days Ahead"
-    col_name = "Prec Forecast"
+    title = "Precipitation Norway"
+    col_name = "Prec Norway"
+    plot_col_per_year(col_name, title, ylabel)
+    ylabel = "Mm"
+    title = "Precipitation Norway Seven Days Ahead"
+    col_name = "Prec Norway 7"
     plot_col_per_year(col_name, title, ylabel)
 
 
@@ -533,6 +535,129 @@ def plot_european_prices():
     plt.savefig("output/plots/eda/european_market_prices.png")
     plt.close()
 
+
+def plot_spring_2019():
+    data = get_data("01.03.2019", "30.06.2019", ["System Price", "Total Hydro Dev", "Wind Prod", "Prec Norway"], os.getcwd(), "d")
+    plt.subplots(figsize=full_fig)
+    plt.plot(data["Date"], data["System Price"])
+    plt.show()
+    plt.close()
+    plt.subplots(figsize=full_fig)
+    plt.plot(data["Date"], data["Total Hydro Dev"])
+    plt.show()
+    plt.close()
+    plt.subplots(figsize=full_fig)
+    plt.plot(data["Date"], data["Prec Norway"])
+    plt.show()
+    plt.close()
+    plt.subplots(figsize=full_fig)
+    plt.plot(data["Date"], data["Wind Prod"])
+    plt.show()
+    plt.close()
+
+
+def check_demand_stationarity():
+    # H0: Suggests the time series has a unit root, meaning it is non-stationary.
+    # H1: Null-hyp is rejected. Suggests the time series does not have a unit root, meaning it is stationary.
+    # p-value <= 0.05: Reject the null hypothesis
+    from statsmodels.tsa.stattools import adfuller
+    demand_col = "Curve Demand"
+    data = get_data("01.07.2014", "02.06.2020", [demand_col], os.getcwd(), "d")
+    x = data[demand_col].values
+    result = adfuller(x)
+    print('ADF Statistic: %f' % result[0])
+    print('p-value: %f' % result[1])
+    print('Critical Values:')
+    for key, value in result[4].items():
+        print('\t%s: %.3f' % (key, value))
+
+
+def explore_holyday():
+    df = get_data("20.12.2019", "3.01.2020", ["Curve Demand", "System Price"], os.getcwd(), "d")
+    plt.subplots(figsize=full_fig)
+    plt.plot(df["Date"], df["System Price"])
+    plt.show()
+    plt.close()
+    plt.subplots(figsize=full_fig)
+    plt.plot(df["Date"], df["Curve Demand"])
+    plt.show()
+    plt.close()
+
+
+def explore_snowfall():
+    df = get_data("01.01.2014", "31.12.2019", ["Temp Norway"], os.getcwd(), "d")
+    ninja = pd.read_csv("input/ninja/snow_temp_norway_2014_2019.csv")
+    ninja["Date"] = pd.to_datetime(ninja["Date"], format="%Y-%m-%d")
+    ninja = ninja[["Date", "temperature", "snow_mass"]]
+    df = df.merge(ninja, on="Date")
+    test_temperature = True
+    if test_temperature:
+        for year in range(2014, 2020):
+            sub = df[df["Date"].dt.year == year]
+            plt.subplots(figsize=full_fig)
+            plt.plot(sub["Date"], sub["Temp Norway"], label="old")
+            plt.plot(sub["Date"], sub["temperature"], label="new")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
+    test_snowmass = True
+    if test_snowmass:
+        for year in range(2014, 2020):
+            sub = df[df["Date"].dt.year == year]
+            plt.subplots(figsize=full_fig)
+            plt.plot(sub["Date"], sub["snow_mass"], label="snowmass")
+            plt.title("Snowmass {}".format(year))
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
+
+
+def explore_coal_and_wv():
+    d = pd.read_csv("output/auction/water_values.csv", usecols=["Date", "Water Value"])
+    d["Date"] = pd.to_datetime(d["Date"], format="%Y-%m-%d")
+    df = get_data("07.07.2014", "02.06.2019", ["Week", "Coal"], os.getcwd(), "d")
+    df = df.merge(d, on="Date")
+    r_coeff = round(stats.pearsonr(df["Coal"], df["Water Value"])[0], 3)
+    print("R coal  and wv : {}".format(r_coeff))
+    plt.subplots(figsize=full_fig)
+    plt.plot(df["Date"], df["Water Value"], label="water value")
+    plt.plot(df["Date"], df["Coal"], label="coal price")
+    plt.xlabel("Date")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    for i in range(len(df) // 7):
+        df.loc[i*7:i*7+7, "Week"] = i + 1
+    df = df.groupby(by="Week").mean().reset_index()
+    df["Coal Diff 1"] = df["Coal"] - df["Coal"].shift(1)
+    df["WV Diff 1"] = df["Water Value"] - df["Water Value"].shift(1)
+    df["Coal Diff 2"] = df["Coal Diff 1"].shift(1)
+    df = df.dropna()
+    r_coeff = round(stats.pearsonr(df["Coal Diff 1"], df["WV Diff 1"])[0], 3)
+    print("R coal diff 1 and wv diff 1: {}".format(r_coeff))
+    plt.subplots(figsize=full_fig)
+    plt.plot(df["Week"], df["WV Diff 1"], label="wv diff 1")
+    plt.plot(df["Week"], df["Coal Diff 1"], label="coal diff 1")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+    r_coeff = round(stats.pearsonr(df["Coal"], df["Water Value"])[0], 3)
+    print("R coal  and wv week: {}".format(r_coeff))
+    plt.subplots(figsize=full_fig)
+    plt.plot(df["Week"], df["Water Value"], label="water value")
+    plt.plot(df["Week"], df["Coal"], label="coal price")
+    plt.xlabel("Week")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
 if __name__ == '__main__':
     print("Running eda..")
     # plot_norm_weekday()
@@ -542,7 +667,7 @@ if __name__ == '__main__':
     # plot_temperatures()
     # plot_precipitation()
     # plot_all_variables_per_year()
-    # plot_correlation("System Price", "Coal")
+    # plot_correlation("System Price", "Prec Norway 7")
     # plot_correlation_norm_price_per_year("System Price", "Total Hydro Dev")
     # check_lagged_correlation("System Price", "Total Hydro Dev")
     # lin_model_test()
@@ -551,5 +676,10 @@ if __name__ == '__main__':
     # explore_eikon_data()
     # plot_random_auctions(10)
     # eda_auction_data()
-    plot_european_prices()
+    # plot_european_prices()
+    # plot_spring_2019()
+    # check_demand_stationarity()
+    # explore_holyday()
+    # explore_snowfall()
+    explore_coal_and_wv()
 
