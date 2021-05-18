@@ -15,12 +15,10 @@ full_fig = (13, 7)
 half_fig = (6.5, 7)
 
 
-def decompose_daily_to_hourly_demand(df, start_date, end_date, plot):
+def decompose_daily_to_hourly_demand(df, start_date, end_date, plot, result):
     demand_col = "Curve Demand"
     data = get_data(start_date, end_date, ["Month", "Weekday", "Holiday"], os.getcwd(), "d")
     df = df.merge(data, on="Date")
-    result = get_data(start_date, end_date, [], os.getcwd(), "h")
-    true_demand = get_data(start_date, end_date, [demand_col], os.getcwd(), "h")
     result["Demand Forecast"] = np.NAN
     profiles = pd.read_csv(r"hourly_demand_profiles.csv")
     for i in range(len(df)):
@@ -30,22 +28,23 @@ def decompose_daily_to_hourly_demand(df, start_date, end_date, plot):
         profile = profiles[(profiles["Month"] == month) & (profiles["Weekday"] == weekday)].reset_index(drop=True)
         for j in range(24):
             result.loc[i * 24 + j, "Demand Forecast"] = daily_demand * profile[str(j)][0]
-    result = result.merge(true_demand, on=["Date", "Hour"])
     if plot:
         plot_h_demand(result, demand_col, start_date, end_date)
+    result = result[["Date", "Hour", "Curve Demand", "Demand Forecast"]]
     return result
 
 
 def plot_h_demand(result, demand_col, start_date, end_date):
-    result["Hour"] = pd.to_datetime(result['Hour'], format="%H").dt.time
-    result["DateTime"] = result.apply(lambda r: dt.datetime.combine(r['Date'], r['Hour']), 1)
+    mape = 100 * (abs((result["Curve Demand"]-result["Demand Forecast"]) / result["Curve Demand"])).mean()
+    result["Hour_t"] = pd.to_datetime(result['Hour'], format="%H").dt.time
+    result["DateTime"] = result.apply(lambda r: dt.datetime.combine(r['Date'], r['Hour_t']), 1)
     plt.subplots(figsize=full_fig)
     plt.plot(result["DateTime"], result[demand_col], color=first_color, label="Demand")
     plt.plot(result["DateTime"], result["Demand Forecast"], color=sec_color, label="Demand Forecast")
     for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03),
                            fancybox=True, shadow=True).get_lines():
         line.set_linewidth(2)
-    plt.title("Hourly Demand Forecast from {} to {}".format(start_date.date(), end_date.date()), pad=title_pad)
+    plt.title("Hourly Demand Forecast from {} to {} (MAPE = {:.2f})".format(start_date.date(), end_date.date(), mape), pad=title_pad)
     plt.xlabel("Date", labelpad=label_pad)
     plt.ylabel("Volume [MWh]", labelpad=label_pad)
     plt.tight_layout()

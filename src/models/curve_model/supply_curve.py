@@ -25,19 +25,20 @@ def get_supply_curve(month, hour, weekend, weekly_mean, safe):
     df = pd.DataFrame()
     result = profile * weekly_mean
     if not safe:
-        return result
+        upper, lower = (1.15, 0.9)
     else:
-        df["Result"] = result
-        wv_df = get_water_values(df.copy())
-        wv_df["Prices"] = wv_df.apply(lambda row: "s {}".format(int(row["Prices"])), axis=1)
-        wv_df.index = wv_df["Prices"]
-        wv_df = wv_df[["Volume"]]
-        df = df.merge(wv_df, left_index=True, right_index=True, how="left")
-        df = df.reset_index()
-        df.loc[0, "Volume"] = df.loc[0, "Result"] * 0.9
-        df.loc[len(df)-1, "Volume"] = df.loc[len(df)-1, "Result"] * 1.1
-        df["Volume"] = df["Volume"].interpolate()
-        return df["Volume"]
+        upper, lower = (1.05, 0.9)
+    df["Result"] = result
+    wv_df = get_water_values(df.copy())
+    wv_df["Prices"] = wv_df.apply(lambda row: "s {}".format(int(row["Prices"])), axis=1)
+    wv_df.index = wv_df["Prices"]
+    wv_df = wv_df[["Volume"]]
+    df = df.merge(wv_df, left_index=True, right_index=True, how="left")
+    df = df.reset_index()
+    df.loc[0, "Volume"] = df.loc[0, "Result"] * lower
+    df.loc[len(df)-1, "Volume"] = df.loc[len(df)-1, "Result"] * upper
+    df["Volume"] = df["Volume"].interpolate()
+    return df["Volume"]
 
 
 def get_supply_curve_water_values(month, hour, weekend, weekly_mean, cur_row, last_week_row, wv_model, last_coal, safe):

@@ -21,17 +21,13 @@ def plot_monthly_error(folder_path):
     df = pd.read_csv(folder_path+"/forecast.csv")
     if "DateTime" not in df.columns:
         df["Date"] = pd.to_datetime(df["Date"])
-        df["Hour"] = pd.to_datetime(df['Hour'], format="%H").dt.time
+        df["Hour"] = pd.to_datetime(df['Hour'].astype(str).str[0:2].astype(int), format="%H").dt.time
         df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour']), 1)
     else:
         df["DateTime"] = pd.to_datetime(df["DateTime"])
     for month in months:
         month_int = months.index(month) + 1
-        last_date = calendar.monthrange(2019, month_int)[1]
-        start = dt(2019, month_int, 1)
-        end = dt(2019, month_int, last_date, 23)
-        mask = (df['DateTime'] >= start) & (df['DateTime'] <= end)
-        sub_df = df.loc[mask].reset_index()
+        sub_df = df[df["Date"].dt.month == month_int].copy()
         pos_mask = (sub_df['Forecast'] > sub_df["System Price"])
         pos_error = pos_mask.value_counts()[True]/len(sub_df)
         sub_df["E"] = sub_df["Forecast"] - sub_df["System Price"]
@@ -48,14 +44,14 @@ def plot_monthly_error(folder_path):
     legends = ["Mean error", "Mean abs. error"]
     labels = ["Month", 'Error [€]']
     colors = [main_col, sec_col]
-    title = "Monthly Validation Errors"
+    title = "Monthly Errors"
     bar_plot(result, n, width, columns, legends, labels, colors, title, months, folder_path)
     width = 0.5  # the width of the bars
     columns = ["Pos error", "Neg error"]
     legends = ["Forecast > SYS", "Forecast <= SYS"]
     labels = ["Month", "Proportion"]
     colors = [main_col, sec_col]
-    title = "Monthly Positive/Negative Validation Error Ratio"
+    title = "Monthly Positive/Negative Error Frequency Ratio"
     ratio_plot(result, width, columns, legends, labels, colors, title, months, folder_path)
 
 
@@ -120,8 +116,40 @@ def compare_results_two_models(path_names):
         print("\t\t{}: {:.2f}, {}: {:.2f}. Best: {:.2f}".format(m_1_name, m_1.mean(), m_2_name, m_2.mean(), best))
 
 
+def plot_all_monthly_errors_all_models():
+    all_folders = ["CurveModel", "ETS", "ExpertDay", "ExpertMLP", "ExpertModel", "NaiveDay", "NaiveWeek", "Sarima"]
+    for f in all_folders:
+        path = "../results/test/{}".format(f)
+        plot_monthly_error(path)
+
+
+def find_best_and_worst_periods_curve_model():
+    folder_path = "../results/test/CurveModel"
+    perf_df = pd.read_csv(folder_path + "/performance.csv")
+    df = perf_df.sort_values(by="MAE")
+    best = df[["Period", "From Date", "To Date", "MAE"]].head(3)
+    print(best)
+    worst = df[["Period", "From Date", "To Date", "MAE"]].tail(3)
+    print(worst)
+    int_df = perf_df[["CE", "IS"]]
+    norm_int = (int_df - int_df.min()) / (int_df.max() - int_df.min())
+    norm_int["Sum"] = norm_int.sum(axis=1)
+    norm_int = norm_int.sort_values(by="Sum")
+    print(int_df.loc[norm_int.head(3).index])
+    print(int_df.loc[norm_int.tail(3).index])
+
+
+def demand_and_supply_errors_curve_model():
+    folder_path = "../models/curve_model/demand_scores_test_period"
+    for res in ["day", "hour"]:
+        df = pd.read_csv(folder_path + "/{}_demand_results.csv".format(res))
+        mae = df["AE"].mean()
+        mape = df["APE"].mean()
+        print("{}: MAE demand forecast {:.2f}, MAPE demand forecast {:.2f}".format(res, mae, mape))
+
 if __name__ == '__main__':
-    path = "../results/validation/CurveModel_351_1"
-    plot_monthly_error(path)
+    # plot_all_monthly_errors_all_models()
     # path_names_ = ["CurveModel_mean_supply", "CurveModel_351_1"]
     # compare_results_two_models(path_names_)
+    # find_best_and_worst_periods_curve_model()
+    demand_and_supply_errors_curve_model()

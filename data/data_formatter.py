@@ -1007,6 +1007,20 @@ def update_season():
         df.to_csv("../data/input/combined/all_data_{}.csv".format(res), index=False, float_format='%g')
 
 
+def add_snow_to_daily_data():
+    df = pd.read_csv("../data/input/combined/all_data_daily.csv")
+    orig_len = len(df)
+    df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+    snow = pd.read_csv("../data/input/ninja/snow_temp_norway_2014_2019.csv", usecols=["Date", "snow_mass"])
+    snow = snow.rename(columns={"snow_mass": "Snow Norway"})
+    snow["Date"] = pd.to_datetime(snow["Date"], format="%Y-%m-%d")
+    df = df.merge(snow, on="Date", how="left")
+    df["Snow Norway"] = df["Snow Norway"].fillna(0)
+    assert len(df) == orig_len
+    assert [i == 0 for i in df.isna().sum()]
+    df.to_csv("../data/input/combined/all_data_daily.csv", index=False, float_format='%g')
+
+
 if __name__ == '__main__':
     print("Running method.." + "\n")
     # write_price_to_combined("h", convert_to_csv=True, replace_commas=True)
@@ -1044,5 +1058,6 @@ if __name__ == '__main__':
     # write_est_demand_to_all_data()
     # write_holiday_to_all_data()
     # shift_total_hydro_dev_test()
-    update_season()
+    # update_season()
+    add_snow_to_daily_data()
 

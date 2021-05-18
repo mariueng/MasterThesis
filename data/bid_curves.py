@@ -261,6 +261,55 @@ def plot_mean_curves():
     df.to_csv("output/auction/mean_curves.csv", index=False)
 
 
+def plot_mean_curves_together():
+    df = pd.read_csv("output/auction/mean_curves.csv")
+    demand = df[["Price", "Mean demand"]]
+    supply = df[["Price", "Mean supply"]]
+    fig, (ax1, ax2) = plt.subplots(2, figsize=(13, 14))
+    fig.suptitle("16 Mean Demand Classes and 18 Mean Supply Classes", y=0.96)
+    c_map = plt.get_cmap("tab10")
+    d_col, s_col = (c_map(0), c_map(1))
+    ax1.plot(demand["Mean demand"], demand["Price"], linewidth=3, label="Mean demand", color=d_col)
+    ax1.yaxis.tick_right()
+    ax2.plot(supply["Mean supply"], supply["Price"], linewidth=3, label="Mean supply", color=s_col)
+    for a in [ax1, ax2]:
+        a.set_xlabel("Volume [MWh]", labelpad=label_pad)
+        a.set_ylabel("Price [€]", labelpad=label_pad)
+    demand_line = LineString(np.column_stack((demand["Mean demand"], demand["Price"])))
+    d_min, d_max = (demand["Mean demand"].min(), demand["Mean demand"].max())
+    d_min_y, d_max_y = ax1.get_ylim()
+    d_min_x, d_max_x = ax1.get_xlim()
+    d_cl = [d_min + i * (d_max - d_min) / 15 for i in range(16)]
+    for d in d_cl:
+        stop_y = demand_line.intersection(LineString([(d, -10), (d, 210)])).y
+        lab = "_nolegend_" if int(stop_y) != -10 else "Volume classes"
+        ax1.vlines(d, d_min_y, stop_y,  color="grey", label=lab, linestyle="dotted")
+        lab = "_nolegend_" if int(stop_y) != -10 else "Price classes"
+        ax1.hlines(stop_y, d, d_max_x,  color="grey", label=lab)
+    ax1.set_ylim(d_min_y, d_max_y)
+    ax1.set_xlim(d_min_x, d_max_x)
+    ax1.yaxis.set_label_position("right")
+    supply_line = LineString(np.column_stack((supply["Mean supply"], supply["Price"])))
+    s_min, s_max = (supply["Mean supply"].min(), supply["Mean supply"].max())
+    s_min_y, s_max_y = ax2.get_ylim()
+    s_min_x, s_max_x = ax2.get_xlim()
+    s_cl = [s_min + i * (s_max - s_min) / 17 for i in range(18)]
+    for s in s_cl:
+        stop_y = supply_line.intersection(LineString([(s, -10), (s, 210)])).y
+        lab = "_nolegend_" if stop_y != -10 else "Volume classes"
+        ax2.vlines(s, s_min_y, stop_y, color="grey", label=lab, linestyle="dotted")
+        lab = "_nolegend_" if stop_y != -10 else "Price classes"
+        ax2.hlines(stop_y, s_min_x, s, color="grey", label=lab)
+    ax2.set_ylim(s_min_y, s_max_y)
+    ax2.set_xlim(s_min_x, s_max_x)
+    for ax in [ax1, ax2]:
+        for line in ax.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                              shadow=True).get_lines():
+            line.set_linewidth(2)
+    plt.tight_layout(pad=3.0)
+    plt.savefig("output/auction/price_classes/mean_classes.png")
+
+
 def eda_disc_auction_data(overview, make_analysis_csv):
     if overview:
         all_dates = [i.strftime("%Y-%m-%d") + ".csv" for i in
@@ -824,8 +873,8 @@ def get_volume_sensitivity(price, volume, min_s, max_s, supply_line, s):
 
 # def spike source: outside Gaussian 90%, 60 day moving average and variance. Borovkova and Permana (2006)
 def define_and_plot_spikes():
-    start_date = dt(2014, 1, 1)
-    last_date = dt(2020, 1, 1)
+    start_date = dt(2015, 1, 1)
+    last_date = dt(2019, 12, 31)
     price_df = get_data(start_date, last_date, ["System Price"], os.getcwd(), "h")
     df = pd.read_csv("output/auction/price_sensitivities.csv")
     df = df[[i for i in df.columns if "Est" not in i]]
@@ -839,13 +888,14 @@ def define_and_plot_spikes():
     share_pos_spike_three = 100 * len(df[df["Spike"] == 1]) / len(df)
     share_neg_spike_three = 100 * len(df[df["Spike"] == -1]) / len(df)
     print("Spike occurrence:\tpos {:.2f}%, neg {:.2f}%".format(share_pos_spike_three, share_neg_spike_three))
-    df.to_csv("output/auction/spike.csv", index=False, float_format="%.2f")
     plot_spikes(df)
+    assert False
+    df.to_csv("output/auction/spike.csv", index=False, float_format="%.2f")
 
 
 def plot_spikes(df_all):
     warnings.filterwarnings("ignore")
-    for year in range(2014, 2020):
+    for year in range(2015, 2020):
         print("Plotting for year {}".format(year))
         df = df_all[df_all["Date"].dt.year == year]
         if len(df) > 0:
@@ -873,8 +923,8 @@ def plot_spikes(df_all):
 
 def check_if_spike(price, i, df):  # Helping method
     spike = 0
-    number_of_days_in_window = min(30, len(df) // 24)
-    threshold = 3
+    number_of_days_in_window = min(60, len(df) // 24)
+    threshold = 1.96
     number_of_hours_in_window = 24 * number_of_days_in_window
     if i < number_of_hours_in_window:
         window_prices = df[0:number_of_hours_in_window]
@@ -1133,7 +1183,16 @@ def eda_water_values():
         plot_supply(row, wl, wl_upper, wl_lower, s_classes)
         for key, value in {"Water Value": wl, "WL Upper": wl_upper, "WL Lower": wl_lower}.items():
             result.loc[i, key] = value
-    result.to_csv("output/auction/water_values.csv", index=False, float_format="%g")
+    # result.to_csv("output/auction/water_values.csv", index=False, float_format="%g")
+
+
+def plot_water_val_example():
+    date = "18.11.2014"
+    df = get_auction_data(date, date, "s", os.getcwd()).drop(columns=["Hour"])
+    row = df.loc[0]
+    _, s_classes, _, _ = get_best_price_classes(plot=False)
+    wl, wl_upper, wl_lower = get_water_values(row, s_classes)
+    plot_supply_2(row, wl, wl_upper, wl_lower, s_classes)
 
 
 def get_water_values(row, prices):
@@ -1217,23 +1276,55 @@ def plot_supply(row, wl, wl_upper, wl_lower, s_classes):
     plt.close()
 
 
+def plot_supply_2(row, wl, wl_upper, wl_lower, s_classes):
+    volumes = row[1:].values
+    plt.subplots(figsize=full_fig)
+    color = plt.get_cmap("tab10")(1)
+    plt.plot(volumes, s_classes, label="Supply", color=color, linewidth=2)
+    x_lim = plt.gca().get_xlim()
+    plt.hlines(wl, x_lim[0], x_lim[1], label="Mean base load {:.1f}".format(wl), color=first_color, linewidth=2)
+    plt.hlines(wl_upper, x_lim[0], x_lim[1], label="Base load upper {:.0f}".format(wl_upper), linestyles="dotted", color=first_color, linewidth=2)
+    plt.hlines(wl_lower, x_lim[0], x_lim[1], label="Base load lower {:.0f}".format(wl_lower), linestyles="dotted", color=first_color, linewidth=2)
+    plt.ylim(-11, wl_upper+35)
+    for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                           shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.title("Mean Base Load Estimation  - {}".format(row[0].date()), pad=title_pad)
+    plt.xlabel("Volume [MWh]", labelpad=label_pad)
+    plt.ylabel("Price [€]", labelpad=label_pad)
+    plt.xlim(x_lim[0], x_lim[1])
+    plt.tight_layout()
+    plt.savefig("output/auction/eda/base_load_est{}.png".format(row[0].date()))
+    plt.show()
+    plt.close()
+
+
 def eda_water_value_model():
     wv_data = pd.read_csv("output/auction/water_values.csv")
     wv_data["Date"] = pd.to_datetime(wv_data["Date"], format="%Y-%m-%d")
+    for year in range(2014, 2021):
+        syb_df = wv_data[wv_data["Date"].dt.year == year]
+        r_coeff = round(stats.pearsonr(syb_df["Water Value"], syb_df["System Price"])[0], 3)
+        print("{}: Pearson coeff for base load price and SYS: {:.2f}".format(year, r_coeff))
+    assert False
+    r_coeff = round(stats.pearsonr(wv_data["Water Value"], wv_data["System Price"])[0], 3)
+    print("Pearson coeff for base load price and SYS: {:.2f}".format(r_coeff))
     plot = True
     if plot:
-        wv_plot = wv_data[(wv_data["Date"] > dt(2018, 6, 4)) & (wv_data["Date"] < dt(2019, 6, 2))]
+        wv_plot = wv_data[(wv_data["Date"] >= dt(2019, 1, 1)) & (wv_data["Date"] <= dt(2019, 12, 31))]
+        r_coeff = round(stats.pearsonr(wv_plot["Water Value"], wv_plot["System Price"])[0], 3)
         plt.subplots(figsize=full_fig)
         plt.plot(wv_plot["Date"], wv_plot["System Price"], label="SYS", color=first_color)
-        plt.plot(wv_plot["Date"], wv_plot["Water Value"], label="Est water value", color=sec_color)
+        plt.plot(wv_plot["Date"], wv_plot["Water Value"], label="Base load price", color=sec_color)
         for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
                                shadow=True).get_lines():
             line.set_linewidth(2)
-        plt.title("System Price and Est. Water Value during Validation Period", pad=title_pad)
+        plt.title("Daily system Price and Daily Mean Base Load Price 2019 (R = {:.2f})".format(r_coeff), pad=title_pad)
         plt.xlabel("Date", labelpad=label_pad)
         plt.ylabel("Price [€]", labelpad=label_pad)
         plt.tight_layout()
-        plt.savefig("output/auction/eda/water_value_and_sys.png")
+        #plt.savefig("output/auction/eda/water_value_and_sys.png")
+        plt.savefig("output/auction/eda/base_load_and_sys_2019.png")
     for col in ["System Price", "Total Hydro Dev", "Prec Norway 7"]:
         r_coeff = round(stats.pearsonr(wv_data["Water Value"], wv_data[col])[0], 3)
         print("Pearson coeff for water values and {}: {:.2f}".format(col, r_coeff))
@@ -1255,6 +1346,11 @@ def eda_wv_hydro_dev():
         plt.show()
         plt.close()
 
+def get_col_names():
+    import matplotlib
+    print(matplotlib.colors.cnames["steelblue"])
+    print(matplotlib.colors.cnames["firebrick"])
+    print(matplotlib.colors.cnames["darkorange"])
 
 if __name__ == '__main__':
     print("Running bid curve script..\n")
@@ -1264,6 +1360,7 @@ if __name__ == '__main__':
     # auction_data()
     # merge_same_dates_in_one_csv()
     # plot_mean_curves()
+    plot_mean_curves_together()
     # eda_disc_auction_data(overview=True, make_analysis_csv=False)
     # investigate_unit_price_information_loss()
     # make_price_classes_from_mean_curves(16, 18)
@@ -1282,5 +1379,7 @@ if __name__ == '__main__':
     # eda_supply_weekends()
     # eda_special_days()
     # eda_water_values()
+    # plot_water_val_example()
     # eda_water_value_model()
-    eda_wv_hydro_dev()
+    # eda_wv_hydro_dev()
+    # get_col_names()
