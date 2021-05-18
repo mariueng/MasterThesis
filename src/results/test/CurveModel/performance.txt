@@ -1,0 +1,17 @@
+-- Performance Summary for 'Curve Model', created 2021-05-14 00:03 --
+
+Point performance:
+Mape:	 22.353 (18.903)
+Smape:	17.771 (11.775)
+Mae:	3.774 (2.303)
+Rmse:	5.802 (5.345)
+
+Interval performance: 
+Cov:	94.55% (12.2)
+ACE:	6.63% (10.243)
+MIS:	22.58 (13.581)
+
+Three best SMAPE performances:	{78: 3.257, 77: 3.274, 79: 3.332}
+Three worst SMAPE performances:	{337: 49.098, 350: 52.992, 351: 61.057}
+Three best IS performances:	{312: 12.884, 313: 12.976, 311: 12.99}
+Three worst IS performances:	{34: 88.424, 2: 88.605, 35: 90.661}

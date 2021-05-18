@@ -25,6 +25,8 @@ import shutil
 import datetime as dt
 import math
 import time
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def run(model, periods, result_folder, plot):  # plot is boolean value, if you want to plot results
@@ -188,12 +190,12 @@ def get_periods_and_result_folder_path(mode):
         periods = get_testing_periods()
         result_folder = "test"
     elif mode == "short":
+        periods = [(dt.datetime(2019, 4, 11).date(), dt.datetime(2019, 4, 24).date())]
         periods = get_random_periods(30)
-        #periods = [(dt.datetime(2018, 7, 26).date(), dt.datetime(2018, 8, 8).date())]
         result_folder = "short"
     elif mode == "old":
         # periods = get_all_2019_periods()
-        periods = get_random_periods(5)
+        periods = get_random_periods(2)
         #periods = [(dt.datetime(2019, 3, 22).date(), dt.datetime(2019, 4, 4).date())]
         result_folder = "old"
     else:
@@ -213,9 +215,9 @@ if __name__ == '__main__':
     # periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_random_periods(30)
     # periods_, result_folder_ = get_periods_and_result_folder_path("short")
-    periods_, result_folder_ = get_periods_and_result_folder_path("old")
+    # periods_, result_folder_ = get_periods_and_result_folder_path("old")
     # periods_, result_folder_ = get_periods_and_result_folder_path("v")
-    # periods_, result_folder_ = get_periods_and_result_folder_path("t")
+    periods_, result_folder_ = get_periods_and_result_folder_path("t")
     # periods_ = get_testing_periods()
     # periods_ = get_one_period()
     # periods_ = [(dt.datetime(2019, 5, 27), dt.datetime(2019, 6, 9))]

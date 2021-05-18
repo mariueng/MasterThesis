@@ -53,7 +53,7 @@ def make_transition_table():
     df.to_csv("demand_temp_transitions.csv", index=False, float_format="%g")
 
 
-def predict_daily_demand_naive(start, end, trans_table, plot):
+def predict_daily_demand_naive(start, end, trans_table, plot, true_demand):
     hist_data = get_data(start-td(days=7), start-td(days=1), ["Curve Demand", "Weekday", "Temp Norway", "Holiday"], os.getcwd(), "d")
     hist_data["Curve Demand"] = hist_data.apply(
             lambda row: row["Curve Demand"] * get_hol_factor() if row["Holiday"] == 1 else row["Curve Demand"], axis=1)
@@ -89,21 +89,22 @@ def predict_daily_demand_naive(start, end, trans_table, plot):
             forecast = forecast / get_hol_factor()
         result_df.loc[i, "Demand Forecast"] = forecast
     if plot:
+
         plt.subplots(figsize=full_fig)
-        plt.plot(result_df["Date"], result_df["Demand Forecast"], color = first_color, label="Demand forecast")
-        true = get_data(start, end, ["Curve Demand", "Temp Norway"], os.getcwd(), "d")
-        hist_data = hist_data.append(true, ignore_index=True)
-        plt.plot(hist_data["Date"], hist_data["Curve Demand"], label="True demand", color=sec_color)
+        plt.plot(result_df["Date"], result_df["Demand Forecast"], color=first_color, label="Demand forecast")
+        result_df = result_df.merge(true_demand, on="Date")
+        mape = 100 * (abs((result_df["Curve Demand"]-result_df["Demand Forecast"]) / result_df["Curve Demand"])).mean()
+        plt.plot(result_df["Date"], result_df["Curve Demand"], label="True demand", color=sec_color)
         for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03),
                                fancybox=True, shadow=True).get_lines():
             line.set_linewidth(2)
-        plt.title("Daily Demand Forecast from {} to {}".format(start.date(), end.date()), pad=title_pad)
+        plt.title("Daily Demand Forecast from {} to {} (MAPE = {:.2f})".format(start.date(), end.date(), mape), pad=title_pad)
         plt.xlabel("Date", labelpad=label_pad)
         plt.ylabel("Volume [MWh]", labelpad=label_pad)
         plt.tight_layout()
         plt.savefig("daily_demand_plots/{}_to_{}.png".format(start.date(), end.date()))
         plt.close()
-    result_df = result_df[["Date", "Demand Forecast"]]
+    result_df = result_df[["Date", "Demand Forecast", "Curve Demand"]]
     return result_df
 
 

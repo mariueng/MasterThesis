@@ -57,7 +57,7 @@ class Sarima:
         else:
             history = [x for x in hist["System Price"]]
         ses_order = (1, 1, 1, 24)
-        order = (2, 1, 1)
+        order = (1, 0, 2)
         model = ARIMA(history, order=order, seasonal_order=ses_order, trend="n", enforce_stationarity=False)
         model_fit = model.fit()
         prediction = model_fit.get_forecast(steps=len(forecast_df))

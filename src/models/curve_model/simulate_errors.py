@@ -44,33 +44,44 @@ def get_upper_and_lower_bound(alpha, demand, n, error_series, supply_line, price
     min_vol = min(supply_line.coords.xy[0])
     upper_index = int(n * alpha)
     lower_index = int(n * (1-alpha))
-    chosen_price_errors = np.random.choice(price_errors, n)
-    chosen_price_errors.sort()
-    min_upper = point_forecast + chosen_price_errors[upper_index]
-    max_lower = point_forecast + chosen_price_errors[lower_index]
+    min_upper = point_forecast + price_errors["Positive 95"].values[0]
+    max_lower = point_forecast - price_errors["Negative 95"].values[0]
     chosen_errors = np.random.choice(error_series, n)
     chosen_errors.sort()
     upper_demand = demand + chosen_errors[upper_index]
     lower_demand = demand + chosen_errors[lower_index]
     if upper_demand > max_vol:
         upper_demand = max_vol
+    elif upper_demand < min_vol:
+        upper_demand = min_vol
     if lower_demand < min_vol:
         lower_demand = min_vol
+    elif lower_demand > max_vol:
+        lower_demand = max_vol
     u_d_line = LineString([(upper_demand, -10), (upper_demand, 210)])
     l_d_line = LineString([(lower_demand, -10), (lower_demand, 210)])
     upper_inter = supply_line.intersection(u_d_line)
-    if type(upper_inter) is MultiPoint:
+    if type(upper_inter) is MultiPoint or type(upper_inter) is LineString:
         print(supply_line.coords.xy[0])
         print(supply_line.coords.xy[1])
         print(u_d_line)
+        print("Max volume {}".format(max_vol))
+        print("Point demand: {}".format(demand))
+        print("Upper demand: {}".format(upper_demand))
     lower_inter = supply_line.intersection(l_d_line)
-    if type(lower_inter) is MultiPoint:
+    if type(lower_inter) is MultiPoint or type(lower_inter) is LineString:
         print(supply_line.coords.xy[0])
         print(supply_line.coords.xy[1])
         print(l_d_line)
+        print("Min volume {}".format(min_vol))
+        print("Point demand: {}".format(demand))
+        print("Lower demand: {}".format(lower_demand))
     upper_bound = max(min_upper, upper_inter.y)
+    upper_bound = min(200, upper_bound)
+    #upper_bound = min(upper_bound, point_forecast * 1.5)
     lower_bound = min(max_lower, lower_inter.y)
-
+    lower_bound = max(-1, lower_bound)
+    #upper_bound = min(upper_bound, point_forecast * 0.5)
     return upper_bound, lower_bound
 
 
@@ -104,7 +115,31 @@ def estimate_daily_price_errors():
         print("{} mean {:.2f} Euro".format(col, abs(df[col]).mean()))
 
 
+def estimate_daily_price_errors_2():
+    df = pd.read_csv("../../results/validation/CurveModel/forecast.csv", usecols=["Period", "System Price", "Forecast"])
+    columns = ["Day {}".format(i) for i in range(1, 15)]
+    result = pd.DataFrame(columns=columns)
+    for period in df["Period"].unique():
+        r = pd.DataFrame(columns=result.columns)
+        sub = df[df["Period"]==period].reset_index(drop=True)
+        for i in range(14):
+            day_df = sub.loc[i*24:i*24+23, :].reset_index(drop=True)
+            r["Day {}".format(i+1)] = day_df["System Price"] - day_df["Forecast"]
+        result = result.append(r, ignore_index=True)
+    result = result.transform(np.sort)
+    result = result.iloc[160:len(result)-91]
+    table = pd.DataFrame(columns=["Day", "Mean", "Negative 95", "Positive 95"])
+    for col in result.columns:
+        row = {"Day": col, "Negative 95": 1.96*result[[col]][result[col] < 0][col].std(),
+        "Positive 95": 1.96*result[[col]][result[col] > 0][col].std(), "Mean": abs(result[col]).mean()}
+        table = table.append(row, ignore_index=True)
+    table = table.round(2)
+    table.to_csv("price_table.csv", index=False, float_format="%g")
+    result = result.round(2)
+    result.to_csv("price_errors.csv", index=False, float_format="%g")
+
 if __name__ == '__main__':
     print("Running methods")
     # estimate_hourly_demand_errors()
-    estimate_daily_price_errors()
+    # estimate_daily_price_errors()
+    estimate_daily_price_errors_2()

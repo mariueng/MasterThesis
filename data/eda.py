@@ -14,6 +14,11 @@ from scipy import stats
 from src.system.scores import get_all_point_metrics
 from data.bid_curves import get_original_bid_methods
 import random
+random.seed(1)
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.graphics.tsaplots import acf
+from statsmodels.tsa.seasonal import seasonal_decompose
+
 
 label_pad = 12
 title_pad = 20
@@ -22,6 +27,11 @@ half_fig = (6.5, 7)
 first_color = "steelblue"
 sec_color = "firebrick"
 third_color = "darkorange"
+fourth_color = "mediumseagreen"
+fifth_color = "silver"
+sixth_color = "palevioletred"
+seventh_color = "teal"
+seven_colors = [first_color, sec_color, third_color, fourth_color, fifth_color, sixth_color, seventh_color]
 
 
 def plot_norm_weekday():
@@ -410,7 +420,6 @@ def lin_model_test_norm_per_year():
 
 
 def plot_autocorrelation():
-    from statsmodels.graphics.tsaplots import plot_acf
     data = get_data("01.01.2014", "31.12.2019", ["System Price"], os.getcwd(), "d")["System Price"]
     fig, ax = plt.subplots(figsize=full_fig)
     plot_acf(data, lags=21, ax=ax, label="c", vlines_kwargs={"colors": "black", "label": "h"})
@@ -518,17 +527,35 @@ def eda_auction_data():
 
 
 def plot_european_prices():
-    data = get_data("01.01.2019", "31.12.2019", ["System Price", "APX", "OMEL", "EEX"], os.getcwd(), "d")
+    data = get_data("01.01.2015", "01.01.2020", ["System Price", "APX", "OMEL", "EEX"], os.getcwd(), "d")
+    for col in ["System Price", "APX", "OMEL", "EEX"]:
+        print("Mean col {}: {:.2f}: ".format(col, data[col].mean()))
+    assert False
+    data = get_data("01.01.2019", "31.12.2019", ["System Price", "APX", "OMEL", "EEX", "Week", "Weekday"], os.getcwd(), "d")
     data = data.rename(columns={"System Price": "Nord Pool"})
+    grouped = data[["APX", "OMEL", "EEX", "Week"]].groupby(by="Week").mean()
+    for market in ["APX", "OMEL", "EEX"]:
+        m_df = grouped[market]
+        for week in grouped.index:
+            mean = m_df.loc[week]
+            data_mask = data[data["Week"] == week]
+            data.loc[data_mask.index, market] = mean
+    for market in ["APX", "OMEL", "EEX"]:
+        data[market] = data.apply(lambda row: row[market] if row["Weekday"] == 4 else np.NaN, axis=1)
     plt.subplots(figsize=full_fig)
-    for col in ["Nord Pool", "EEX", "APX", "OMEL"]:
+    colors = [sec_color, third_color, fourth_color, first_color]
+    markets = ["EEX", "APX", "OMEL", "Nord Pool"]
+    data = data[["Date", "Nord Pool", "EEX", "APX", "OMEL"]]
+    data = data.interpolate()
+    for i in range(len(markets)):
+        col = markets[i]
         avg_price = data[col].mean()
-        plt.plot(data["Date"], data[col], label="{} (€{:.2f})".format(col, avg_price))
-    plt.ylim(-1, 100)
+        plt.plot(data["Date"], data[col], label="{} (€{:.2f})".format(col, avg_price), color=colors[i])
+    plt.ylim(0, 80)
     for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
                           shadow=True).get_lines():
         line.set_linewidth(2)
-    plt.title("Daily European Spot Prices 2019", pad=title_pad)
+    plt.title("Mean Weekly European Spot Prices vs. Nord Pool Daily Spot Price - 2019", pad=title_pad)
     plt.xlabel("Date", labelpad=label_pad)
     plt.ylabel("Price [€]", labelpad=label_pad)
     plt.tight_layout()
@@ -655,7 +682,216 @@ def explore_coal_and_wv():
     plt.show()
 
 
+def explore_hydro_and_coal_multiple_regression():
+    warnings.filterwarnings("ignore")
+    from sklearn.svm import SVR
+    d = pd.read_csv("output/auction/water_values.csv", usecols=["Date", "Water Value"])
+    d["Date"] = pd.to_datetime(d["Date"], format="%Y-%m-%d")
+    df = get_data("01.07.2014", "02.06.2019", ["Weekday", "Season", "Coal", "Total Hydro Dev"], os.getcwd(), "d")
+    df = df.merge(d, on="Date")
+    all_dates = [i.date() for i in pd.date_range(dt(2014, 8, 1), dt(2019, 5, 19), freq="d")]
+    chosen_dates = random.sample(all_dates, 50)
+    run_svr = True
+    if run_svr:
+        w = 30
+        maes = []
+        for date in chosen_dates:
+            first_d = date - timedelta(days=w)
+            end_d = date + timedelta(days=13)
+            data = df[(df["Date"].dt.date >= first_d) & (df["Date"].dt.date <= end_d)]
+            data["Neg Dev"] = data.apply(lambda row: 1 if row["Total Hydro Dev"] < 0 else 0, axis=1)
+            for col in ["Coal", "Total Hydro Dev"]:
+                data["Log {}".format(col)] = np.log(abs(data[col]))
+            data["Log Total Hydro Dev"] = data.apply(lambda row: - row["Log Total Hydro Dev"] if row["Neg Dev"] == 1 else
+                                                   row["Log Total Hydro Dev"], axis=1)
+            data = data[["Date", "Log Coal", "Log Total Hydro Dev", "Water Value"]]
+            training = data.head(w)
+            testing = data.tail(14)
+            model = SVR(kernel='poly')
+            x_rows = ["Log Coal", "Log Total Hydro Dev"]
+            model.fit(training[x_rows].values, training[["Water Value"]].values.ravel())
+            y_pred = model.predict(testing[x_rows].values)
+            maes.append(abs(testing["Water Value"].values - y_pred).mean())
+        print("MAE svr = {}".format(sum(maes) / len(maes)))
+    run_naive = True
+    if run_naive:
+        maes = []
+        for date in chosen_dates:
+            first_d = date - timedelta(days=7)
+            end_d = date + timedelta(days=13)
+            data = df[(df["Date"].dt.date >= first_d) & (df["Date"].dt.date <= end_d)]
+            training = data.head(7)
+            testing = data.tail(14).copy()
+            for index in testing.index:
+                weekday = testing.loc[index, "Weekday"]
+                train_wv = training[training["Weekday"] == weekday].head(1)["Water Value"].values[0]
+                testing.loc[index, "Pred"] = train_wv
+            maes.append(abs(testing["Water Value"] - testing["Pred"]).mean())
+        print("MAE naive = {}".format(sum(maes) / len(maes)))
+    run_coal_naive = True
+    if run_coal_naive:
+        maes = []
+        for date in chosen_dates:
+            first_d = date - timedelta(days=14)
+            end_d = date + timedelta(days=13)
+            data = df[(df["Date"].dt.date >= first_d) & (df["Date"].dt.date <= end_d)]
+            train = data.head(14)
+            test = data.tail(14).copy()
+            first_week_coal = train.head(7)["Coal"].mean()
+            sec_week_coal = train.tail(7)["Coal"].mean()
+            w_diff = sec_week_coal - first_week_coal
+            last_week_wv = train.tail(7)["Water Value"]
+            test["Pred"] = [i + w_diff for i in last_week_wv] + [i + w_diff * 2 for i in last_week_wv]
+            maes.append(abs(test["Water Value"] - test["Pred"]).mean())
+        print("MAE coal naive = {}".format(sum(maes) / len(maes)))
 
+
+def price_distribution():
+    d_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "d")
+    print("Min d {:.2f}, max d {:.2f}".format(d_df["System Price"].min(), d_df["System Price"].max()))
+    h_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "h")
+    print("Min h {:.2f}, max h {:.2f}".format(h_df["System Price"].min(), h_df["System Price"].max()))
+    plot_dist = False
+    if plot_dist:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=full_fig)
+        plot_ax_dist(ax1, d_df["System Price"], "Daily prices")
+        plot_ax_dist(ax2, h_df["System Price"], "Hourly prices")
+        fig.suptitle("Daily and Hourly Price Distribution")
+        plt.tight_layout()
+        plt.savefig("output/plots/eda/price_distribution.png")
+    quantiles = [0.01, 0.05, 0.1, 0.16, 0.5, 0.84, 0.9, 0.95, 0.99]
+    print("Hourly standard dev: {}".format(h_df["System Price"].std()))
+    print("Daily standard dev: {}".format(d_df["System Price"].std()))
+    assert False
+    df = pd.DataFrame(columns=["Res"] + quantiles)
+    for res, value in {"Day": d_df, "Hour": h_df}.items():
+        row = {"Res": res}
+        for q in quantiles:
+            row[q] = value["System Price"].quantile(q)
+        df = df.append(row, ignore_index=True)
+    df = df.round(2)
+    df.to_csv("output/tables/price_quantiles.csv", index=False, float_format="%g")
+
+
+def plot_ax_dist(ax, data, x_title):
+        ax.hist(data, bins=100, density=100, color=first_color)
+        ax.set_xlabel(x_title, labelpad=label_pad)
+        ax.set_ylabel("Proportion", labelpad=label_pad)
+        mean = data.mean()
+        st_dev = 4 * data.std()
+        ax.axis(xmax=mean + st_dev)
+
+
+def price_seasonality():
+    plot = True
+    if plot:
+        df = get_data("01.07.2014", "02.06.2020", ["System Price", "Month", "Weekday"], os.getcwd(), "h")
+        w_df = df[["Weekday", "System Price"]].groupby(by="Weekday").mean()
+        w_df["Day"] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        h_df = df[["Hour", "System Price"]].groupby(by="Hour").mean().reset_index()
+        h_df["Norm"] = h_df["System Price"] - h_df["System Price"].mean()
+        w_df["Norm"] = w_df["System Price"] - w_df["System Price"].mean()
+        m_df = df[["Month", "System Price"]].groupby(by="Month").mean()
+        m_df["Month name"] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        m_df["Norm"] = m_df["System Price"] - m_df["System Price"].mean()
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(17, 7))
+        plot_ax_season(ax1, h_df["Norm"], h_df["Hour"].astype(str), "Hour of day")
+        plot_ax_season(ax2, w_df["Norm"], w_df["Day"], "Day of week")
+        plot_ax_season(ax3, m_df["Norm"], m_df["Month name"], "Month of year")
+        fig.suptitle("Seasonality of Nord Pool Electricity Price", size=18)
+        plt.tight_layout()
+        plt.savefig("output/plots/eda/price_seasonality.png")
+    df = get_data("01.07.2014", "02.06.2020", ["System Price", "Month", "Holiday", "Weekday"], os.getcwd(), "d")
+    sun_df = df[df["Weekday"] == 7]
+    reg = df[df["Weekday"] != 7]
+    sun_factor = sun_df["System Price"].mean() / reg["System Price"].mean()
+    print("Mean Sunday factor: {:.2f}".format(sun_factor))
+    df["Year"] = df["Date"].dt.year
+    df["Month"] = df["Date"].dt.month
+    df_h = df[df["Holiday"] == 1]
+    df_reg = df[df["Holiday"] == 0]
+    print("Regular mean {:.2f}, hol mean {:.2f}".format(df_reg["System Price"].mean(), df_h["System Price"].mean()))
+    print("Number of holidays: {}".format(len(df_h)))
+    df_reg = df_reg.groupby(by=["Year", "Month"]).mean()
+    df_h = df_h.groupby(by=["Year", "Month"]).mean()
+    factors = []
+    for i in range(len(df_h)):
+        row = df_h.iloc[i]
+        name = row.name
+        h_price = row["System Price"]
+        reg_price = df_reg[df_reg.index == name]["System Price"].values[0]
+        factors.append(h_price/reg_price)
+    print("Mean Holiday factor: {:.2f}".format(sum(factors) / len(factors)))
+
+
+def plot_ax_season(ax, data, x_ticks, x_label):
+    ax.bar(x_ticks, data, color=first_color)
+    ax.set_xlabel(xlabel=x_label, labelpad=label_pad)
+    ax.set_ylabel("Deviation from mean", labelpad=label_pad)
+    ax.set_xticklabels(x_ticks)
+
+def plot_autocorr_2():
+    d_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "d")
+    h_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "h")
+    fig, (ax1, ax2) = plt.subplots(2, figsize=full_fig)
+    plot_acf(d_df["System Price"], lags=21, ax=ax1,  color=sec_color, vlines_kwargs={"color": sec_color}, title="Day")
+    values = acf(d_df["System Price"])
+    print("One day lag: {:.2f}".format(values[1]))
+    values = acf(h_df["System Price"])
+    print("One hour lag: {:.2f}".format(values[1]))
+    assert False
+    fig.suptitle("Daily and Hourly System Price Autocorrelation")
+    ax1.set_ylabel("Pearson's coefficient", labelpad=label_pad)
+    ax1.set_xlabel("Day lag", labelpad=label_pad)
+    points, ci, plot_acf(h_df["System Price"], lags=36, ax=ax2,  color=sec_color, vlines_kwargs={"color": sec_color}, title="Hour")
+    ax2.set_ylabel("Pearson's coefficient", labelpad=label_pad)
+    ax2.set_xlabel("Hour lag", labelpad=label_pad)
+    plt.tight_layout()
+    plt.savefig("output/plots/eda/autocorr_price_final.png")
+    plt.close()
+
+def measure_volatility():
+    import math
+    annual_volatility = False
+    if annual_volatility:
+        df = get_data("01.01.2015", "31.12.2019", ["System Price", "Weekday", "Holiday"], os.getcwd(), "d")
+        df["System Price"] = df.apply(
+                lambda row: row["System Price"] * 1.12 if row["Holiday"] == 1 and row["Weekday"] != 7 else
+                row["System Price"], axis=1)
+        annual_volatilities = []
+        for year in df["Date"].dt.year.unique():
+            sub_df = df[df["Date"].dt.year == year]
+            sub_df = get_decomposition(sub_df)
+            sub_df["Diff"] = sub_df["Trend"].shift(1)
+            sub_df["Dev"] = 100 * (sub_df["Trend"] - sub_df["Trend"].shift(1)) / sub_df["Trend"]
+            daily_stdev = sub_df["Dev"].std()
+            annual_volatilities.append(math.sqrt(len(sub_df)-1) * daily_stdev)
+        print("Mean annual volatility: {:.2f}%".format(sum(annual_volatilities)/len(annual_volatilities)))
+    daily_volatility = True
+    if daily_volatility:
+        df = get_data("01.01.2015", "31.12.2019", ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
+        all_dates = pd.date_range(dt(2015, 1, 1), dt(2019, 12, 31), freq="d")
+        volatilities = []
+        for day in all_dates:
+            sub_df = df[df["Date"] == day]
+            sub_df = sub_df.rename(columns={"System Price": "Trend"})
+            sub_df["Diff"] = sub_df["Trend"].shift(1)
+            sub_df["Dev"] = 100 * (sub_df["Trend"] - sub_df["Trend"].shift(1)) / sub_df["Trend"]
+            hourly_std = sub_df["Dev"].std()
+            volatilities.append(math.sqrt(len(sub_df)-1) * hourly_std)
+        print("Mean daily volatility: {:.2f}%".format(sum(volatilities)/len(volatilities)))
+
+def get_decomposition(df):
+    df = df.reset_index(drop=True)
+    decomp = seasonal_decompose(df["System Price"], model='multiplicative', period=7)
+    df["Factor"] = decomp.seasonal
+    df["Trend"] = decomp.trend
+    df["Adj Trend"] = df["System Price"] / df["Factor"]
+    df.loc[0, "Trend"] = sum(df["Adj Trend"].head(3) * np.asarray([0.2, 0.3, 0.5]))
+    df.loc[len(df)-1, "Trend"] = sum(df["Adj Trend"].tail(3) * np.asarray([0.2, 0.3, 0.5]))
+    df["Trend"] = df["Trend"].interpolate(method='linear', limit_area="inside")
+    df = df.drop(columns=["Adj Trend", "Weekday", "Holiday", "System Price", "Factor"])
+    return df
 
 
 if __name__ == '__main__':
@@ -681,5 +917,10 @@ if __name__ == '__main__':
     # check_demand_stationarity()
     # explore_holyday()
     # explore_snowfall()
-    explore_coal_and_wv()
+    # explore_coal_and_wv()
+    # explore_hydro_and_coal_multiple_regression()
+    # price_distribution()
+    # price_seasonality()
+    # plot_autocorr_2()
+    # measure_volatility()
 
