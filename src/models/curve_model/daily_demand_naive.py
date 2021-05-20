@@ -88,11 +88,11 @@ def predict_daily_demand_naive(start, end, trans_table, plot, true_demand):
         if result_df.loc[i, "Holiday"] == 1:
             forecast = forecast / get_hol_factor()
         result_df.loc[i, "Demand Forecast"] = forecast
+    result_df = result_df.merge(true_demand, on="Date")
     if plot:
 
         plt.subplots(figsize=full_fig)
         plt.plot(result_df["Date"], result_df["Demand Forecast"], color=first_color, label="Demand forecast")
-        result_df = result_df.merge(true_demand, on="Date")
         mape = 100 * (abs((result_df["Curve Demand"]-result_df["Demand Forecast"]) / result_df["Curve Demand"])).mean()
         plt.plot(result_df["Date"], result_df["Curve Demand"], label="True demand", color=sec_color)
         for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03),

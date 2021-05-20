@@ -1136,6 +1136,7 @@ def eda_supply_weekends():
     plt.plot(weekdays_mean, s_prices, label="Mean weekday", color=first_color, linewidth=3)
     plt.plot(weekend_mean, s_prices, label="Mean weekend", color=sec_color, linewidth=3)
     plt.ylim(-10, 100)
+    plt.xlim(20000, 60000)
     plt.title("Strategic Supply Bidding during Weekends - 2019", pad=title_pad)
     plt.ylabel("Price [€]", labelpad=label_pad)
     plt.xlabel("Volume [MWh]", labelpad=label_pad)
@@ -1143,7 +1144,7 @@ def eda_supply_weekends():
                            shadow=True).get_lines():
         line.set_linewidth(2)
     plt.tight_layout()
-    #plt.savefig("output/auction/eda/strategic_bidding_weekends.png")
+    plt.savefig("output/auction/eda/strategic_bidding_weekends.png")
     plt.close()
 
 
@@ -1360,7 +1361,7 @@ if __name__ == '__main__':
     # auction_data()
     # merge_same_dates_in_one_csv()
     # plot_mean_curves()
-    plot_mean_curves_together()
+    # plot_mean_curves_together()
     # eda_disc_auction_data(overview=True, make_analysis_csv=False)
     # investigate_unit_price_information_loss()
     # make_price_classes_from_mean_curves(16, 18)
@@ -1376,7 +1377,7 @@ if __name__ == '__main__':
     # explore_daily_curves()
     # explore_volume_error()
     # eda_net_flow()
-    # eda_supply_weekends()
+    eda_supply_weekends()
     # eda_special_days()
     # eda_water_values()
     # plot_water_val_example()

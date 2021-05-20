@@ -19,7 +19,7 @@ from src.models.curve_model.supply_curve import get_supply_curve_water_values
 from src.models.curve_model.hourly_demand import decompose_daily_to_hourly_demand
 from src.models.curve_model.simulate_errors import get_upper_and_lower_bound
 import matplotlib
-matplotlib.use('Cairo')
+# matplotlib.use('Cairo')
 import matplotlib.pyplot as plt
 import shutil
 
@@ -190,8 +190,8 @@ sec_color = "firebrick"
 label_pad = 12
 title_pad = 20
 full_fig = (13, 7)
-plot_demand = True
-plot_price = True
+plot_demand = False
+plot_price = False
 
 
 def get_prob_forecast(alpha, demand, n, month, hour, weekend, mean_supply_curve, i, point_forecast, d_errors, p_errors):
@@ -358,5 +358,5 @@ if __name__ == '__main__':
     # explore_temp_and_price()
     model_ = CurveModel()
     periods_ = get_random_periods(1)
-    periods_ = [(dt(2019, 7, 7), dt(2019, 7, 20))]
+    periods_ = [(dt(2019, 1, 1), dt(2019, 1, 14))]
     run_model(model_, periods_)
