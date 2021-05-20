@@ -58,6 +58,8 @@ def get_upper_and_lower_bound(alpha, demand, n, error_series, supply_line, price
         lower_demand = min_vol
     elif lower_demand > max_vol:
         lower_demand = max_vol
+    plot_demand_dist(supply_line, demand)
+    assert False
     u_d_line = LineString([(upper_demand, -10), (upper_demand, 210)])
     l_d_line = LineString([(lower_demand, -10), (lower_demand, 210)])
     upper_inter = supply_line.intersection(u_d_line)
@@ -84,6 +86,41 @@ def get_upper_and_lower_bound(alpha, demand, n, error_series, supply_line, price
     #upper_bound = min(upper_bound, point_forecast * 0.5)
     return upper_bound, lower_bound
 
+
+def plot_demand_dist(supply_line, demand):
+    import scipy.stats as stats
+    np.random.seed(seed=10)
+    a, b = demand-5000, demand+5000
+    mu, sigma = demand, 3200
+    dist = stats.truncnorm((a - mu) / sigma, (b - mu) / sigma, loc=mu, scale=sigma)
+    values = dist.rvs(20)
+    values.sort()
+    lower_demand = values[2]
+    upper_demand = values[17]
+    values = np.delete(values, 17)
+    values = np.delete(values, 2)
+    plt.subplots(figsize=(13, 7))
+    plt.plot(supply_line.coords.xy[0], supply_line.coords.xy[1], label="Supply", color=plt.get_cmap("tab10")(1))
+    y_min, y_max = plt.ylim()
+    price = supply_line.intersection(LineString([(demand, y_min), (demand, y_max)])).y
+    l_price = supply_line.intersection(LineString([(lower_demand, y_min), (lower_demand, y_max)])).y
+    u_price = supply_line.intersection(LineString([(upper_demand, y_min), (upper_demand, y_max)])).y
+    plt.vlines(demand, y_min, y_max, label="Demand forecast (€{:.1f})".format(price), linewidth=3, zorder=5)
+    for i in range(len(values)):
+        lab = "_nolegend" if i != 0 else "Simulated demand"
+        plt.vlines(values[i], y_min, y_max, label=lab, linestyles="dotted", color="grey")
+    plt.vlines(lower_demand, y_min, y_max, label="Lower demand (€{:.1f})".format(l_price), linewidth=3, linestyle="dotted")
+    plt.vlines(upper_demand, y_min, y_max, label="Upper demand (€{:.1f})".format(u_price), linewidth=3, linestyle="dotted")
+    for line in plt.legend(loc='upper center', ncol=5, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+                           shadow=True).get_lines():
+        line.set_linewidth(2)
+    plt.ylim(y_min, y_max)
+    plt.title("Demand Simulation for Fundamental Uncertainty Estimation", pad=20)
+    plt.xlabel("Volume [MWh]", labelpad=12)
+    plt.ylabel("Price [€]", labelpad=12)
+    plt.tight_layout()
+    plt.savefig("eda/sim_demand.png")
+    assert False
 
 def estimate_daily_price_errors():
     from src.models.curve_model.curve_model import CurveModel
@@ -142,4 +179,4 @@ if __name__ == '__main__':
     print("Running methods")
     # estimate_hourly_demand_errors()
     # estimate_daily_price_errors()
-    estimate_daily_price_errors_2()
+    # estimate_daily_price_errors_2()

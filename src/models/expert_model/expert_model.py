@@ -172,7 +172,7 @@ def run(model, periods):
 
 
 if __name__ == '__main__':
-    # train_model(str(Path(__file__).parent))
+    train_model(str(Path(__file__).parent))
     model_ = ExpertModel()
     periods_ = get_random_periods(1)
     run(model_, periods_)
