@@ -61,10 +61,11 @@ class CurveModel:
         return self.creation_date
 
     def forecast(self, forecast_df):  # forecast_df is dataframe with ["Date", "Hour", "Forecast", "Upper", "Lower"]
-        forecast_df = self.get_forecast(forecast_df)
-        return forecast_df
+        forecast_df, demand, supply = self.get_forecast(forecast_df)
+        return forecast_df, demand, supply
 
     def get_forecast(self, forecast_df):
+        demand_df, supply_df = (forecast_df[["Date", "Hour"]].copy(), forecast_df[["Date", "Hour"]].copy())
         prev_workdir = os.getcwd()
         os.chdir("\\".join(prev_workdir.split("\\")[:6]) + "\\models\\curve_model")
         start_date = forecast_df.at[0, "Date"]
@@ -75,6 +76,9 @@ class CurveModel:
                              os.getcwd(), "d")
         #last_week_coal = help_data.head(7)["Coal"].mean()
         data, h_demand_forecast, supply_mean_week, d_errors, p_table = self.get_data_demand_and_supply(start_date, end_date)
+        demand_df["Demand Forecast"] = h_demand_forecast["Demand Forecast"]
+        for col in supply_mean_week.columns[1:]:
+            supply_df[col] = np.NAN
         #wv_model = pickle.load(open("wv_model.pickle", 'rb'))
         if plot_price:
             if not os.path.exists("price_curves/curves_{}_{}".format(start_date.date(), end_date.date())):
@@ -91,6 +95,8 @@ class CurveModel:
             #last_week_row = help_data[help_data["Date"] == forecast_df.loc[i, "Date"] - timedelta(days=7)]
             #help_row = help_data[help_data["Date"] == forecast_df.loc[i, "Date"]]
             safe_supply = get_supply_curve(month, hour, weekend, mean_supply_curve, safe=True)  # VERSION 0
+            for j in range(len(safe_supply)):
+               supply_df.iloc[i, j+2] = safe_supply[j]
             # safe_supply = get_supply_curve_water_values(month, hour, weekend, mean_supply_curve, help_row, last_week_row, wv_model, last_week_coal, safe=True) # VERSION 1
             # safe_supply = true_supply.iloc[i][2:]
             volumes = safe_supply.values
@@ -119,7 +125,7 @@ class CurveModel:
             max_lower = mean_forecast - margin_low
             forecast_df.loc[i*24:i*24+24, "Upper"][forecast_df["Upper"] < min_upper] = min_upper
             forecast_df.loc[i*24:i*24+24, "Lower"][forecast_df["Lower"] > max_lower] = max_lower
-        return forecast_df
+        return forecast_df, demand_df, supply_df
 
     @staticmethod
     def create_background_curve_plot(supply_mean_week, h_demand_forecast):

@@ -37,7 +37,7 @@ def get_point_forecast(forecast_df):
     end_date = start_date + timedelta(days=13)
     data = get_data(start_date, end_date, ["Weekday", "Holiday"], os.getcwd(), "h")
     prev_day = start_date - timedelta(days=1)
-    prev_day_price = get_data(prev_day, start_date, ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
+    prev_day_price = get_data(prev_day, prev_day, ["System Price", "Weekday", "Holiday"], os.getcwd(), "h")
     last_day_weekday = prev_day_price.loc[0, "Weekday"] if prev_day_price.loc[0, "Holiday"] == 0 else 7
     weekdays_c = get_weekday_coefficient()
     prev_day_price["System Price"] = prev_day_price["System Price"] / weekdays_c[last_day_weekday]

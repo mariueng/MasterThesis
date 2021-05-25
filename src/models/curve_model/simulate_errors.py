@@ -58,8 +58,7 @@ def get_upper_and_lower_bound(alpha, demand, n, error_series, supply_line, price
         lower_demand = min_vol
     elif lower_demand > max_vol:
         lower_demand = max_vol
-    plot_demand_dist(supply_line, demand)
-    assert False
+    # plot_demand_dist(supply_line, demand)
     u_d_line = LineString([(upper_demand, -10), (upper_demand, 210)])
     l_d_line = LineString([(lower_demand, -10), (lower_demand, 210)])
     upper_inter = supply_line.intersection(u_d_line)

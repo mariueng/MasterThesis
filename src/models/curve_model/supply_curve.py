@@ -14,7 +14,9 @@ s_classes = [-10, -4, -1, 0, 1, 3, 5, 8, 12, 15, 19, 22, 24, 26, 28, 30, 32, 35,
 
 
 def get_supply_curve(month, hour, weekend, weekly_mean, safe):
-    index = weekend * 288 + (month-1) * 24 + hour
+    prev_workdir = os.getcwd()
+    os.chdir("\\".join(prev_workdir.split("\\")[:6]) + "\\models\\curve_model")
+    index = int(weekend * 288 + (month-1) * 24 + hour)
     profiles = pd.read_csv(r"supply_week_coefficients.csv")
     profile = profiles.iloc[index, :]
     assert month == profile["Month"]
@@ -38,6 +40,7 @@ def get_supply_curve(month, hour, weekend, weekly_mean, safe):
     df.loc[0, "Volume"] = df.loc[0, "Result"] * lower
     df.loc[len(df)-1, "Volume"] = df.loc[len(df)-1, "Result"] * upper
     df["Volume"] = df["Volume"].interpolate()
+    os.chdir(prev_workdir)
     return df["Volume"]
 
 

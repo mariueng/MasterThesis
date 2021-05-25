@@ -191,11 +191,11 @@ def get_periods_and_result_folder_path(mode):
         result_folder = "test"
     elif mode == "short":
         periods = [(dt.datetime(2019, 4, 11).date(), dt.datetime(2019, 4, 24).date())]
-        periods = get_random_periods(30)
+        periods = get_random_periods(1)
         result_folder = "short"
     elif mode == "old":
         # periods = get_all_2019_periods()
-        periods = get_random_periods(2)
+        periods = get_random_periods(1)
         #periods = [(dt.datetime(2019, 3, 22).date(), dt.datetime(2019, 4, 4).date())]
         result_folder = "old"
     else:
@@ -204,14 +204,14 @@ def get_periods_and_result_folder_path(mode):
 
 
 if __name__ == '__main__':
-    # model_ = naive_day.NaiveDay()
+    model_ = naive_day.NaiveDay()
     # model_ = naive_week.NaiveWeek()
     # model_ = sarima.Sarima()
     # model_ = ets.Ets()
     # model_ = expert_model.ExpertModel()
     # model_ = expert_day.ExpertDay()
     # model_ = expert_mlp.ExpertMLP()
-    model_ = curve_model.CurveModel()
+    # model_ = curve_model.CurveModel()
     # periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_random_periods(30)
     # periods_, result_folder_ = get_periods_and_result_folder_path("short")
