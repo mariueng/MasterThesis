@@ -1,0 +1,1 @@
+1 hour lag,2 hour lag,1 day lag,2 day lag,1 week lag,Max Yesterday,Min Yesterday,Midnight Yesterday,Mon,Tue,Wed,Thu,Fri,Sat,Sun

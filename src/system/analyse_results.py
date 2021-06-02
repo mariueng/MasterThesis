@@ -289,37 +289,38 @@ def get_season_result(model_name):  # Helping method
 def error_distributions():
     df = pd.read_csv("../results/test/CurveModel/performance.csv")
     scores = ["MAPE", "SMAPE", "MAE", "RMSE"]
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16, 7))
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(13, 5.5))
     axes = [ax1, ax2, ax3, ax4]
     colors = [main_col, sec_col, third_col, fourth_color]
     for i in range(4):
         avg = df[scores[i]].mean()
-        counts, bins, bars = axes[i].hist(df[scores[i]], bins=35, density=1, color=colors[i], label="{} distribution ({:.2f})".format(scores[i], avg))
-        axes[i].set_xlabel(scores[i])
+        counts, bins, bars = axes[i].hist(df[scores[i]], bins=35, density=1, color=colors[i], label="Periods {} ({:.2f})".format(scores[i], avg))
+        axes[i].set_xlabel(scores[i], size=11)
     for ax in axes:
-        for line in ax.legend(loc='upper center', ncol=1, bbox_to_anchor=(0.5, 1.03),
+        for line in ax.legend(loc='upper center', ncol=1, bbox_to_anchor=(0.5, 1.04),
                                fancybox=True, shadow=True).get_lines():
             line.set_linewidth(2)
-    ax1.set_ylabel("Proportion", labelpad=label_pad)
-    fig.suptitle("Point Metric Error Distribution - Curve Model", y=0.98, size=15)
-    plt.tight_layout(pad=2)
+    ax1.set_ylabel("Proportion", labelpad=label_pad, size=11)
+    fig.suptitle("Point Metric Error Distribution - Curve Model", y=0.98, size=14)
+    plt.tight_layout()
     plt.savefig("../analysis/CurveModel/error_dist.png")
 
 
 def prob_dist():
     df = pd.read_csv("../results/test/CurveModel/performance.csv")
     scores = ["COV", "CE", "IS"]
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 7))
+    labs = {"COV": "Coverage", "CE": "Coverage error", "IS": "Interval score"}
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13, 5.5))
     axes = [ax1, ax2, ax3]
     colors = [main_col, sec_col, third_col]
     for i in range(3):
         print(scores[i])
         avg = df[scores[i]].mean()
         (counts, bins, patches) = axes[i].hist(df[scores[i]].values, bins=77, color=colors[i], align="mid",
-                                               label="{} distribution ({:.2f})".format(scores[i], avg))
+                                               label="Periods {} ({:.2f})".format(scores[i], avg))
         #count_sum = counts.sum()
         #counts = np.append(counts, 1 - count_sum)
-        axes[i].set_xlabel(scores[i])
+        axes[i].set_xlabel(labs[scores[i]], size=11)
         for j in range(len(counts)):
             print("Between {:.2f} and {:.2f}: {:.3f}".format(bins[j], bins[j+1], counts[j]))
         if i == 0:
@@ -327,12 +328,12 @@ def prob_dist():
         else:
             axes[i].set_xlim(df[scores[i]].min()-2, df[scores[i]].mean()+1.96*df[scores[i]].std())
     for ax in axes:
-        for line in ax.legend(loc='upper center', ncol=1, bbox_to_anchor=(0.5, 1.03),
+        for line in ax.legend(loc='upper center', ncol=1, bbox_to_anchor=(0.5, 1.04),
                                fancybox=True, shadow=True).get_lines():
             line.set_linewidth(2)
-    ax1.set_ylabel("Proportion", labelpad=label_pad)
+    ax1.set_ylabel("Proportion", labelpad=label_pad, size=11)
     fig.suptitle("Probabilistic Metric Error Distribution - Curve Model", y=0.97, size=14)
-    plt.tight_layout(pad=2)
+    plt.tight_layout()
     plt.savefig("../analysis/CurveModel/prob_error_dist.png")
 
 
@@ -844,7 +845,7 @@ if __name__ == '__main__':
     # t_test()
     # monthly_error_double()
     # error_distributions()
-    # prob_dist()
+    prob_dist()
     # example_periods()
     # example_curves()
     # t_test_2()
@@ -853,5 +854,5 @@ if __name__ == '__main__':
     # assess_spike_detection()
     # performance_without_spikes()
     # trend_detection()
-    demand_performance()
-    supply_performance()
+    # demand_performance()
+    # supply_performance()

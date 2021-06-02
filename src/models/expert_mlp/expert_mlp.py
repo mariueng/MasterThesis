@@ -26,15 +26,15 @@ import pickle
 
 class ExpertMLP:
     def __init__(self):
-        self.name = "Expert MLP"
+        self.name = "Expert MLP Sinh"
         today = dt.today()
         self.creation_date = str(today)[0:10] + "_" + str(today)[11:16]
         print("'{}' is instantiated\n".format(self.name))
         self.prev_workdir = os.getcwd()
         os.chdir("\\".join(self.prev_workdir.split("\\")[:6]) + "\\models\\expert_mlp")
-        self.model_fit = load_model("expert_mlp.pickle")
-        self.scaler = pickle.load(open("scaler.pickle", 'rb'))
-        with open("mlp_input.txt", 'r') as fh:
+        self.model_fits = [load_model("h_models/expert_mlp_{}.pickle".format(h)) for h in range(24)]
+        self.scalers = [pickle.load(open("h_scalers/scaler_{}.pickle".format(h), 'rb')) for h in range(24)]
+        with open("h_columns/mlp_input_0.txt", 'r') as fh:
             self.columns = fh.readline().replace("\n", "").split(",")
             fh.close()
 
@@ -73,12 +73,14 @@ class ExpertMLP:
             x.loc[0, "Midnight Yesterday"] = yest_df["System Price"].values[-1]
             for key, value in weekdays.items():
                 x.loc[0, value] = 1 if df.loc[i, "Weekday"] == key else 0
-            for h in range(24):
-                x.loc[0, "h{}".format(h)] = 1 if df.loc[i, "Hour"] == h else 0
+            #for h in range(24):
+                #x.loc[0, "h{}".format(h)] = 1 if df.loc[i, "Hour"] == h else 0
             #print(x.transpose())
-            x = self.scaler.transform(x)
+            scaler = self.scalers[i%24]
+            model_fit = self.model_fits[i%24]
+            x = scaler.transform(x)
             #print(x)
-            df.loc[i, "System Price"] = self.model_fit.predict(x)[0][0]
+            df.loc[i, "System Price"] = model_fit.predict(x)[0][0]
             #print("Predicted value {}".format(df.loc[i, "System Price"]))
             #print("-------------------------------\n")
         result = df.tail(336).reset_index(drop=True)
@@ -134,23 +136,25 @@ def train_model():
     weekdays = {1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
     for key, value in weekdays.items():
         df[value] = df.apply(lambda row: 1 if key == row["Weekday"] else 0, axis=1)
-    for i in range(24):
-        df["h{}".format(i)] = df.apply(lambda row: 1 if row["Hour"] == i else 0, axis=1)
+    #for i in range(24):
+        #df["h{}".format(i)] = df.apply(lambda row: 1 if row["Hour"] == i else 0, axis=1)
     drop_cols = ["Date", "Hour", "System Price", "Weekday"]
-    x_columns = [col for col in df.columns if col not in drop_cols]
-    y = df[[col]].values
-    scaler.fit(df[x_columns])
-    pickle.dump(scaler, open("scaler.pickle", 'wb'))
-    with open("mlp_input.txt", 'w') as fh:
-        fh.write(",".join(x_columns) + "\n")
-        fh.close()
-    x = scaler.transform(df[x_columns])
-    model = get_mlp_model(x.shape[1])
-    print(model.summary())
-    epocks = 100
-    earlystopping = EarlyStopping(monitor="loss", mode="min", patience=5, restore_best_weights=True)
-    model.fit(x, y, epochs=epocks, batch_size=32,  callbacks=[earlystopping])
-    model.save("expert_mlp.pickle")
+    for h in range(0, 24):
+        sub_df = df[df["Hour"]==h]
+        x_columns = [col for col in df.columns if col not in drop_cols]
+        y = df[[col]].values
+        scaler.fit(df[x_columns])
+        pickle.dump(scaler, open("h_scalers/scaler_{}.pickle".format(h), 'wb'))
+        with open("h_columns/mlp_input_{}.txt".format(h), 'w') as fh:
+            fh.write(",".join(x_columns) + "\n")
+            fh.close()
+        x = scaler.transform(df[x_columns])
+        model = get_mlp_model(x.shape[1])
+        print(model.summary())
+        epocks = 25
+        earlystopping = EarlyStopping(monitor="loss", mode="min", patience=5, restore_best_weights=True)
+        model.fit(x, y, epochs=epocks, batch_size=32,  callbacks=[earlystopping])
+        model.save("h_models/expert_mlp_{}.pickle".format(h))
 
 
 def adjust_for_holiday(df, col):
@@ -308,8 +312,8 @@ def run(model, periods):
 
 
 if __name__ == '__main__':
-    print("Running models")
-    train_model()
-    # model_ = ExpertDay()
-    # periods_ = get_random_periods(1)
-    # run(model_, periods_)
+    print("Running script")
+    # train_model()
+    model_ = ExpertMLP()
+    periods_ = get_random_periods(1)
+    run(model_, periods_)
