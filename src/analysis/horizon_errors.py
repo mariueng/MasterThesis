@@ -220,24 +220,28 @@ def get_spikes_per_day(model='CurveModel'):
     # Drop unnecessary data
     df_new.drop(columns={'Period', 'System Price', 'Forecast', 'Upper', 'Lower', 'forecast_hour'}, inplace=True)
 
-    """
     #Analyze whether spikes are more frequent further into the horizon in both predicted and analyzed data
     print('Spike occurence frequency in Curve Model forecast and true price over all data')
     spike_hor_freq = df_new.groupby(['forecast_day']).mean()
     print(spike_hor_freq.round(4))
     # spike_hor_freq[['cm_pred_spike', 'true_spike', 'spike_cov']]
-    fig, ax = plt.subplots(figsize=(13, 7))
+    fig, ax = plt.subplots(figsize=(13, 4))
     x_values = spike_hor_freq.index
-    ax.plot(x_values, spike_hor_freq['true_spike'], label='True spike frequency', color='steelblue')
-    ax.plot(x_values, spike_hor_freq['cm_pred_spike'], label='Spike forecast frequency', color='firebrick')
+    ax.plot(x_values, spike_hor_freq['true_spike']*100, label='True', color='steelblue')
+    ax.plot(x_values, spike_hor_freq['cm_pred_spike']*100, label='Curve Model', color='firebrick')
     #ax.plot(x_values, spike_hor_freq['spike_cov'], label='Spike coverage', color='darkorange')
-    #ax.set(title='Spike frequency')
-    ax.set(xlabel='Forecast day', ylabel='%')
-    ax.legend()
+    ax.set_title("True Average vs. Model Average Spike Frequency per Day", size=14, y=1.08)
+    ax.set_xticks(range(1, 15))
+    ax.set_xlabel('Day of prediction horizon', size=11, labelpad=12)
+    ax.set_ylabel('Frequency [%]', size=11, labelpad=12)
+    ax.set_ylim(ax.get_ylim()[0]*0.9, ax.get_ylim()[1]*1.1)
+    for line in ax.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.07),
+                          fancybox=True, shadow=True, prop={'size': 11}).get_lines():
+        line.set_linewidth(2)
     # ax.title(metric, pad=title_pad)
     fig.tight_layout()
-    plt.show()
-    """
+    plt.savefig("../analysis/CurveModel/spike_freq.png")
+    assert False
     # Analysis from here on only with spike data points
 
     # Only predicted spikes på CM
@@ -332,6 +336,9 @@ def find_trends():
 
 
 if __name__ == '__main__':
+    df_day_ = get_spikes_per_day()
+    assert False
+    find_trends()
     pd.set_option('display.width', 100000)
     pd.set_option('display.max_rows', 10000)
     pd.set_option('display.min_rows', 1000)
@@ -341,9 +348,6 @@ if __name__ == '__main__':
     # df_hour_sa, df_day_sa = get_error_distribution_by_horizon('Sarima')
     # plot_horizon_error(df_hour_cm, df_day_cm, 'Forecast hour')
     # plot_horizon_error(df_day_cm, df_day_nd, 'Forecast day')
-    find_trends()
-    assert False
-    df_day_ = get_spikes_per_day()
     assert False
 
     df_day_ = get_demand_forecast_errors()
