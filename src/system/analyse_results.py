@@ -472,7 +472,7 @@ def example_curves():
             ax.axhline(l, color="black")
             ax.axhline(u, color="black")
             custom_lines = [Line2D([0], [0], color="grey", linestyle="dotted"), Line2D([0], [0], color="grey"), Line2D([0], [0], color="black")]
-            ax.legend(custom_lines, ["T ({:.1f})".format(sys), 'F ({:.1f})'.format(for_c), "I"], loc=0)
+            ax.legend(custom_lines, ["T ({:.1f})".format(sys), 'F ({:.1f})'.format(for_c), "Bound"], loc=0)
         else:
             custom_lines = [Line2D([0], [0], color="grey", linestyle="dotted"), Line2D([0], [0], color="grey")]
             ax.legend(custom_lines, ["T ({:.1f})".format(sys), 'F ({:.1f})'.format(for_c)], loc=0)
@@ -480,9 +480,115 @@ def example_curves():
     plt.savefig("../analysis/CurveModel/12_curves.png")
 
 
+def combined_period_curves():
+    import matplotlib.dates as mdates
+    performance = pd.read_csv("../results/test/CurveModel/performance.csv")
+    performance["From Date"] = pd.to_datetime(performance["From Date"], format="%Y-%m-%d").dt.date
+    metrics = performance.columns[3:].tolist()
+    metrics.pop(metrics.index("COV"))
+    final = {"MAPE": [77, 351], "SMAPE": [164, 336], "MAE": [307, 146], "RMSE": [313, 178], "CE": [220, 38], "IS": [312, 2]}
+    all_periods = [77, 164, 307, 313, 220, 312, 351, 336, 146, 178, 38, 2]
+    periods = [[77, 164], [307, 313], [220, 312], [351, 336], [146, 178], [38, 2]]
+    titles = ["Good {}".format(i) for i in metrics] + ["Bad {}".format(i) for i in metrics]
+    pred = pd.read_csv("../results/test/CurveModel/forecast.csv")
+    pred = pred[pred["Period"].isin(all_periods)].reset_index(drop=True)
+    pred["Date"] = pd.to_datetime(pred["Date"], format="%Y-%m-%d").dt.date
+    pred["Hour"] = pd.to_datetime(pred['Hour'].astype(str).str[0:2].astype(int), format="%H").dt.time
+    pred["DateTime"] = pred.apply(lambda r: dt.combine(r['Date'], r['Hour']), 1)
+    demand = pd.read_csv("../analysis/CurveModel/example_periods/demand.csv")
+    supply = pd.read_csv("../analysis/CurveModel/example_periods/supply.csv")
+    forecast = pd.read_csv("../analysis/CurveModel/example_periods/forecast.csv")
+    s_classes = [-10, -4, -1, 0, 1, 3, 5, 8, 12, 15, 19, 22, 24, 26, 28, 30, 32, 35, 39, 42, 46, 51, 56, 66, 75, 105,
+                 165, 210]
+    d_classes = [-10, 0, 1, 5, 11, 20, 32, 46, 75, 107, 195, 210]
+    d_col, s_col = (plt.get_cmap("tab10")(0), plt.get_cmap("tab10")(1))
+    for j in range(len(periods)):
+        fig, (ax_a, ax_b) = plt.subplots(2, 2, figsize=(13, 6))
+        ax1, ax2 = (ax_a[0], ax_a[1])
+        ax3, ax4 = (ax_b[0], ax_b[1])
+        axs = [ax1, ax2, ax3, ax4]
+        #frame = "green" if j <3 else "red"
+        #for ax in axs:
+            #for spine in ax.spines.values():
+                #spine.set_edgecolor(frame)
+        for i in range(2):
+            period = periods[j][i]
+            ax = ax_a[i]
+            if i == 0:
+                ax.set_ylabel("Price [€]", size=11)
+            #ax.set_xlabel("Time", size=11)
+            title = titles[j*2+i]
+            metric = title.split()[1]
+            score = performance[performance["Period"] == all_periods[j*2+i]][metric].values[0]
+            sub_pred = pred[pred["Period"] == periods[j][i]]
+            assert len(sub_pred) == 336
+            from_date = dt.strftime(sub_pred.head(1)["Date"].values[0], "%d %b")
+            to_date = dt.strftime(sub_pred.tail(1)["Date"].values[0], "%d %b")
+            ax.plot(sub_pred["DateTime"], sub_pred["System Price"], color=main_col, label="T")
+            ax.plot(sub_pred["DateTime"], sub_pred["Forecast"], color=sec_col, label="F")
+            dates = sub_pred["Date"].unique()
+            ax.set_xlim(dates[0], dates[len(dates)-1]+timedelta(days=1))
+            ax.xaxis.set_ticks(dates)
+            dtFmt = mdates.DateFormatter('%d')  # define the formatting
+            ax.xaxis.set_major_formatter(dtFmt)  # apply the format to the desired axis
+            #ax.set_xticklabels([])
+            ax.set_title("{}) Forecast {} - {}. {} ({:.2f}) ".format((j*2+i) + 1, from_date, to_date, title, score), size=13)
+            if metric in ["CE", "IS"]:
+                ax.fill_between(sub_pred["DateTime"], sub_pred["Upper"], sub_pred["Lower"],
+                                facecolor='gainsboro', interpolate=True, label="I")
+            ax.legend(loc="upper left")
+            ax = ax_b[i]
+            ax.set_title("Mean Curves", size=13)
+            if i == 0:
+                ax.set_ylabel("Price [€]", size=11)
+            ax.set_xlabel("Volume [MWh]", size=11)
+            s_d = sub_pred.head(1)["Date"].values[0]
+            print(s_d)
+            true_d = get_auction_data(s_d, s_d + timedelta(days=13), "d", os.getcwd()).iloc[:, 2:].mean(axis=0).values
+            true_s = get_auction_data(s_d, s_d + timedelta(days=13), "s", os.getcwd()).iloc[:, 2:].mean(axis=0).values
+            ax.plot(true_d, d_classes, color=d_col, linestyle="dotted")
+            ax.plot(true_s, s_classes, color=s_col, linestyle="dotted")
+            y_min, y_max = ax.get_ylim()
+            f = forecast[forecast["Period"] == period]
+            sys, for_c, u, lower = (f["System Price"].mean(), f["Forecast"].mean(), f["Upper"].mean(), f["Lower"].mean())
+            max_sys, max_pred = (sub_pred["System Price"].max(), sub_pred["Forecast"].max())
+            #ax.set_ylim(0, max(70, max(sys, for_c) * 1.1))
+            s = supply[supply["Period"] == period].iloc[:, 3:].mean(axis=0).values
+            if max(max_sys, max_pred) < 60:
+                ax.set_ylim(0, max(max_sys, max_pred)*1.5)
+                ax.set_xlim(min(true_s[3], s[3]), max(20, max(true_s[25], s[25])))
+            else:
+                ax.set_ylim(0, max(max_sys, max_pred))
+                ax.set_xlim(min(true_s[3], s[3]), max(true_s[27], s[27]))
+            d = demand[demand["Period"] == period]["Demand Forecast"].mean()
+            ax.axvline(d, y_min, y_max, color=d_col)
+            ax.plot(s, s_classes, color=s_col)
+            if metric in ["CE", "IS"]:
+                if lower < 0:
+                    ax.set_ylim(lower - 2, ax.get_ylim()[1])
+                if u+15 > ax.get_ylim()[1]:
+                    if sys < 10:
+                        ax.set_ylim(ax.get_ylim()[0], 25)
+                    else:
+                        ax.set_ylim(ax.get_ylim()[0], 60)
+                ax.axhline(lower, color="black")
+                ax.axhline(u, color="black")
+                custom_lines = [Line2D([0], [0], color="grey", linestyle="dotted"), Line2D([0], [0], color="grey"),
+                                Line2D([0], [0], color="black")]
+                ax.legend(custom_lines, ["T ({:.1f})".format(sys), 'F ({:.1f})'.format(for_c), "Bound"], loc="upper left")
+            else:
+                custom_lines = [Line2D([0], [0], color="grey", linestyle="dotted"), Line2D([0], [0], color="grey")]
+                ax.legend(custom_lines, ["T ({:.1f})".format(sys), 'F ({:.1f})'.format(for_c)], loc="upper left")
+        plt.tight_layout()
+        #plt.show()
+        #assert False
+        plt.savefig("../analysis/CurveModel/result_{}.png".format(j+1))
+
+
+
 def t_test_2():
     models = ["Curve Model", "ETS", "Expert Day", "Expert MLP", "Expert Model", "Naive Day", "Naive Week", "Sarima"]
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13, 6))
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13, 7))
     axs = [ax1, ax2, ax3]
     metrics = ["MAD", "MSE", "MAPE"]
     custom_lines = [Rectangle((0,0),1,1,facecolor="#da3b46"), Rectangle((0,0),1,1,facecolor="#3f7f93")]
@@ -845,9 +951,10 @@ if __name__ == '__main__':
     # t_test()
     # monthly_error_double()
     # error_distributions()
-    prob_dist()
+    # prob_dist()
     # example_periods()
     # example_curves()
+    combined_period_curves()
     # t_test_2()
     # val_vs_test()
     # check_data_test_val()
