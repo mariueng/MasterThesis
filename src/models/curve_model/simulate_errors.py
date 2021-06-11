@@ -58,7 +58,7 @@ def get_upper_and_lower_bound(alpha, demand, n, error_series, supply_line, price
         lower_demand = min_vol
     elif lower_demand > max_vol:
         lower_demand = max_vol
-    # plot_demand_dist(supply_line, demand)
+    plot_demand_dist(supply_line, demand)
     u_d_line = LineString([(upper_demand, -10), (upper_demand, 210)])
     l_d_line = LineString([(lower_demand, -10), (lower_demand, 210)])
     upper_inter = supply_line.intersection(u_d_line)
@@ -98,25 +98,27 @@ def plot_demand_dist(supply_line, demand):
     upper_demand = values[17]
     values = np.delete(values, 17)
     values = np.delete(values, 2)
-    plt.subplots(figsize=(13, 7))
+    plt.subplots(figsize=(13, 6))
     plt.plot(supply_line.coords.xy[0], supply_line.coords.xy[1], label="Supply", color=plt.get_cmap("tab10")(1))
     y_min, y_max = plt.ylim()
+    x_min, x_max = (supply_line.coords.xy[0][0], supply_line.coords.xy[0][-1])
+    plt.xlim(x_min, x_max)
     price = supply_line.intersection(LineString([(demand, y_min), (demand, y_max)])).y
     l_price = supply_line.intersection(LineString([(lower_demand, y_min), (lower_demand, y_max)])).y
     u_price = supply_line.intersection(LineString([(upper_demand, y_min), (upper_demand, y_max)])).y
     plt.vlines(demand, y_min, y_max, label="Demand forecast (€{:.1f})".format(price), linewidth=3, zorder=5)
     for i in range(len(values)):
-        lab = "_nolegend" if i != 0 else "Simulated demand"
+        lab = "_nolegend" if i != 0 else "Simulations"
         plt.vlines(values[i], y_min, y_max, label=lab, linestyles="dotted", color="grey")
     plt.vlines(lower_demand, y_min, y_max, label="Lower demand (€{:.1f})".format(l_price), linewidth=3, linestyle="dotted")
     plt.vlines(upper_demand, y_min, y_max, label="Upper demand (€{:.1f})".format(u_price), linewidth=3, linestyle="dotted")
-    for line in plt.legend(loc='upper center', ncol=5, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                           shadow=True).get_lines():
+    for line in plt.legend(loc='upper center', ncol=5, bbox_to_anchor=(0.5, 1.04), fancybox=True,
+                           shadow=True, prop={"size":11}).get_lines():
         line.set_linewidth(2)
     plt.ylim(y_min, y_max)
-    plt.title("Demand Simulation for Fundamental Uncertainty Estimation", pad=20)
-    plt.xlabel("Volume [MWh]", labelpad=12)
-    plt.ylabel("Price [€]", labelpad=12)
+    plt.title("Demand Simulation for Fundamental Uncertainty Estimation", pad=20, size=14)
+    plt.xlabel("Volume [MWh]", labelpad=12, size=11)
+    plt.ylabel("Price [€]", labelpad=12, size=11)
     plt.tight_layout()
     plt.savefig("eda/sim_demand.png")
     assert False

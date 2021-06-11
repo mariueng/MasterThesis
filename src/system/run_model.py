@@ -204,20 +204,20 @@ def get_periods_and_result_folder_path(mode):
 
 
 if __name__ == '__main__':
-    model_ = naive_day.NaiveDay()
+    # model_ = naive_day.NaiveDay()
     # model_ = naive_week.NaiveWeek()
     # model_ = sarima.Sarima()
     # model_ = ets.Ets()
     # model_ = expert_model.ExpertModel()
     # model_ = expert_day.ExpertDay()
     # model_ = expert_mlp.ExpertMLP()
-    # model_ = curve_model.CurveModel()
+    model_ = curve_model.CurveModel()
     # periods_ = get_four_periods_median_method(write_summary=False)
     # periods_ = get_random_periods(30)
     # periods_, result_folder_ = get_periods_and_result_folder_path("short")
     # periods_, result_folder_ = get_periods_and_result_folder_path("old")
     # periods_, result_folder_ = get_periods_and_result_folder_path("v")
-    periods_, result_folder_ = get_periods_and_result_folder_path("t")
+    periods_, result_folder_ = get_periods_and_result_folder_path("short")
     # periods_ = get_testing_periods()
     # periods_ = get_one_period()
     # periods_ = [(dt.datetime(2019, 5, 27), dt.datetime(2019, 6, 9))]

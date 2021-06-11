@@ -90,7 +90,6 @@ def predict_daily_demand_naive(start, end, trans_table, plot, true_demand):
         result_df.loc[i, "Demand Forecast"] = forecast
     result_df = result_df.merge(true_demand, on="Date")
     if plot:
-
         plt.subplots(figsize=full_fig)
         plt.plot(result_df["Date"], result_df["Demand Forecast"], color=first_color, label="Demand forecast")
         mape = 100 * (abs((result_df["Curve Demand"]-result_df["Demand Forecast"]) / result_df["Curve Demand"])).mean()

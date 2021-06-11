@@ -266,16 +266,17 @@ def plot_mean_curves_together():
     df = pd.read_csv("output/auction/mean_curves.csv")
     demand = df[["Price", "Mean demand"]]
     supply = df[["Price", "Mean supply"]]
-    fig, (ax1, ax2) = plt.subplots(2, figsize=(13, 14))
-    fig.suptitle("16 Mean Demand Classes and 18 Mean Supply Classes", y=0.96)
+    fig, (ax1, ax2) = plt.subplots(2, figsize=(13, 12))
     c_map = plt.get_cmap("tab10")
     d_col, s_col = (c_map(0), c_map(1))
     ax1.plot(demand["Mean demand"], demand["Price"], linewidth=3, label="Mean demand", color=d_col)
     ax1.yaxis.tick_right()
     ax2.plot(supply["Mean supply"], supply["Price"], linewidth=3, label="Mean supply", color=s_col)
     for a in [ax1, ax2]:
-        a.set_xlabel("Volume [MWh]", labelpad=label_pad)
-        a.set_ylabel("Price [€]", labelpad=label_pad)
+        a.set_xlabel("Volume [MWh]", labelpad=4, size=11)
+        a.set_ylabel("Price [€]", labelpad=label_pad, size=11)
+    ax1.set_title("Mean Demand and 16 Initial Demand Price Classes", size=14, y=1.04)
+    ax2.set_title("Mean Supply and 18 Initial Supply Price Classes", size=14, y=1.04)
     demand_line = LineString(np.column_stack((demand["Mean demand"], demand["Price"])))
     d_min, d_max = (demand["Mean demand"].min(), demand["Mean demand"].max())
     d_min_y, d_max_y = ax1.get_ylim()
@@ -304,10 +305,10 @@ def plot_mean_curves_together():
     ax2.set_ylim(s_min_y, s_max_y)
     ax2.set_xlim(s_min_x, s_max_x)
     for ax in [ax1, ax2]:
-        for line in ax.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                              shadow=True).get_lines():
+        for line in ax.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.04), fancybox=True,
+                              shadow=True, prop={"size":11}).get_lines():
             line.set_linewidth(2)
-    plt.tight_layout(pad=3.0)
+    plt.tight_layout(pad=1)
     plt.savefig("output/auction/price_classes/mean_classes.png")
 
 
@@ -552,14 +553,14 @@ def plot_mae_improvement(ax, curve, df, opt):
     ax.plot(df["Amount"], df["Improvement {}".format(curve.capitalize())], color=color, linestyle="dotted",
             linewidth=3, label="Marginal MAE benefit".format(curve.capitalize()))
     y_min, y_max = ax.get_ylim()
-    ax.axvline(opt, y_min, y_max, color="red", label="Opt. = {}".format(opt), linestyle="dotted")
+    ax.axvline(opt, y_min, y_max, color="red", label="Opt. = {}".format(opt), linestyle="dotted", lw=2)
     ax.set_ylim(y_min, y_max)
-    for line in ax.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                          shadow=True).get_lines():
+    for line in ax.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.06), fancybox=True,
+                          shadow=True, prop={"size":11}).get_lines():
         line.set_linewidth(2)
-    ax.set_title("Mean Absolute Error per $k$-partition for {}".format(curve.capitalize()), pad=title_pad)
-    ax.set_ylabel("MAE [MWh]", labelpad=label_pad, size=11)
-    ax.set_xlabel("Number of price classes ($k$)", labelpad=label_pad, size=11)
+    ax.set_title("Mean Absolute Error per $k$-partition for {}".format(curve.capitalize()), pad=title_pad, size=14)
+    ax.set_ylabel("MAE [MWh]", labelpad=8, size=11)
+    ax.set_xlabel("Number of price classes [$k$]", labelpad=label_pad, size=11)
 
 
 def evaluate_price_class(demand, supply, hours):  # Helping method
@@ -903,16 +904,16 @@ def plot_spikes(df_all):
             df["Hour Time"] = pd.to_datetime(df['Hour'], format="%H").dt.time
             df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour Time']), 1)
             plt.subplots(figsize=(13, 6))
-            plt.title("Spike Detection for {}".format(year), pad=title_pad)
+            plt.title("Spike Detection for {}".format(year), pad=title_pad, size=14)
             plt.plot(df["DateTime"], df["System Price"], color=first_color, label="SYS")
             outlier_df = df[df["Spike"] != 0]
             share = 100 * len(outlier_df) / len(df)
             plt.scatter(outlier_df["DateTime"], outlier_df["System Price"], color=sec_color,
                         label="Spike ({:.2f}%)".format(share))
-            plt.xlabel("Date", labelpad=label_pad)
-            plt.ylabel("Price [€]", labelpad=label_pad)
+            plt.xlabel("Date", labelpad=label_pad, size=11)
+            plt.ylabel("Price [€]", labelpad=label_pad, size=11)
             for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                                   shadow=True).get_lines():
+                                   shadow=True, prop={"size":11}).get_lines():
                 line.set_linewidth(2)
             plt.tight_layout()
             y_lim = plt.gca().get_ylim()
@@ -1131,11 +1132,11 @@ def eda_supply_weekends():
     ax1.set_ylim(-5, 100)
     ax1.set_xlim(23000, 52000)
     ax1.set_ylabel("Price [€]", labelpad=label_pad, size=11)
-    ax1.set_xlabel("Volume [MWh]", labelpad=label_pad, size=11)
-    for line in ax1.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+    ax1.set_xlabel("Volume [MWh]", labelpad=8, size=11)
+    for line in ax1.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.04), fancybox=True,
                           shadow=True, prop={'size': 11}).get_lines():
-        line.set_linewidth(3)
-    ax1.set_title("Mean Supply Curve", size=14, y=1.02)
+        line.set_linewidth(2)
+    ax1.set_title("Mean Supply Curve - Training Data", size=14, y=1.04)
     result = df[["Year", "Week"]].drop_duplicates().reset_index(drop=True)
     p_result = df[["Year", "Week"]].drop_duplicates().reset_index(drop=True)
     for col in df.columns[3:]:
@@ -1157,8 +1158,6 @@ def eda_supply_weekends():
     p_result = p_result.dropna()
     p_result = p_result.drop(columns=["Year", "Week"])
     p_result = p_result.mean(axis=0)
-    print(p_result)
-    assert False
     result = result.dropna()
     result["Diff"] = result["Weekday"]-result["Weekend"]
     print("Mean weekly difference of supply (weekday - weekend): {:.2f}".format(result["Diff"].mean()))
@@ -1168,12 +1167,12 @@ def eda_supply_weekends():
     print("Absolute mean weekly difference of supply: {:.2f}".format(result["Abs diff"].mean()))
     ax2.plot([k for k in p_result.keys()], p_result.values, label="Difference", color=sec_color, lw=2)
     ax2.set_ylim(ax2.get_ylim()[0], 0)
-    ax2.set_ylabel("Difference [%]", labelpad=label_pad, size=11)
+    ax2.set_ylabel("Difference [%]", labelpad=6, size=11)
     ax2.set_xlabel("Supply price class [€]", size=11)
-    for line in ax2.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03), fancybox=True,
+    for line in ax2.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.04), fancybox=True,
                           shadow=True, prop={'size': 11}).get_lines():
-        line.set_linewidth(3)
-    ax2.set_title("Mean Deviation Weekday/Weekend", size=14, y=1.02)
+        line.set_linewidth(2)
+    ax2.set_title("Mean Deviation Weekday/Weekend", size=14, y=1.04)
     plt.tight_layout()
     ax2.set_xticklabels(s_prices, rotation=90, fontsize=9)
     plt.savefig("output/auction/eda/strategic_bidding_weekends_2.png")
@@ -1222,6 +1221,30 @@ def eda_water_values():
     df = pd.read_csv("output/auction/water_values.csv")
     within_df = df[(df["WL Upper"]>df["System Price"]) & ((df["WL Lower"]<df["System Price"]))]
     print("Within frequency: {:.2f}%".format(100*len(within_df)/len(df)))
+
+def base_load_test_period():
+        start = dt(2019, 6, 3).date()
+        end = dt(2020, 5, 31).date()
+        df = get_auction_data(start, end, "s", os.getcwd()).drop(columns=["Hour"])
+        df = df.groupby(by=["Date"]).mean().reset_index()
+        _, s_classes, _, _ = get_best_price_classes(plot=False)
+        result = get_data(start, end, ["System Price"], os.getcwd(), "d")
+        for col in ["Water Value", "WL Upper", "WL Lower"]:
+            result[col] = np.NAN
+        last_printed_date = None
+        for i in range(len(df)):
+            row = df.iloc[i]
+            date = row[0].date()
+            if last_printed_date != date:
+                print(date)
+                last_printed_date = date
+            wl, wl_upper, wl_lower = get_water_values(row, s_classes)
+            #print("wl {}, upper {}, lower {}".format(wl, wl_upper, wl_lower))
+            #plot_supply(row, wl, wl_upper, wl_lower, s_classes)
+            for key, value in {"Water Value": wl, "WL Upper": wl_upper, "WL Lower": wl_lower}.items():
+                result.loc[i, key] = value
+        result.to_csv("output/auction/base_load_test.csv", index=False, float_format="%g")
+
 
 
 def plot_water_val_example():
@@ -1329,8 +1352,8 @@ def plot_supply_2(row, wl, wl_upper, wl_lower, s_classes):
     t_vol, t_price = get_vol_price(x_low, x_high, wl, supply_line)
     u_vol, u_price = get_vol_price(x_low, x_high, wl_upper, supply_line)
     plt.hlines(wl, x_low, t_vol, label="Mean base load (€{:.1f})".format(wl), color=first_color, linewidth=2)
-    plt.hlines(wl_upper, x_low, u_vol, label="Base load upper bound (€{:.0f})".format(wl_upper), linestyles="dotted", color=first_color, linewidth=2)
-    plt.hlines(wl_lower, x_low, l_vol, label="Base load lower bound (€{:.0f})".format(wl_lower), linestyles="dotted", color=first_color, linewidth=2)
+    plt.hlines(wl_upper, x_low, u_vol, label="BL upper bound (€{:.0f})".format(wl_upper), linestyles="dotted", color=first_color, linewidth=2)
+    plt.hlines(wl_lower, x_low, l_vol, label="BL lower bound (€{:.0f})".format(wl_lower), linestyles="dotted", color=first_color, linewidth=2)
     plt.vlines(t_vol, y_low, t_price, color=first_color, linewidth=2)
     plt.vlines(u_vol, y_low, u_price, linestyles="dotted", color=first_color, linewidth=2)
     plt.vlines(l_vol, y_low, l_price, linestyles="dotted", color=first_color, linewidth=2)
@@ -1338,11 +1361,11 @@ def plot_supply_2(row, wl, wl_upper, wl_lower, s_classes):
     plt.text(x=l_vol+200, y=-1, s="$v_l$", size=12)
     plt.text(x=u_vol+200, y=-1, s="$v_u$", size=12)
     plt.text(x=t_vol+200, y=-1, s="$v=0.5(v_u-v_l)$", size=12)
-    plt.text(x=x_low+200, y=l_price-3, s="$p_l$", size=12)
-    plt.text(x=x_low+200, y=u_price+2, s="$p_u$", size=12)
-    plt.text(x=x_low+200, y=t_price+2, s=r"$\bar{p}^{ BL}_{mc}$", size=12)
-    for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                           shadow=True, prop={'size': 10}).get_lines():
+    plt.text(x=x_low+200, y=l_price-3, s="$c_l$", size=12)
+    plt.text(x=x_low+200, y=u_price+2, s="$c_u$", size=12)
+    plt.text(x=x_low+200, y=t_price+2, s=r"$\bar{c}_{mc}$", size=12)
+    for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.04), fancybox=True,
+                           shadow=True, prop={'size': 11}).get_lines():
         line.set_linewidth(3)
     plt.title("Daily Mean Base Load Estimation  - {}".format(row[0].date()), pad=title_pad, size=14)
     plt.xlabel("Volume [MWh]", labelpad=label_pad, size=11)
@@ -1375,11 +1398,13 @@ def eda_water_value_model():
         r_coeff = round(stats.pearsonr(wv_plot["Water Value"], wv_plot["System Price"])[0], 3)
         plt.subplots(figsize=(13, 6))
         plt.plot(wv_plot["Date"], wv_plot["System Price"], label="SYS", color=first_color)
-        plt.plot(wv_plot["Date"], wv_plot["Water Value"], label="Base load marg. cost", color=sec_color)
-        for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                               shadow=True).get_lines():
+        plt.plot(wv_plot["Date"], wv_plot["Water Value"], label="Base load marg. cost", color=sec_color, lw=2)
+        wv_plot = wv_plot.reset_index(drop=True)
+        plt.xlim(wv_plot.loc[0, "Date"], wv_plot.loc[len(wv_plot)-1, "Date"])
+        for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.04), fancybox=True,
+                               shadow=True, prop={"size":11}).get_lines():
             line.set_linewidth(2)
-        plt.title("Daily System Price and Estimated Mean Base Load Marginal Cost 2018 (R = {:.2f})".format(r_coeff), pad=title_pad, size=14)
+        plt.title("Daily System Price and Mean Base Load Marginal Cost 2018 (R = {:.2f})".format(r_coeff), pad=title_pad, size=14)
         plt.xlabel("Date", labelpad=label_pad, size=11)
         plt.ylabel("Price [€]", labelpad=label_pad, size=11)
         plt.tight_layout()
@@ -1448,12 +1473,12 @@ def example_plot_curves():
             plt.xlim(x_lim)
             for line in plt.legend(loc='upper left', ncol=1, fancybox=True, shadow=True, prop={'size': 12}).get_lines():
                 line.set_linewidth(2)
-            plt.title("Sale and Purchase Curve - 2019-04-01 07:00", pad=title_pad-6, size=15)
-            plt.xlabel("Volume (MWh)", labelpad=label_pad, size=12)
-            plt.ylabel("Price [€]", labelpad=label_pad-12, size=12)
+            plt.title("Sale and Purchase Curve - 2019-04-01 07:00", pad=title_pad-6, size=16)
+            plt.xlabel("Volume [MWh]", labelpad=label_pad, size=13)
+            plt.ylabel("Price [€]", labelpad=label_pad-12, size=13)
             plt.text(quantitiy-5800, -160, "$Q={:,}$".format(quantitiy), size=12)
             plt.text(x_lim[0]+1000, price+30, "$P={:.2f}$".format(price), size=12)
-            plt.text(13500, 450, "Bid\naggregation", size=12, ha='center')
+            plt.text(13500, 450, "Bid\naggregation", size=14, ha='center')
             plt.arrow(10000, 400, 7000, 0, width=5, color="k", clip_on=False, head_width=30, head_length=400)
             plt.tight_layout()
             plt.savefig("output/auction/eda/curve_example.png")
@@ -1463,7 +1488,7 @@ def spike_example():
     from matplotlib.patches import ConnectionPatch
     import matplotlib.dates as mdates
     converter = mdates.ConciseDateConverter()
-    df = get_data("13.10.2018", "15.10.2018", ["System Price"], os.getcwd(), "h")
+    df = get_data("13.10.2018", "14.10.2018", ["System Price"], os.getcwd(), "h")
     df["Hour Time"] = pd.to_datetime(df['Hour'], format="%H").dt.time
     df["DateTime"] = df.apply(lambda r: dt.combine(r['Date'], r['Hour Time']), 1)
     fig = plt.figure(figsize=(15, 7))
@@ -1471,14 +1496,14 @@ def spike_example():
     ax1 = plt.subplot(gs[0])
     ax2 = plt.subplot(gs[1])
     ax1.plot(df["DateTime"], df["System Price"], color="black", ls='-', marker='o',)
-    ax1.set_title("System Price Oct 13 - Oct 15, 2018", y=1.02, size=15)
+    ax1.set_title("System Price Oct 13 - Oct 14, 2018", y=1.02, size=15)
     ax1.set_ylabel("Price [€]", size=12)
     myFmt = mdates.DateFormatter('%H:00')
     ax1.xaxis.set_major_formatter(myFmt)
     ax1.set_xlabel("Time", size=12, labelpad=label_pad)
     ax2.set_title("Sale and Purchase Curve - 4 Hours Apart", y=1.02, size=15)
     ax2.set_xlabel("Volume [MWh]", size=12, labelpad=label_pad)
-    auction = get_auction_data("13.10.2018", "15.10.2018", ["d", "s"], os.getcwd())
+    auction = get_auction_data("13.10.2018", "14.10.2018", ["d", "s"], os.getcwd())
     high = auction.iloc[20, :]
     low = auction.iloc[24, :]
     high_d = high[2:14].values
@@ -1496,10 +1521,10 @@ def spike_example():
     low_price, low_vol = (low_intersect.y, low_intersect.x)
     c_map = plt.get_cmap("tab10")
     d_col, s_col = (c_map(0), c_map(1))
-    ax2.plot(high_d, d, color=d_col, label="Demand Oct 13 - 20PM")
-    ax2.plot(high_s, s, color=s_col, label="Supply Oct 13 - 20PM")
-    ax2.plot(low_d, d, color="dodgerblue", label="Demand Oct 14 - 00PM")
-    ax2.plot(low_s, s, color="chocolate", label="Supply Oct 14 - 00PM")
+    ax2.plot(high_d, d, color=d_col, label="Demand Oct 13 - 20 PM")
+    ax2.plot(high_s, s, color=s_col, label="Supply Oct 13 - 20 PM")
+    ax2.plot(low_d, d, color="dodgerblue", label="Demand Oct 14 - 00 AM")
+    ax2.plot(low_s, s, color="chocolate", label="Supply Oct 14 - 00 AM")
     for line in ax2.legend(loc='lower right', ncol=1, fancybox=True, shadow=True, prop={'size': 12},  bbox_to_anchor=(0.98, 0.02)).get_lines():
         line.set_linewidth(2)
     ax2.set_ylim(0, 53)
@@ -1509,6 +1534,7 @@ def spike_example():
     ax1.plot(df.loc[20, "DateTime"], df.loc[20, "System Price"], 'ro', markersize=10)
     ax2.plot(high_vol, high_price, 'ro', markersize=10)
     ax1.plot(df.loc[24, "DateTime"], df.loc[24, "System Price"], 'ro', markersize=10)
+    ax1.set_ylim(0, 50)
     ax2.plot(low_vol, low_price, 'ro', markersize=10)
     plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None)
     con = ConnectionPatch(xyA=(df.loc[20, "DateTime"], df.loc[20, "System Price"]), xyB=(high_vol, high_price), coordsA="data", coordsB="data",
@@ -1575,8 +1601,8 @@ if __name__ == '__main__':
     eda_supply_weekends()
     # eda_special_days()
     # eda_water_values()
+    # base_load_test_period()
     # plot_water_val_example()
-    # eda_water_value_model()
     # eda_water_value_model()
     # eda_wv_hydro_dev()
     # get_col_names()

@@ -15,6 +15,7 @@ from src.system.generate_periods import get_testing_periods
 from dm_test import dm_test
 import seaborn as sns
 from src.models.curve_model.supply_curve import get_supply_curve
+from shapely.geometry import LineString
 
 from pyparsing import col
 
@@ -220,8 +221,7 @@ def monthly_error_double():
     print("Mean pos freq: {:.2f}".format(result["Pos"].mean()))
     for i in range(1, 5):
         print("Season {}: diff {:.3f}".format(i, result.loc[i-1, "MAE"]-naive_result.loc[i-1, "MAE"]))
-    assert False
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 7))
     ax3 = ax1.twinx()
     width = 0.5
     space = 2
@@ -235,29 +235,28 @@ def monthly_error_double():
             labs = ["Mean error", "MAE", "MAPE"]
     ax1.set_ylim(result["Error"].min() * 1.2, result["MAE"].max() * 1.1)
     ax3.set_ylim(-6.9, 45)
-    ax3.set_ylabel("Error [%]", labelpad=label_pad, color=sec_col)
-    ax3.tick_params(colors=sec_col)
-    ax1.set_xlabel("Season", labelpad=label_pad)
-    ax1.set_ylabel("Error [€]", labelpad=label_pad)
+    ax3.set_ylabel("Error [%]", labelpad=label_pad, size=11)
+    ax1.set_xlabel("Season", labelpad=label_pad, size=11)
+    ax1.set_ylabel("Error [€]", labelpad=label_pad, size=11)
     ax1.set_xticks([i * space + width for i in range(4)])
     ax1.set_xticklabels(["Winter", "Spring", "Summer", "Fall"])
     ax3.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.03),
-               fancybox=True, shadow=True, handles=lines, labels=labs)
+               fancybox=True, shadow=True, handles=lines, labels=labs, prop={"size":11})
 
     result = result.rename(columns={"Pos": "Forecast > SYS", "Neg": "Forecast ≤ SYS"})
     result[["Forecast > SYS", "Forecast ≤ SYS"]].plot(kind="bar", stacked=True, color=[main_col, sec_col],
                                                        figsize=fig_size, width=width, ax=ax2)
     ax2.set_ylim(-0.16, 1.1)
     for line in ax2.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03),
-                           fancybox=True, shadow=True).get_lines():
+                           fancybox=True, shadow=True, prop={"size":11}).get_lines():
         line.set_linewidth(2)
-    ax2.set_xlabel("Season", labelpad=label_pad)
-    ax2.set_ylabel("Proportion", labelpad=label_pad)
+    ax2.set_xlabel("Season", labelpad=label_pad, size=11)
+    ax2.set_ylabel("Proportion", labelpad=label_pad, size=11)
     ax2.set_xticks([i for i in range(4)])
     ax2.set_xticklabels(["Winter", "Spring", "Summer", "Fall"], rotation=0)
-    ax2.set_title("Curve Model Positive/Negative Error Frequency per Season", pad=title_pad)
-    ax3.set_title("Curve Model Point Error Metrics per Season", pad=title_pad)
-    plt.tight_layout(pad=3.0)
+    ax2.set_title("Positive/Negative Error Frequency per Season", pad=title_pad, size=14)
+    ax3.set_title("Error Metrics per Season", pad=title_pad, size=14)
+    plt.tight_layout(pad=1.5)
     plt.savefig("../analysis/CurveModel/season_res.png")
     plt.show()
 
@@ -294,11 +293,11 @@ def error_distributions():
     colors = [main_col, sec_col, third_col, fourth_color]
     for i in range(4):
         avg = df[scores[i]].mean()
-        counts, bins, bars = axes[i].hist(df[scores[i]], bins=35, density=1, color=colors[i], label="Periods {} ({:.2f})".format(scores[i], avg))
+        counts, bins, bars = axes[i].hist(df[scores[i]], bins=35, density=1, color=colors[i], label="Period {} ({:.2f})".format(scores[i][1:], avg))
         axes[i].set_xlabel(scores[i], size=11)
     for ax in axes:
         for line in ax.legend(loc='upper center', ncol=1, bbox_to_anchor=(0.5, 1.04),
-                               fancybox=True, shadow=True).get_lines():
+                               fancybox=True, shadow=True, prop={"size":11}).get_lines():
             line.set_linewidth(2)
     ax1.set_ylabel("Proportion", labelpad=label_pad, size=11)
     fig.suptitle("Point Metric Error Distribution - Curve Model", y=0.98, size=14)
@@ -329,7 +328,7 @@ def prob_dist():
             axes[i].set_xlim(df[scores[i]].min()-2, df[scores[i]].mean()+1.96*df[scores[i]].std())
     for ax in axes:
         for line in ax.legend(loc='upper center', ncol=1, bbox_to_anchor=(0.5, 1.04),
-                               fancybox=True, shadow=True).get_lines():
+                               fancybox=True, shadow=True, prop={"size":11}).get_lines():
             line.set_linewidth(2)
     ax1.set_ylabel("Proportion", labelpad=label_pad, size=11)
     fig.suptitle("Probabilistic Metric Error Distribution - Curve Model", y=0.97, size=14)
@@ -502,6 +501,7 @@ def combined_period_curves():
                  165, 210]
     d_classes = [-10, 0, 1, 5, 11, 20, 32, 46, 75, 107, 195, 210]
     d_col, s_col = (plt.get_cmap("tab10")(0), plt.get_cmap("tab10")(1))
+    y_tops = [70, 70, 16, 16, 65, 25, 40, 60, 200, 200, 60, 60]
     for j in range(len(periods)):
         fig, (ax_a, ax_b) = plt.subplots(2, 2, figsize=(13, 6))
         ax1, ax2 = (ax_a[0], ax_a[1])
@@ -513,6 +513,7 @@ def combined_period_curves():
                 #spine.set_edgecolor(frame)
         for i in range(2):
             period = periods[j][i]
+            b_lim = y_tops[j*2+i]
             ax = ax_a[i]
             if i == 0:
                 ax.set_ylabel("Price [€]", size=11)
@@ -532,13 +533,13 @@ def combined_period_curves():
             dtFmt = mdates.DateFormatter('%d')  # define the formatting
             ax.xaxis.set_major_formatter(dtFmt)  # apply the format to the desired axis
             #ax.set_xticklabels([])
-            ax.set_title("{}) Forecast {} - {}. {} ({:.2f}) ".format((j*2+i) + 1, from_date, to_date, title, score), size=13)
+            ax.set_title("{}) Forecast {} - {}. {} ({:.2f}) ".format((j*2+i) + 1, from_date, to_date, title, score), size=14)
             if metric in ["CE", "IS"]:
                 ax.fill_between(sub_pred["DateTime"], sub_pred["Upper"], sub_pred["Lower"],
                                 facecolor='gainsboro', interpolate=True, label="I")
             ax.legend(loc="upper left")
             ax = ax_b[i]
-            ax.set_title("Mean Curves", size=13)
+            ax.set_title("{}) Mean Curves".format(j*2+i+1), size=14)
             if i == 0:
                 ax.set_ylabel("Price [€]", size=11)
             ax.set_xlabel("Volume [MWh]", size=11)
@@ -554,11 +555,12 @@ def combined_period_curves():
             max_sys, max_pred = (sub_pred["System Price"].max(), sub_pred["Forecast"].max())
             #ax.set_ylim(0, max(70, max(sys, for_c) * 1.1))
             s = supply[supply["Period"] == period].iloc[:, 3:].mean(axis=0).values
+            ax.set_ylim(0, b_lim)
             if max(max_sys, max_pred) < 60:
-                ax.set_ylim(0, max(max_sys, max_pred)*1.5)
+                #ax.set_ylim(0, max(max_sys, max_pred)*1.5)
                 ax.set_xlim(min(true_s[3], s[3]), max(20, max(true_s[25], s[25])))
             else:
-                ax.set_ylim(0, max(max_sys, max_pred))
+                #ax.set_ylim(0, b_lim)
                 ax.set_xlim(min(true_s[3], s[3]), max(true_s[27], s[27]))
             d = demand[demand["Period"] == period]["Demand Forecast"].mean()
             ax.axvline(d, y_min, y_max, color=d_col)
@@ -566,11 +568,7 @@ def combined_period_curves():
             if metric in ["CE", "IS"]:
                 if lower < 0:
                     ax.set_ylim(lower - 2, ax.get_ylim()[1])
-                if u+15 > ax.get_ylim()[1]:
-                    if sys < 10:
-                        ax.set_ylim(ax.get_ylim()[0], 25)
-                    else:
-                        ax.set_ylim(ax.get_ylim()[0], 60)
+                ax.set_ylim(ax.get_ylim()[0], b_lim)
                 ax.axhline(lower, color="black")
                 ax.axhline(u, color="black")
                 custom_lines = [Line2D([0], [0], color="grey", linestyle="dotted"), Line2D([0], [0], color="grey"),
@@ -848,11 +846,15 @@ def demand_performance():
         true_demand = get_auction_data("03.06.2019", "31.05.2020", "d", os.getcwd())
         hour_df = hour_df.merge(true_demand, on=["Date", "Hour"])
         errors = {}
+        d_class_df = pd.DataFrame(columns=["Class", "MAE", "MAPE"])
         for col in hour_df.columns[4:]:
             ae = abs(hour_df[col]-hour_df["Demand Forecast"]).mean()
             ape = 100 * ae / abs(hour_df[col]).mean()
-            print("{}: mae {:.0f}, mape {:.2f}%".format(col, ae, ape))
             errors[ae] = ape
+            row = {"Class": col, "MAE": ae, "MAPE": ape}
+            d_class_df = d_class_df.append(row, ignore_index=True)
+        print(d_class_df)
+        d_class_df.to_csv("../analysis/CurveModel/demand_per_class.csv", index=False)
         print("\nMAE tot: {:.0f}".format(sum(errors.keys())/len(errors.keys())))
         print("MAPE tot: {:.2f}%".format(sum(errors.values())/len(errors.values())))
         print("-----------------------------")
@@ -866,7 +868,16 @@ def demand_performance():
         errors = 100 * errors / hour_df.iloc[:, 4:]
         errors["Day"] = errors.index // 24 % 14 + 1
         errors = errors.groupby(by="Day").mean()
-        print(errors.mean(axis=1))
+        mean_mapes = errors.mean(axis=1).round(2)
+        first_week_mape = mean_mapes.values[0:7]
+        week1_mean = first_week_mape.mean()
+        print("--------------------")
+        print("Mean mape week 1: {:.2f} %".format(week1_mean))
+        sec_week_mape = mean_mapes.values[7:len(mean_mapes)]
+        week2_mean = sec_week_mape.mean()
+        print("Mean mape week 2: {:.2f} %".format(week2_mean))
+        print("Decrease of {:.2f} %".format(100*(week2_mean-week1_mean)/week1_mean))
+        print("--------------------")
 
 
 
@@ -919,15 +930,16 @@ def supply_performance():
         for c in range(3, len(forecast.columns)):
             forecast[forecast.columns[c]] = 100 * forecast[forecast.columns[c]] / s_sub[s_sub.columns[c-1]]
         mape = mape.append(forecast, ignore_index=True)
-    print(mae)
-    print(mape)
-    print("\n")
     mae_mean = mae.drop(columns=["Period", "Date", "Hour"]).mean(axis=0)
     print("MAE supply {:.0f} MWh".format(mae_mean.mean()))
-    print("\n{}".format(mae_mean))
     mape_mean = mape.drop(columns=["Period", "Date", "Hour"]).mean(axis=0)
     print("MAPE supply {:.2f} %".format(mape_mean.mean()))
-    print("\n{}".format(mape_mean))
+    s_class_df = pd.DataFrame(columns=["Class", "MAE", "MAPE"])
+    s_class_df["Class"] = mape_mean.keys()
+    s_class_df["MAE"] = mae_mean.values
+    s_class_df["MAPE"] = mape_mean.values
+    print(s_class_df)
+    s_class_df.to_csv("../analysis/CurveModel/supply_per_class.csv", index=False)
     print("-----------------------------")
     mae_per_day = mae.copy().drop(columns=["Period", "Date", "Hour"])
     mae_per_day["Day"] = mae_per_day.index//24 % 14 + 1
@@ -937,9 +949,370 @@ def supply_performance():
     mape_per_day = mape.copy().drop(columns=["Period", "Date", "Hour"])
     mape_per_day["Day"] = mape_per_day.index//24 % 14 + 1
     mape_per_day = mape_per_day.groupby(by="Day").mean()
-    print(mape_per_day.mean(axis=1))
+    mape_per_day = mape_per_day.mean(axis=1).round(2)
+    print(mape_per_day)
+    first_week_mape = mape_per_day.values[0:7]
+    week1_mean = first_week_mape.mean()
+    print("--------------------")
+    print("Mean mape week 1: {:.2f} %".format(week1_mean))
+    sec_week_mape = mape_per_day.values[7:len(mape_per_day)]
+    week2_mean = sec_week_mape.mean()
+    print("Mean mape week 2: {:.2f} %".format(week2_mean))
+    print("Decrease of {:.2f} %".format(100 * (week2_mean - week1_mean) / week1_mean))
+    print("--------------------")
 
 
+def plot_perf_per_price_class():
+    demand = pd.read_csv("../analysis/CurveModel/demand_per_class.csv")
+    supply = pd.read_csv("../analysis/CurveModel/supply_per_class.csv")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
+    plot_perf(ax1, demand, "Demand", main_col, 1)
+    plot_perf(ax2, supply, "Supply", sec_col, 1.05)
+    plt.tight_layout(w_pad=3)
+    plt.savefig("../analysis/CurveModel/perf_per_class.png")
+
+
+def plot_perf(ax, data, title, color, ylim_c):
+    ax.set_title("{} Curve Performance per Price Class".format(title), y=1.03, size=14)
+    ax.set_ylabel("MAE [MWh]", size=11, labelpad=8)
+    ax.set_xlabel("{} price class [€]".format(title), size=11)
+    mae_mean = data.iloc[:, 1].mean()
+    l1 = ax.plot(data.iloc[:, 0], data.iloc[:, 1], color=color)
+    a = ax.twinx()
+    a.set_ylabel("MAPE [%]", size=11, labelpad=8)
+    mape_mean = data.iloc[:, 2].mean()
+    l2 = a.plot(data.iloc[:, 0], data.iloc[:, 2], color=color, ls="dotted")
+    labs = [d[2:] for d in data.iloc[:, 0].values.astype(str)]
+    ax.set_xticklabels(labs, rotation=90)
+    for x in [a, ax]:
+        x.set_ylim(x.get_ylim()[0], x.get_ylim()[1]*ylim_c)
+    labels = ["MAE ({:,})".format(int(mae_mean)), "MAPE ({:.1f}%)".format(mape_mean)]
+    for line in a.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.03),
+               fancybox=True, shadow=True, handles=[l1[0], l2[0]], labels=labels, prop={"size": 11}).get_lines():
+        line.set_linewidth(2)
+
+
+def test_base_load_test_period():
+    df = pd.read_csv("../../data/output/auction/base_load_test.csv")
+    print("Mean Base load: {:.2f}".format(df["Water Value"].mean()))
+    print("Mean Base load lower: {:.2f}".format(df["WL Lower"].mean()))
+    print("Mean Base load upper: {:.2f}".format(df["WL Upper"].mean()))
+    print("Mean system price {:.2f}".format(df["System Price"].mean()))
+
+
+def check_spike_coverage():
+    get_result = False
+    if get_result:
+        df = pd.read_csv("../results/test/CurveModel/forecast.csv")
+        df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+        result = pd.DataFrame(columns=["Period", "Date", "Hour", "System Price", "Forecast", "Upper", "Lower", "Pos", "Neg"])
+        periods = df["Period"].unique()
+        data = get_data("01.03.2019", "31.05.2020", ["System Price"], os.getcwd(), "h")
+        for p in periods:
+            forecast = df[df["Period"]==p].reset_index(drop=True)
+            dates = forecast["Date"].dt.date.unique()
+            for d in dates:
+                f = forecast[forecast["Date"].dt.date==d]
+                w_end = d - timedelta(days=1)
+                w_start = w_end - timedelta(days=59)
+                window = data[(data["Date"].dt.date >= w_start) & (data["Date"].dt.date <= w_end)]
+                assert len(window) == 1440
+                w_mean, st_dev = (window["System Price"].mean(), window["System Price"].std())
+                upper, lower = (w_mean+1.96*st_dev, w_mean-1.96*st_dev)
+                pos_spikes = f[f["System Price"]>upper]
+                neg_spikes = f[f["System Price"]<lower]
+                pos_spikes["Pos"] = 1
+                pos_spikes["Neg"] = 0
+                neg_spikes["Neg"] = 1
+                neg_spikes["Pos"] = 0
+                result = result.append(pos_spikes, ignore_index=True)
+                result = result.append(neg_spikes, ignore_index=True)
+        result.to_csv("../analysis/CurveModel/spikes_forecast.csv", index=False)
+    else:
+        result = pd.read_csv("../analysis/CurveModel/spikes_forecast.csv")
+    covered = result[(result["System Price"]<=result["Upper"]) & (result["System Price"]>=result["Lower"])]
+    print("Spikes coverage {:.2f} %".format(100*len(covered)/len(result)))
+    pos = result[result["Pos"]==1]
+    covered = pos[(pos["System Price"]<=pos["Upper"]) & (pos["System Price"]>=pos["Lower"])]
+    print("Pos spikes coverage {:.2f} %".format(100*len(covered)/len(pos)))
+    neg = result[result["Neg"]==1]
+    covered = neg[(neg["System Price"]<=neg["Upper"]) & (neg["System Price"]>=neg["Lower"])]
+    print("Neg spikes coverage {:.2f} %".format(100*len(covered)/len(neg)))
+
+
+def check_predicted_spikes():
+    get_result = True
+    if get_result:
+        df = pd.read_csv("../results/test/CurveModel/forecast.csv")
+        n_spikes = 9180
+        cov_spike = 0.71
+        non_spikes = len(df) - n_spikes
+        cov_non_spike = 100 * (len(df) * 0.9455 - n_spikes * cov_spike) / non_spikes
+        print("Coverage non-spikes = {:.2f} %".format(cov_non_spike))
+        df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+        result = pd.DataFrame(columns=["System Price", "Forecast", "T Pos", "T Neg", "P Pos", "P Neg"])
+        periods = df["Period"].unique()
+        data = get_data("01.03.2019", "31.05.2020", ["System Price"], os.getcwd(), "h")
+        for p in periods:
+            print(p)
+            forecast = df[df["Period"]==p].reset_index(drop=True)
+            dates = forecast["Date"].dt.date.unique()
+            for d in dates:
+                f = forecast[forecast["Date"].dt.date==d]
+                w_end = d - timedelta(days=1)
+                w_start = w_end - timedelta(days=59)
+                window = data[(data["Date"].dt.date >= w_start) & (data["Date"].dt.date <= w_end)]
+                assert len(window) == 1440
+                w_mean, st_dev = (window["System Price"].mean(), window["System Price"].std())
+                upper, lower = (w_mean+1.96*st_dev, w_mean-1.96*st_dev)
+                f["T Pos"] = df.apply(lambda r: 1 if r["System Price"]>upper else 0, axis=1)
+                f["T Neg"] = df.apply(lambda r: 1 if r["System Price"]<lower else 0, axis=1)
+                f["P Pos"] = df.apply(lambda r: 1 if r["Forecast"]>upper else 0, axis=1)
+                f["P Neg"] = df.apply(lambda r: 1 if r["Forecast"]>upper else 0, axis=1)
+                f = f[["System Price", "Forecast", "T Pos", "T Neg", "P Pos", "P Neg"]]
+                result = result.append(f, ignore_index=True)
+        result.to_csv("../analysis/CurveModel/spikes_forecast_2.csv", index=False)
+    else:
+        result = pd.read_csv("../analysis/CurveModel/spikes_forecast_2.csv")
+    pred_spikes = result[(result["P Pos"]==1)|(result["P Neg"]==1)]
+    pred_pos = pred_spikes[pred_spikes["P Pos"]==1]
+    correct_pos = pred_spikes[pred_spikes["T Pos"]==1]
+    pred_neg = pred_spikes[pred_spikes["P Neg"]==1]
+    correct_neg = pred_spikes[pred_spikes["T Neg"]==1]
+    correct_spikes = len(correct_pos) + len(correct_neg)
+    print("Predictd spikes turned out as spikes {:.2f} %".format(100*correct_spikes/len(pred_spikes)))
+    print("Predictd pos spikes turned out as pos spikes {:.2f} %".format(100*len(correct_pos)/len(pred_pos)))
+    print("Predictd neg spikes turned out as neg spikes {:.2f} %".format(100*len(correct_neg)/len(pred_neg)))
+
+def check_trend_coverage():
+    output=88.29
+    forecast = pd.read_csv("../results/test/CurveModel/forecast.csv")
+    assert False
+    forecast["Date"] = pd.to_datetime(forecast["Date"], format="%Y-%m-%d")
+    find_trend = False
+    if find_trend:
+        data = get_data("01.05.2019", "31.05.2020", ["System Price"], os.getcwd(), "h")
+        result = pd.DataFrame(columns=["Period", "Trend", "Trend w1", "Trend w2", "Model", "Model w1", "Model w2"], index=forecast["Period"].unique())
+        for period in forecast["Period"].unique():
+            sub_df = forecast[forecast["Period"] == period].reset_index(drop=True)
+            s_date = sub_df.loc[0, "Date"]
+            true_df = data[(data["Date"] >= s_date - timedelta(days=7)) & (data["Date"] <= s_date+timedelta(days=13))].reset_index(drop=True)
+            prev_lvl = true_df.head(168)["System Price"].median()
+            result.loc[period, "Period"] = period
+            result.loc[period, "Trend"] = true_df.tail(336)["System Price"].median() - prev_lvl
+            result.loc[period, "Trend w1"] = true_df.loc[168:335, "System Price"].median() - prev_lvl
+            result.loc[period, "Trend w2"] = true_df.tail(168)["System Price"].median() - prev_lvl
+            result.loc[period, "Model"] = sub_df["Forecast"].median() - prev_lvl
+            result.loc[period, "Model w1"] = sub_df.head(168)["Forecast"].median() - prev_lvl
+            result.loc[period, "Model w2"] = sub_df.tail(168)["Forecast"].median() - prev_lvl
+        pos_trend = result.sort_values(by="Trend").tail(50)
+        neg_trend = result.sort_values(by="Trend").head(50)
+        print(pos_trend["Period"].tolist())
+        print(neg_trend["Period"].tolist())
+    p_p = [10, 266, 269, 138, 158, 137, 268, 331, 124, 267, 329, 122, 330, 108, 123, 339, 44, 157, 30, 346, 156, 155,
+           154, 153, 146, 151, 152, 150, 345, 344, 147, 43, 343, 340, 148, 149, 342, 341, 42, 31, 32, 41, 40, 33, 37,
+           38, 36, 39, 35, 34]
+    n_p = [211, 210, 212, 209, 248, 351, 213, 247, 208, 246, 214, 206, 245, 205, 207, 244, 252, 243, 250, 249, 253, 251,
+           215, 1, 224, 2, 225, 204, 350, 67, 226, 221, 66, 223, 242, 222, 281, 254, 220, 68, 216, 69, 65, 185, 280,
+           186, 184, 70, 283, 282]
+    pos_trend = forecast[forecast["Period"].isin(p_p)].reset_index(drop=True)
+    neg_trend = forecast[forecast["Period"].isin(n_p)].reset_index(drop=True)
+    pos_trend["Pos"] = 1
+    pos_trend["Neg"] = 0
+    neg_trend["Pos"] = 0
+    neg_trend["Neg"] = 1
+    df = pos_trend.append(neg_trend, ignore_index=True)
+    df = remove_true_spikes(df)
+    covered = df[(df["System Price"]>=df["Lower"]) & (df["System Price"]<=df["Upper"])]
+    print("Trend coverage {:.2f} %".format(100*len(covered)/len(df)))
+
+
+def remove_true_spikes(df):
+    data = get_data("01.03.2019", "31.05.2020", ["System Price"], os.getcwd(), "h")
+    result = pd.DataFrame(columns=df.columns)
+    for p in df["Period"].unique():
+        forecast = df[df["Period"] == p].reset_index(drop=True)
+        dates = forecast["Date"].dt.date.unique()
+        for d in dates:
+            f = forecast[forecast["Date"].dt.date == d]
+            w_end = d - timedelta(days=1)
+            w_start = w_end - timedelta(days=59)
+            window = data[(data["Date"].dt.date >= w_start) & (data["Date"].dt.date <= w_end)]
+            assert len(window) == 1440
+            w_mean, st_dev = (window["System Price"].mean(), window["System Price"].std())
+            upper, lower = (w_mean + 1.96 * st_dev, w_mean - 1.96 * st_dev)
+            no_spike = f[(f["System Price"]<=upper) & (f["System Price"]>=lower)]
+            result = result.append(no_spike, ignore_index=True)
+    return result
+
+
+def check_supply_shifts():
+    true_supply = get_auction_data("01.05.2019", "31.05.2020", "s", os.getcwd())
+    calculate = False
+    if calculate:
+        df = pd.read_csv("../analysis/CurveModel/supply_forecast.csv")
+        df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d")
+        score = pd.DataFrame(columns=["Period", "Start", "MAE", "MAPE"])
+        shifts = pd.DataFrame(columns=["Period", "Start", "MAE", "MAPE"])
+        for p in df["Period"].unique():
+            print(p)
+            pred = df[df["Period"]==p].reset_index(drop=True)
+            start_d = pred.loc[0, "Date"]
+            true = true_supply[(true_supply["Date"]>=start_d) & (true_supply["Date"]<=start_d+timedelta(days=13))].reset_index(drop=True)
+            period_true_means = true.iloc[:, 2:].mean(axis=0)
+            one_week_before = start_d-timedelta(days=7)
+            last_week = true_supply[(true_supply["Date"] >= one_week_before) & (true_supply["Date"]<start_d)].reset_index(drop=True)
+            assert len(last_week)==168 and len(true)==336 and len(pred)==336
+            last_week_mean = last_week.iloc[:, 2:].mean(axis=0)
+            change = abs(period_true_means-last_week_mean)
+            change_mean = change.values.mean()
+            change_mape = 100*change/last_week_mean
+            mape_mean = change_mape.values.mean()
+            row = {"Period": p, "Start": start_d, "MAE": change_mean, "MAPE": mape_mean}
+            shifts = shifts.append(row, ignore_index=True)
+            pred = pred.drop(columns=["Period", "Date", "Hour"])
+            true = true.drop(columns=["Date", "Hour"])
+            mae = abs(pred-true)
+            mape = 100*mae/true
+            mae_mean = mae.mean(axis=0).mean()
+            mape_mean = mape.mean(axis=0).mean()
+            row = {"Period": p, "Start": start_d, "MAE": mae_mean, "MAPE": mape_mean}
+            score = score.append(row, ignore_index=True)
+        shifts.to_csv("../analysis/CurveModel/supply_shifts_per_period.csv", index=False, float_format='%.2f')
+        score.to_csv("../analysis/CurveModel/supply_score_per_period.csv", index=False, float_format='%.2f')
+    else:
+        shifts = pd.read_csv("../analysis/CurveModel/supply_shifts_per_period.csv")
+        shifts["Start"] = pd.to_datetime(shifts["Start"], format="%Y-%m-%d")
+        score = pd.read_csv("../analysis/CurveModel/supply_score_per_period.csv")
+        score["Start"] = pd.to_datetime(score["Start"], format="%Y-%m-%d")
+    cols = ["Wind Prod", "Total Hydro", "Total Hydro Dev", "Prec Norway", "Prec Norway 7", "Coal", "Gas", "EEX"]
+    data = get_data("01.05.2019", "31.05.2020", cols, os.getcwd(), "d")
+    base_load_marg_test = pd.read_csv("../../data/output/auction/base_load_test.csv")
+    cols = base_load_marg_test.columns
+    base_load_marg = pd.read_csv("../../data/output/auction/water_values.csv", usecols=cols)
+    base_load_marg = base_load_marg.append(base_load_marg_test, ignore_index=True).tail(397)[["Date", "Water Value"]]
+    base_load_marg = base_load_marg.rename(columns={"Water Value": "BL MC"})
+    base_load_marg["Date"] = pd.to_datetime(base_load_marg["Date"], format="%Y-%m-%d")
+    data = pd.merge(data, base_load_marg)
+    #most = shifts.sort_values(by="MAPE").tail(60)
+    periods = [209, 36, 322, 67, 142, 179]
+    most_change = shifts[shifts["Period"].isin(periods)]
+    cols = ["Period", "Start"] + data.columns[1:].tolist()
+    analysis = pd.DataFrame(columns=cols)
+    prev_weeks = pd.DataFrame(columns=cols)
+    periods_df = pd.DataFrame(columns=cols)
+    plot_most_change = True
+    if plot_most_change:
+        plot_worst_supply(most_change, true_supply, data)
+    for p in periods:
+        s_date = most_change[most_change["Period"]==p].head(1)["Start"].values[0]
+        prev_week = data[(data["Date"]>s_date-np.timedelta64(8, 'D')) & (data["Date"]<s_date)].iloc[:, 1:].mean(axis=0)
+        period = data[(data["Date"]>=s_date) & (data["Date"]<s_date+np.timedelta64(13, 'D'))].iloc[:, 1:].mean(axis=0)
+        diff = period - prev_week
+        diff["Period"], diff["Start"] = (p, s_date)
+        prev_week["Period"], prev_week["Start"] = (p, s_date)
+        period["Period"], period["Start"] = (p, s_date)
+        prev_weeks = prev_weeks.append(prev_week, ignore_index=True)
+        periods_df = periods_df.append(period, ignore_index=True)
+        analysis = analysis.append(diff, ignore_index=True)
+    prev_weeks = prev_weeks.round(1)
+    prev_weeks = prev_weeks.sort_values(by="Start").reset_index(drop=True)
+    prev_weeks.to_csv("../analysis/CurveModel/supply_volatility.csv", index=False)
+    periods_df = periods_df.round(1)
+    periods_df = periods_df.sort_values(by="Start").reset_index(drop=True)
+    periods_df.to_csv("../analysis/CurveModel/supply_volatility.csv", mode="a", header=False, index=False)
+    analysis = analysis.round(1)
+    analysis = analysis.sort_values(by="Start").reset_index(drop=True)
+    analysis.to_csv("../analysis/CurveModel/supply_volatility.csv", mode="a", header=False, index=False)
+
+
+def plot_worst_supply(most_change, true_supply, data):
+    s_classes = [-10, -4, -1, 0, 1, 3, 5, 8, 12, 15, 19, 22, 24, 26, 28, 30, 32, 35, 39, 42, 46, 51, 56, 66, 75, 105,
+                 165, 210]
+    most_change = most_change.reset_index(drop=True)
+    cols = ["Period"]
+    cols.extend([c for c in true_supply.columns])
+    df_last_week = pd.DataFrame(columns=cols)
+    df_period = pd.DataFrame(columns=df_last_week.columns)
+    periods = most_change["Period"].unique()
+    period_blmc = {}
+    for i in range(len(periods)):
+        period = periods[i]
+        s_date = most_change.loc[i, "Start"]
+        prev_data = data[(data["Date"]>=s_date-timedelta(days=7)) & (data["Date"]<s_date)]
+        prev_blmc = prev_data["BL MC"].mean()
+        prev_week = true_supply[(true_supply["Date"]>=s_date-timedelta(days=7)) & (true_supply["Date"]<s_date)]
+        assert len(prev_week) == 168
+        prev_week["Period"] = period
+        df_last_week = df_last_week.append(prev_week, ignore_index=True)
+        per_data = data[(data["Date"]>=s_date) & (data["Date"]<=s_date+timedelta(days=13))]
+        per_blmc = per_data["BL MC"].mean()
+        period_blmc[period] = [prev_blmc, per_blmc]
+        period_df = true_supply[(true_supply["Date"]>=s_date) & (true_supply["Date"]<=s_date+timedelta(days=13))]
+        period_df["Period"] = period
+        df_period = df_period.append(period_df, ignore_index=True)
+    fig, axs = plt.subplots(2, 3, figsize=(13, 8))
+    s_col = plt.get_cmap("tab10")(1)
+    for i in range(len(periods)):
+        period = periods[i]
+        prev_blmc, per_blmc = (period_blmc[period][0], period_blmc[period][1])
+        mape = most_change[most_change["Period"]==period].head(1)["MAPE"].values[0]
+        last_week = df_last_week[df_last_week["Period"]==period]
+        last_week_mean = last_week.iloc[:, 3:].mean(axis=0).values
+        last_week_mean = last_week_mean / 1000
+        this_period = df_period[df_period["Period"]==period].reset_index(drop=True)
+        s_date = this_period.loc[0, "Date"]
+        e_date = s_date + timedelta(days=13)
+        s_date, e_date = (dt.strftime(s_date, "%d  %b"), dt.strftime(e_date, "%d  %b"))
+        period_mean = this_period.iloc[:, 3:].mean(axis=0).values
+        period_mean = period_mean / 1000
+        x_max = max(period_mean[-3], last_week_mean[-3])
+        x_min = min(period_mean[0], last_week_mean[0])
+        ax = axs[i//3][i%3]
+        if i in [0, 3]:
+            ax.set_ylabel("Price [€]", size=11)
+        if i in [3, 4, 5]:
+            ax.set_xlabel("Volume [GWh]", size=11)
+        prev_line = LineString(np.column_stack((last_week_mean, s_classes)))
+        prev_bline = LineString([(min(last_week_mean), prev_blmc), (max(last_week_mean), prev_blmc)])
+        prev_x = prev_bline.intersection(prev_line).x
+        per_line = LineString(np.column_stack((period_mean, s_classes)))
+        per_bline = LineString([(min(period_mean), per_blmc), (max(period_mean), per_blmc)])
+        per_x = per_bline.intersection(per_line).x
+        print("Period {} hor shift: {:.1f} GWh (from {:.1f} to {:.1f})".format(period, per_x-prev_x, prev_x, per_x))
+        ax.plot(last_week_mean, s_classes, color=s_col, ls="dotted", lw=2, label="Last week mean")
+        ax.plot(period_mean, s_classes, color=s_col, lw=2, label="Period mean")
+        ax.arrow(prev_x, prev_blmc, per_x-prev_x, per_blmc-prev_blmc, head_width=2, head_length=2, width=0.5,
+                 length_includes_head=True, color="black", zorder=100)
+        for line in ax.legend(loc='upper left', ncol=1,
+                             fancybox=True, shadow=True, prop={"size": 11}).get_lines():
+            line.set_linewidth(2)
+        ax.set_ylim(-10, 80)
+        ax.set_xlim(x_min, x_max)
+        ax.set_title("{})  {} - {} ($\Delta={:.1f}\%$)".format(i+1, s_date, e_date, mape), size=13)
+    fig.suptitle("Examples of Supply Volatility", size=14, y=0.99)
+    plt.tight_layout()
+    plt.savefig("../analysis/CurveModel/supply_volatility.png")
+
+
+def r_wind():
+    x = [-5.2, 3, 3.7, 3.2, 5.4, -5.1]
+    y = [-3.6, 2.7, 1.7, 3.4, 6.5, -4.6]
+    r_coeff = round(stats.pearsonr(x, y)[0], 2)
+    print("Correlation hor and wind {}".format(r_coeff))
+    x = [4.2, -2.3, 1.7, -0.6, -5.1, 0.3]
+    y = [-2.8, 0.5, -1.3, 0.3, 4.4, -3]
+    r_coeff = round(stats.pearsonr(x, y)[0], 2)
+    print("Correlation vert and hydro dev {}".format(r_coeff))
+    y = [-52.6, 111.8, -15.7, 62.7, 132.7, -72.1]
+    r_coeff = round(stats.pearsonr(x, y)[0], 2)
+    print("Correlation vert and prec {}".format(r_coeff))
+    y = [3.2, -1.1, -2.4, -0.2, -0.8, -2.9]
+    r_coeff = round(stats.pearsonr(x, y)[0], 2)
+    print("Correlation vert and coal {}".format(r_coeff))
+    y = [8.3, -6.9, -0.1, -8.7, 5.2, 2]
+    r_coeff = round(stats.pearsonr(x, y)[0], 2)
+    print("Correlation vert and EEX {}".format(r_coeff))
 
 
 if __name__ == '__main__':
@@ -963,3 +1336,10 @@ if __name__ == '__main__':
     # trend_detection()
     # demand_performance()
     # supply_performance()
+    # plot_perf_per_price_class()
+    # test_base_load_test_period()
+    # check_spike_coverage()
+    # check_predicted_spikes()
+    # check_trend_coverage()
+    # check_supply_shifts()
+    # r_wind()

@@ -424,14 +424,16 @@ def plot_autocorrelation():
     fig, ax = plt.subplots(figsize=full_fig)
     plot_acf(data, lags=21, ax=ax, label="c", vlines_kwargs={"colors": "black", "label": "h"})
     plt.title("Autocorrelation System Price (2014-2019)", pad=title_pad)
-    plt.ylabel("Pearson's coefficient", labelpad=label_pad)
-    plt.xlabel("Day lag", labelpad=label_pad)
+    plt.ylabel("Pearson's coefficient", labelpad=label_pad, size=11)
+    plt.xlabel("Day lag", labelpad=label_pad, size=11)
     handles, labels = ax.get_legend_handles_labels()
     labels = ["95% confidence boundary", "Correlation"]
     for line in plt.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.03),
                            fancybox=True, shadow=True, handles=handles, labels=labels).get_lines():
         line.set_linewidth(2)
     plt.tight_layout()
+    plt.show()
+    assert False
     plt.savefig("output/plots/eda/autocorr_price.png")
     plt.close()
 
@@ -527,7 +529,7 @@ def eda_auction_data():
 
 
 def plot_european_prices():
-    data = get_data("01.01.2015", "02.06.2019", ["System Price", "APX", "OMEL", "EEX"], os.getcwd(), "d")
+    data = get_data("01.07.2014", "02.06.2019", ["System Price", "APX", "OMEL", "EEX"], os.getcwd(), "d")
     # data = get_data("01.01.2019", "31.12.2019", ["System Price", "APX", "OMEL", "EEX", "Week", "Weekday"], os.getcwd(), "d")
     data = data.rename(columns={"System Price": "Nord Pool"})
     data["Year"] = data["Date"].dt.year
@@ -551,15 +553,15 @@ def plot_european_prices():
     for i in range(len(markets)):
         col = markets[i]
         avg_price = data[col].mean()
-        plt.plot(range(len(data)), data[col], label="{} (€{:.2f})".format(col, avg_price), color=colors[i])
+        plt.plot(range(len(data)), data[col], label="{} (€{:.1f})".format(col, avg_price), color=colors[i])
     plt.ylim(0, 80)
     for line in plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), fancybox=True,
-                          shadow=True).get_lines():
+                          shadow=True, prop={"size":11}).get_lines():
         line.set_linewidth(2)
-    plt.title("European and Nord Pool Weekly Mean System Prices - Jan. 2015 to June 2019", pad=title_pad)
+    plt.title("European and Nord Pool Weekly Mean System Prices - Training Data", pad=title_pad, size=14)
     plt.xlabel("Year", labelpad=label_pad, size=11)
     plt.ylabel("Price [€]", labelpad=label_pad, size=11)
-    plt.xticks([0, 12, 24, 36, 48], ["2015", "2016", "2017", "2018", "2019"])
+    plt.xticks([i + 6 for i in [0, 12, 24, 36, 48]], ["2015", "2016", "2017", "2018", "2019"])
     plt.tight_layout()
     plt.savefig("output/plots/eda/european_market_prices_2.png")
     plt.close()
@@ -567,43 +569,56 @@ def plot_european_prices():
 
 def plot_nordpool_prices():
     from matplotlib.dates import DateFormatter
-    data = get_data("01.01.2015", "31.12.2019", ["System Price"], os.getcwd(), "d")
-    h_data = get_data("01.01.2015", "31.12.2019", ["System Price"], os.getcwd(), "h")
+    data = get_data("01.07.2014", "31.12.2019", ["System Price"], os.getcwd(), "d")
+    h_data = get_data("01.07.2014", "31.12.2019", ["System Price"], os.getcwd(), "h")
+    d_range_2014 = pd.date_range(dt(2014,1,1), dt(2014,6,30), freq="d")
+    h_range_2014 = pd.date_range(dt(2014,1,1), dt(2014,6,30), freq="h")
+    d_pd = pd.DataFrame(columns=data.columns)
+    d_pd["Date"] = d_range_2014
+    h_pd = pd.DataFrame(columns=h_data.columns)
+    h_pd["Date"] = [d.date() for d in h_range_2014]
+    h_pd["Hour"] = [d.hour for d in h_range_2014]
     for df in [data, h_data]:
         test = df[df["Date"]>dt(2019,6,2)]
         df.loc[test.index, "System Price"] = np.NAN
+    data = d_pd.append(data, ignore_index=True)
+    h_data = h_pd.append(h_data, ignore_index=True)
     h_data["Hour"] = pd.to_datetime(h_data['Hour'], format="%H").dt.time
     h_data["DateTime"] = h_data.apply(lambda r: dt.combine(r['Date'], r['Hour']), 1)
-    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, figsize=(13, 8))
-    axs = [ax1, ax2, ax3, ax4, ax5]
-    years = [i for i in range(2015, 2020)]
+    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, figsize=(13, 9))
+    axs = [ax1, ax2, ax3, ax4, ax5, ax6]
+    years = [i for i in range(2014, 2020)]
     for i in range(len(years)):
         ax = axs[i]
-        h_df = h_data[h_data["Date"].dt.year == years[i]]
+        h_df = h_data[h_data["DateTime"].dt.year == years[i]]
         df = data[data["Date"].dt.year == years[i]].reset_index(drop=True)
         ax.plot(h_df["DateTime"], h_df["System Price"], color=first_color, lw=0.5, label="Hour")
         ax.plot(df["Date"], df["System Price"], color=sec_color, lw=2, label="Day")
         ax.set_xlim(df.loc[0, "Date"], df.loc[len(df)-1, "Date"])
+        a = ax.twinx()
+        a.set_ylabel("{}".format(years[i]), size=12, labelpad=8)
+        a.set_yticks([])
         if i == 0:
             for line in ax.legend(loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.15), fancybox=True,
-                                   shadow=True).get_lines():
+                                   shadow=True, prop={"size": 11}).get_lines():
                 line.set_linewidth(2)
-        if i == 2:
-            ax.set_ylabel("Price [€]", labelpad=label_pad, size=11)
-        if i != 4:
+            a.spines['top'].set_visible(False)
+        if i != 5:
             ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
         else:
             date_form = DateFormatter("%b")
             ax.xaxis.set_major_formatter(date_form)
         ax.set_ylim(5, 70)
         y_low, y_high = (df["System Price"].min(), df["System Price"].max())
-        span = y_high-y_low
-        y_pos = 60 if i != 0 else 50
+        #span = y_high-y_low
+        y_pos = 30
         # ax.text(x=df.loc[183, "Date"], y=y_pos, s="{}".format(years[i]), size=14)
-        ax.text(x=df.loc[173, "Date"], y=y_pos, s="{}".format(years[i]), size=14)
-    fig.suptitle("Nord Pool System Price", size=14, x=0.52)
+        #a.text(y=y_pos, s="{}".format(years[i]), size=13, rotation=90)
+    fig.text(x=0.01, y=0.48, s="Price [€]", size=12, rotation=90)
+    fig.suptitle("Nord Pool System Price - Training Data", size=14, x=0.52)
     plt.xlabel("Time", labelpad=label_pad, size=11)
-    plt.tight_layout(h_pad=0.25)
+    plt.tight_layout(h_pad=0, w_pad=0)
+    plt.subplots_adjust(left=0.05)
     plt.savefig("output/plots/eda/nordpool_all_train.png")
     plt.close()
 
@@ -792,22 +807,21 @@ def explore_hydro_and_coal_multiple_regression():
 
 
 def price_distribution():
-    d_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "d")
+    d_df = get_data("01.07.2014", "02.06.2019", ["System Price"], os.getcwd(), "d")
     print("Min d {:.2f}, max d {:.2f}".format(d_df["System Price"].min(), d_df["System Price"].max()))
-    h_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "h")
+    h_df = get_data("01.07.2014", "02.06.2019", ["System Price"], os.getcwd(), "h")
     print("Min h {:.2f}, max h {:.2f}".format(h_df["System Price"].min(), h_df["System Price"].max()))
     plot_dist = True
     if plot_dist:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 6))
         plot_ax_dist(ax1, d_df["System Price"], "Daily prices [€]")
         plot_ax_dist(ax2, h_df["System Price"], "Hourly prices [€]")
-        fig.suptitle("Nord Pool Daily and Hourly Price Distribution")
+        fig.suptitle("Nord Pool Daily and Hourly Price Distribution - Training Data", size=14)
         plt.tight_layout()
         plt.savefig("output/plots/eda/price_distribution.png")
     quantiles = [0.01, 0.05, 0.1, 0.16, 0.5, 0.84, 0.9, 0.95, 0.99]
     print("Hourly standard dev: {}".format(h_df["System Price"].std()))
     print("Daily standard dev: {}".format(d_df["System Price"].std()))
-    assert False
     df = pd.DataFrame(columns=["Res"] + quantiles)
     for res, value in {"Day": d_df, "Hour": h_df}.items():
         row = {"Res": res}
@@ -815,13 +829,14 @@ def price_distribution():
             row[q] = value["System Price"].quantile(q)
         df = df.append(row, ignore_index=True)
     df = df.round(2)
+    print(df)
     df.to_csv("output/tables/price_quantiles.csv", index=False, float_format="%g")
 
 
 def plot_ax_dist(ax, data, x_title):
         ax.hist(data, bins=100, density=100, color=first_color)
-        ax.set_xlabel(x_title, labelpad=label_pad)
-        ax.set_ylabel("Proportion [%]", labelpad=label_pad)
+        ax.set_xlabel(x_title, labelpad=label_pad, size=11)
+        ax.set_ylabel("Proportion [%]", labelpad=label_pad, size=11)
         mean = data.mean()
         st_dev = 4 * data.std()
         ax.axis(xmax=mean + st_dev)
@@ -840,10 +855,10 @@ def price_seasonality():
         m_df["Month name"] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         m_df["Norm"] = m_df["System Price"] - m_df["System Price"].mean()
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 6))
-        plot_ax_season(ax1, h_df["Norm"], h_df["Hour"].astype(str), "Hour of day")
-        plot_ax_season(ax2, w_df["Norm"], w_df["Day"], "Day of week")
-        plot_ax_season(ax3, m_df["Norm"], m_df["Month name"], "Month of year")
-        fig.suptitle("Seasonality of Nord Pool Electricity Price", size=15)
+        plot_ax_season(ax1, h_df["Norm"], h_df["Hour"].astype(str), "Hour of day", True)
+        plot_ax_season(ax2, w_df["Norm"], w_df["Day"], "Day of week", False)
+        plot_ax_season(ax3, m_df["Norm"], m_df["Month name"], "Month of year", False)
+        fig.suptitle("Seasonality of Nord Pool System Price", size=15)
         plt.tight_layout()
         plt.savefig("output/plots/eda/price_seasonality.png")
     assert False
@@ -870,10 +885,11 @@ def price_seasonality():
     print("Mean Holiday factor: {:.2f}".format(sum(factors) / len(factors)))
 
 
-def plot_ax_season(ax, data, x_ticks, x_label):
+def plot_ax_season(ax, data, x_ticks, x_label, y_label):
     ax.bar(x_ticks, data, color=first_color)
-    ax.set_xlabel(xlabel=x_label, labelpad=label_pad, size=11)
-    ax.set_ylabel("Deviation from mean [€]", labelpad=label_pad, size=11)
+    ax.set_xlabel(xlabel=x_label, labelpad=label_pad, size=12)
+    if y_label:
+        ax.set_ylabel("Deviation from mean [€]", labelpad=label_pad, size=12)
     ax.set_xticklabels(x_ticks)
 
 def plot_autocorr_2():
@@ -881,18 +897,17 @@ def plot_autocorr_2():
     h_df = get_data("01.07.2014", "02.06.2020", ["System Price"], os.getcwd(), "h")
     fig, (ax1, ax2) = plt.subplots(2, figsize=full_fig)
     plot_acf(d_df["System Price"], lags=21, ax=ax1,  color=sec_color, vlines_kwargs={"color": sec_color}, title="Day")
-    values = acf(d_df["System Price"])
-    print("One day lag: {:.2f}".format(values[1]))
-    values = acf(h_df["System Price"])
-    print("One hour lag: {:.2f}".format(values[1]))
-    assert False
-    fig.suptitle("Daily and Hourly System Price Autocorrelation")
-    ax1.set_ylabel("Pearson's coefficient", labelpad=label_pad)
-    ax1.set_xlabel("Day lag", labelpad=label_pad)
-    points, ci, plot_acf(h_df["System Price"], lags=36, ax=ax2,  color=sec_color, vlines_kwargs={"color": sec_color}, title="Hour")
-    ax2.set_ylabel("Pearson's coefficient", labelpad=label_pad)
-    ax2.set_xlabel("Hour lag", labelpad=label_pad)
-    plt.tight_layout()
+    #values = acf(d_df["System Price"])
+    #print("One day lag: {:.2f}".format(values[1]))
+    #values = acf(h_df["System Price"])
+    #print("One hour lag: {:.2f}".format(values[1]))
+    fig.suptitle("Daily and Hourly System Price Autocorrelation", size=14)
+    ax1.set_ylabel("Pearson's coefficient", labelpad=label_pad, size=11)
+    ax1.set_xlabel("Day lag", labelpad=label_pad, size=11)
+    plot_acf(h_df["System Price"], lags=36, ax=ax2,  color=sec_color, vlines_kwargs={"color": sec_color}, title="Hour")
+    ax2.set_ylabel("Pearson's coefficient", labelpad=label_pad, size=11)
+    ax2.set_xlabel("Hour lag", labelpad=label_pad, size=11)
+    plt.tight_layout(h_pad=1)
     plt.savefig("output/plots/eda/autocorr_price_final.png")
     plt.close()
 
@@ -996,12 +1011,13 @@ def plot_articles():
         s_prob = len(df[df["Output"] == 2]) / len(df)
         df = df.groupby(['Model', 'Output'])['Model'].count().unstack("Output").fillna(0)
         df.plot(kind='bar', stacked=True, ax=ax, color=[first_color, sec_color])
-        ax.set_xticklabels(["Fund.", "M. A", "R-F", "Stat.", "CI"], rotation=0)
-        ax.legend(["Point ({:.0f}%)".format(100 * (1-s_prob)), "Prob. ({:.0f}%)".format(100*s_prob)])
-        ax.set_ylabel("Studies", labelpad=label_pad, size=10)
-        ax.set_xlabel("Model approach", labelpad=label_pad, size=10)
-        ax.set_title("{}-term".format(labels[i]), size=11)
-    fig.suptitle("Outcome of Scopus Literature Review - November 2020", y=0.99, size=13)
+        ax.set_xticklabels(["Fund.", "M. A", "R-F", "Stat.", "CI"], rotation=0, size=11)
+        ax.legend(["Point ({:.0f}%)".format(100 * (1-s_prob)), "Prob. ({:.0f}%)".format(100*s_prob)], prop={"size":11})
+        if i == 0:
+            ax.set_ylabel("Number of studies", labelpad=label_pad, size=11)
+        ax.set_xlabel("Model approach", labelpad=label_pad, size=11)
+        ax.set_title("{}-term".format(labels[i]), size=13, y=1.01)
+    fig.suptitle("Outcome of Scopus Literature Review - November 2020", y=0.99, size=14)
     plt.tight_layout()
     plt.savefig("output/plots/eda/articles.png")
 
@@ -1018,6 +1034,14 @@ def get_count_df(df):
                 new = new.append(row, ignore_index=True)
     return new
 
+
+def normal_test():
+    d = get_data("01.07.2014", "12.06.2019", ["System Price"], os.getcwd(), "d")
+    print("mean dat {:.3f}".format(d["System Price"].mean()))
+    print(stats.normaltest(d["System Price"])[1])
+    d = get_data("01.07.2014", "02.06.2019", ["System Price"], os.getcwd(), "h")
+    print("mean dat {:.3f}".format(d["System Price"].mean()))
+    print(stats.normaltest(d["System Price"])[1])
 
 if __name__ == '__main__':
     print("Running eda..")
@@ -1047,8 +1071,9 @@ if __name__ == '__main__':
     # explore_hydro_and_coal_multiple_regression()
     # price_distribution()
     # price_seasonality()
-    # plot_autocorr_2()
+    plot_autocorr_2()
     # measure_volatility()
     # simple_curves()
     # plot_articles()
+    # normal_test()
 
